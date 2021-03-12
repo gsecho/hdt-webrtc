@@ -1,0 +1,2 @@
+FROM registry-qcc.quantil.com/qcc/qcc-hdt-portal-basic:v1.1.17.16
+COPY static/hdt/ /static/hdt/

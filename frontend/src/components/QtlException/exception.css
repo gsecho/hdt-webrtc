@@ -1,0 +1,66 @@
+.exception {
+  height: calc(100vh - 28px);
+  background-image: url('../../assets/bg-login.svg');
+  background-repeat: no-repeat;
+  background-position: 43% 285px;
+  background-size: 804px 307px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: rgba(0, 0, 0, 0.85);
+}
+.exception div {
+  margin: 0 auto;
+  width: fit-content;
+}
+.exception .logo {
+  overflow: hidden;
+  width: 208px;
+  margin-bottom: 33px;
+}
+.exception .logo img {
+  position: relative;
+  left: -208px;
+  width: 208px;
+  height: 26px;
+  margin-bottom: 0.1rem;
+  filter: drop-shadow(#000000 208px 0);
+  border-left: 1px solid transparent;
+  border-right: 1px solid transparent;
+}
+.exception .content {
+  padding: 50px 100px;
+}
+.exception .content .code {
+  font-size: 90px;
+  font-weight: 300;
+  font-stretch: normal;
+  font-style: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  margin-bottom: 8px;
+}
+.exception .content .text {
+  border-radius: 10px;
+  background-color: rgba(0, 0, 0, 0.1);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.67;
+  padding: 0 16px;
+}
+.exception .content .message {
+  margin: 24px auto;
+  font-size: 16px;
+  line-height: 1.5;
+  white-space: pre;
+}
+.exception .content :global .ant-btn-primary {
+  background-color: #512da8;
+  border-color: #512da8;
+  padding: 0 44px;
+}
+.inMain {
+  height: calc(100vh - 126px);
+  background-position: 43% 215px;
+}

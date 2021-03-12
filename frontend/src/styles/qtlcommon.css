@@ -1,0 +1,802 @@
+:global .custom-exception-top-divider {
+  width: 100%;
+  height: 8px;
+  background: linear-gradient(-90deg, #512DA8, #4C83FF, #4C83FF, #512DA8);
+  background-size: 400% 400%;
+  -webkit-animation: antd-pro-styles-qtlcommon-exceptionTop 15s ease infinite alternate;
+  -moz-animation: antd-pro-styles-qtlcommon-exceptionTop 15s ease infinite alternate;
+  animation: antd-pro-styles-qtlcommon-exceptionTop 15s ease infinite alternate;
+}
+@-moz-keyframes exceptionTop {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+@-webkit-keyframes exceptionTop {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+@keyframes exceptionTop {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+:global .custom-header-dropdown-menu {
+  padding: 0px;
+}
+:global .custom-header-dropdown-menu .ant-dropdown-menu-item {
+  padding: 0px;
+}
+:global .custom-header-dropdown-menu .ant-card-body {
+  padding: 0px;
+}
+:global .custom-header-dropdown-menu .ant-card-meta {
+  padding-left: 24px;
+  padding-right: 24px;
+}
+:global .custom-header-dropdown-menu .custom-divider {
+  margin: 12px 0;
+}
+:global .custom-header-dropdown-menu-text p {
+  white-space: normal;
+  word-wrap: break-word;
+  word-break: break-all;
+}
+:global .custom-card-bottom-btn-l {
+  text-align: left;
+  padding-left: 24px;
+  padding-bottom: 16px;
+}
+:global .custom-card-bottom-btn-r {
+  text-align: right;
+  padding-right: 24px;
+  padding-bottom: 16px;
+}
+:global .custom-header-left-pop .ant-popover-inner-content {
+  padding-left: 0px;
+  padding-right: 0px;
+  padding-bottom: 8px;
+}
+:global .custom-header-left-pop p {
+  padding: 8px 16px;
+  line-height: 28px;
+  margin: 0px;
+}
+:global .custom-header-left-pop p:first-child {
+  padding-top: 0px;
+  padding-bottom: 0px;
+}
+:global .custom-header-left-pop p a {
+  font-family: Roboto;
+  font-size: 20px;
+  font-weight: 500;
+  font-style: normal;
+  font-stretch: normal;
+  letter-spacing: normal;
+  color: #2d3446;
+  display: block;
+  margin-top: 1px;
+}
+:global .custom-header-left-pop .custom-left-top-menu-p:hover {
+  background-color: #e6f7ff;
+}
+:global .custom-header-left-pop .custom-left-top-menu-logo {
+  width: 24px;
+  height: 24px;
+  margin-top: -4px;
+}
+:global .custom-header-action {
+  cursor: pointer;
+  transition: all 0.3s;
+  font-size: 18px;
+  padding: calc((48px - 22px) / 2) 8px;
+}
+:global .custom-header-action:hover {
+  background-color: #e6f7ff;
+}
+:global .custom-header-action2 {
+  font-size: 22px;
+  padding: calc((48px - 28px) / 2) 8px;
+  vertical-align: middle;
+}
+:global .custom-header-pop .custom-user-avatar {
+  font-family: Roboto;
+  font-size: 24px;
+  font-weight: bold;
+  font-style: normal;
+  font-stretch: normal;
+  letter-spacing: normal;
+  text-align: center;
+  color: #ffffff;
+}
+:global .custom-header-pop .ant-popover-inner-content {
+  padding: 0px;
+}
+:global .custom-header-pop .ant-card-body {
+  padding: 0px;
+}
+:global .custom-header-pop .ant-card-meta {
+  padding-left: 24px;
+  padding-right: 24px;
+}
+:global .custom-header-pop .custom-divider {
+  margin: 16px 0;
+}
+:global .custom-header-pop p {
+  white-space: normal;
+  word-wrap: break-word;
+  word-break: break-all;
+  margin-bottom: 4px;
+}
+:global .custom-mt4 {
+  margin-top: 4px;
+}
+:global .custom-mb4 {
+  margin-bottom: 4px;
+}
+:global .custom-mb32 {
+  margin-bottom: 32px;
+}
+:global .custom-mt32 {
+  margin-top: 32px;
+}
+:global .custom-mt48 {
+  margin-top: 48px;
+}
+:global .custom-mb6 {
+  margin-bottom: 6px;
+}
+:global .custom-mb8 {
+  margin-bottom: 8px;
+}
+:global .custom-mb16 {
+  margin-bottom: 16px;
+}
+:global .custom-mb24 {
+  margin-bottom: 24px;
+}
+:global .custom-mr4 {
+  margin-right: 4px;
+}
+:global .custom-mr8 {
+  margin-right: 8px;
+}
+:global .custom-mr16 {
+  margin-right: 16px;
+}
+:global .custom-mr24 {
+  margin-right: 24px;
+}
+:global .custom-float-r {
+  float: right;
+}
+:global .custom-pl24 {
+  padding-left: 24px;
+}
+:global .custom-pl8 {
+  padding-left: 8px;
+}
+:global .custom-pr8 {
+  padding-right: 8px;
+}
+:global .custom-pr24 {
+  padding-right: 24px;
+}
+:global .custom-pt8 {
+  padding-top: 8px;
+}
+:global .custom-pt11 {
+  padding-top: 11px;
+}
+:global .custom-pt16 {
+  padding-top: 16px;
+}
+:global .custom-pt24 {
+  padding-top: 24px;
+}
+:global .custom-pb8 {
+  padding-bottom: 8px;
+}
+:global .custom-pb24 {
+  padding-bottom: 24px;
+}
+:global .custom-pb32 {
+  padding-bottom: 32px;
+}
+:global .custom-ml4 {
+  margin-left: 4px;
+}
+:global .custom-ml8 {
+  margin-left: 8px;
+}
+:global .custom-ml16 {
+  margin-left: 16px;
+}
+:global .custom-mt8 {
+  margin-top: 8px;
+}
+:global .custom-mt16 {
+  margin-top: 16px;
+}
+:global .custom-mt24 {
+  margin-top: 24px;
+}
+:global .custom-mt64 {
+  margin-top: 64px;
+}
+:global .custom-graph-bg {
+  background-color: #fff;
+  border-radius: 4px;
+  border: solid 1px rgba(0, 0, 0, 0.15);
+}
+:global .custom-graph-metrictile {
+  height: 24px;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.5;
+  letter-spacing: normal;
+  text-align: center;
+}
+:global .custom-row {
+  margin-right: 0px;
+}
+:global .custom-form-no-mb {
+  margin-bottom: 0px;
+}
+:global .custom-tag-grey {
+  padding: 4px 12px;
+  border-radius: 12px;
+  background-color: #d9d9d9;
+  margin-left: 8px;
+  font-family: Roboto;
+  font-size: 12px;
+  font-weight: bold;
+  font-style: normal;
+  font-stretch: normal;
+  line-height: 1.67;
+  letter-spacing: normal;
+  text-align: center;
+  color: rgba(0, 0, 0, 0.85);
+}
+:global .qtlcustom .custom-form-no-mb {
+  margin-bottom: 0px;
+}
+:global .qtlcustom .custom-form-hide-err .ant-form-explain {
+  display: none;
+}
+:global .qtlcustom .custom-form-err {
+  color: #f5222d;
+}
+:global .qtlcustom .no-border .custom-top-breadcrumb-view {
+  border-bottom: 0px none;
+}
+:global .qtlcustom .antd-pro-components-global-header-index-trigger:hover {
+  background-color: #e6f7ff;
+}
+:global .qtlcustom .custom-bg-grey {
+  background-color: #d6d8e3;
+}
+:global .qtlcustom .custom-nopadding-lr {
+  padding-left: 0px;
+  padding-right: 0px;
+}
+:global .qtlcustom .custom-nopadding-lr:hover {
+  background-color: #e6f7ff;
+}
+:global .qtlcustom a {
+  text-decoration: none;
+}
+:global .qtlcustom .custom-top-logo {
+  margin-top: -5px;
+  margin-left: 6px;
+  margin-right: 2px;
+  height: 28px;
+  width: 28px;
+}
+:global .qtlcustom .custom-top-breadcrumb-view {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.15);
+}
+:global .qtlcustom .custom-top-breadcrumb-title {
+  font-family: Roboto;
+  font-size: 14px;
+  font-weight: normal;
+  font-style: normal;
+  font-stretch: normal;
+  line-height: 1.57;
+  letter-spacing: normal;
+  color: rgba(0, 0, 0, 0.85);
+  height: 22px;
+}
+:global .qtlcustom .custom-top-breadcrumb-menu {
+  font-family: Roboto;
+  font-size: 20px;
+  font-weight: normal;
+  font-style: normal;
+  font-stretch: normal;
+  line-height: 1.4;
+  letter-spacing: normal;
+  color: rgba(0, 0, 0, 0.85);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+:global .qtlcustom .ant-breadcrumb a,
+:global .qtlcustom .ant-breadcrumb a:hover {
+  color: #1890ff;
+}
+:global .qtlcustom .custom-top-breadcrumb-menu a,
+:global .qtlcustom .custom-top-breadcrumb-menu a:hover {
+  color: #1890ff;
+}
+:global .qtlcustom .custom-top-breadcrumb-menu-adjust {
+  height: 22px;
+  overflow: hidden;
+}
+:global .qtlcustom .custom-top-breadcrumb-menu-adjust span,
+:global .qtlcustom .custom-top-breadcrumb-menu-adjust span .ant-breadcrumb-link a {
+  color: #1890ff;
+}
+:global .qtlcustom .custom-top-breadcrumb-menu span:last-child {
+  color: rgba(0, 0, 0, 0.85);
+}
+:global .qtlcustom .custom-page-footer-version {
+  height: 12px;
+  font-family: Roboto;
+  font-size: 12px;
+  font-weight: normal;
+  font-style: normal;
+  font-stretch: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  color: rgba(0, 0, 0, 0.45);
+}
+:global .qtlcustom .custom-page-footer {
+  height: 12px;
+  font-family: Roboto;
+  font-size: 12px;
+  font-weight: normal;
+  font-style: normal;
+  font-stretch: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-align: center;
+  color: rgba(0, 0, 0, 0.45);
+}
+:global .qtlcustom .custom-card-nobg {
+  background-color: transparent;
+}
+:global .qtlcustom .custom-card-nobg .ant-card-body {
+  padding: 0px;
+}
+:global .qtlcustom .custom-footer {
+  position: fixed;
+  zIndex: 1;
+  bottom: 16px;
+  width: 100%;
+}
+:global .qtlcustom .custom-footer .antd-pro-components-global-footer-index-globalFooter {
+  padding: 0px;
+  margin: 0px;
+  font-family: Roboto;
+  font-size: 12px;
+  font-weight: normal;
+  font-style: normal;
+  font-stretch: normal;
+  line-height: 1.67;
+  letter-spacing: normal;
+  text-align: center;
+  color: rgba(0, 0, 0, 0.45);
+}
+:global .qtlcustom .custom-footer .ant-layout-footer {
+  background-color: #fff;
+}
+:global .qtlcustom .custom-exception-logo {
+  margin: 36px 0 0 36px;
+  width: 160px;
+  height: 20px;
+  object-fit: contain;
+}
+:global .qtlcustom .custom-exception-view {
+  position: relative;
+  width: 100%;
+  height: calc(100vh - 64px - 90px);
+}
+:global .qtlcustom .custom-exception-content {
+  position: absolute;
+  width: 864px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+:global .qtlcustom .custom-exception-view2 {
+  text-align: center;
+}
+:global .qtlcustom .custom-exception-view2 .custom-exception-code {
+  font-family: Roboto;
+  font-size: 90px;
+  font-weight: 300;
+  font-style: normal;
+  font-stretch: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-align: center;
+  color: #512da8;
+}
+:global .qtlcustom .custom-exception-view2 .custom-exception-code2 {
+  font-family: Roboto;
+  font-size: 48px;
+  font-weight: 300;
+  font-stretch: normal;
+  font-style: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-align: center;
+  color: #512da8;
+}
+:global .qtlcustom .custom-exception-view2 .custom-exception-text {
+  font-family: Roboto;
+  font-size: 12px;
+  font-weight: 500;
+  font-style: normal;
+  font-stretch: normal;
+  line-height: 1.67;
+  letter-spacing: normal;
+  text-align: center;
+  color: #512da8;
+  width: 80px;
+  border-radius: 10px;
+  background-color: rgba(81, 45, 168, 0.1);
+  margin: 16px auto 0 auto;
+}
+:global .qtlcustom .custom-exception-view2 .custom-exception-message {
+  margin: 24px auto 0 auto;
+  font-family: Roboto;
+  font-size: 16px;
+  font-weight: normal;
+  font-style: normal;
+  font-stretch: normal;
+  line-height: 1.5;
+  letter-spacing: normal;
+  text-align: center;
+  color: rgba(0, 0, 0, 0.85);
+  word-wrap: break-word;
+  word-break: break-all;
+}
+:global .qtlcustom .custom-exception-view2 .custom-exception-message2 {
+  width: 524px;
+  margin: 24px auto 0 auto;
+  font-family: Roboto;
+  font-size: 16px;
+  font-weight: normal;
+  font-stretch: normal;
+  font-style: normal;
+  line-height: 1.5;
+  letter-spacing: normal;
+  text-align: center;
+  color: rgba(0, 0, 0, 0.85);
+}
+:global .qtlcustom .custom-exception-view2 .custom-exception-btn {
+  width: 146px;
+  height: 40px;
+}
+:global .qtlcustom .custom-exception-view2 .custom-font48 {
+  font-family: Roboto;
+  font-size: 48px;
+  font-weight: 300;
+  font-style: normal;
+  font-stretch: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-align: center;
+  color: #512da8;
+}
+:global .qtlcustom .custom-exception-view2 .custom-font30 {
+  font-family: Roboto;
+  font-size: 30px;
+  font-weight: normal;
+  font-style: normal;
+  font-stretch: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-align: center;
+  color: #512da8;
+}
+:global .qtlcustom .custom-exception-view2 .custom-exception-contact {
+  height: 60px;
+  background-color: rgba(0, 0, 0, 0.09);
+  padding: 8px 16px;
+  width: 424px;
+}
+:global .qtlcustom .custom-exception-view2 .custom-exception-contact-item-l {
+  font-family: Roboto;
+  font-size: 20px;
+  font-weight: normal;
+  font-style: normal;
+  font-stretch: normal;
+  line-height: 1.4;
+  letter-spacing: normal;
+  color: rgba(0, 0, 0, 0.85);
+  text-align: left;
+}
+:global .qtlcustom .custom-exception-view2 .custom-exception-contact-item-r {
+  font-family: Roboto;
+  font-size: 14px;
+  font-weight: normal;
+  font-style: normal;
+  font-stretch: normal;
+  line-height: 1.57;
+  letter-spacing: normal;
+  color: rgba(0, 0, 0, 0.65);
+  text-align: left;
+}
+:global .qtlcustom .custom-table table tbody tr td {
+  word-break: break-all;
+}
+:global .qtlcustom .custom-graph-download-btn {
+  position: absolute;
+  right: 0px;
+  z-index: 3;
+}
+:global .qtlcustom .custom-login-view {
+  width: 100%;
+  height: 100%;
+  background-image: linear-gradient(to right, #5044c0, #5044c0 22%, #5086e9 88%, #5086e9, #5595eb);
+  position: relative;
+}
+:global .qtlcustom .custom-login-logo-view {
+  width: 976px;
+  height: 100%;
+  margin: 0 auto;
+  overflow: hidden;
+}
+:global .qtlcustom .custom-login-logo {
+  width: 100%;
+  height: 900px;
+  object-fit: contain;
+}
+:global .qtlcustom .custom-login-left {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  width: 100%;
+}
+:global .qtlcustom .custom-login-left-desc {
+  font-family: Roboto;
+  font-size: 14px;
+  font-weight: normal;
+  font-style: normal;
+  font-stretch: normal;
+  line-height: 1.57;
+  letter-spacing: normal;
+  color: rgba(0, 0, 0, 0.65);
+}
+:global .qtlcustom .custom-graph-title {
+  font-family: Roboto;
+  font-style: normal;
+  font-stretch: normal;
+  color: rgba(0, 0, 0, 0.85);
+  padding-left: 16px;
+  font-size: 18px;
+}
+:global .qtlcustom .custom-graph-title p {
+  letter-spacing: normal;
+  margin: 0px;
+  padding: 0px;
+}
+:global .qtlcustom .custom-graph-title button {
+  color: #d9d9d9;
+  float: right;
+  line-height: 24px;
+}
+:global .qtlcustom .custom-graph-title .custom-graph-title-key {
+  height: 24px;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+:global .qtlcustom .custom-graph-title .custom-graph-title-val {
+  height: 28px;
+  font-size: 20px;
+  font-weight: bold;
+  line-height: 1.4;
+}
+:global .qtlcustom .custom-graph-title .custom-graph-title-tag {
+  height: 22px;
+  font-family: Roboto;
+  font-size: 14px;
+  line-height: 1.57;
+  color: rgba(0, 0, 0, 0.65);
+}
+:global .qtlcustom .custom-graph-desc {
+  line-height: 36px;
+  font-family: Roboto;
+  font-size: 14px;
+  font-style: normal;
+  font-stretch: normal;
+  line-height: 1.57;
+  letter-spacing: normal;
+  color: rgba(0, 0, 0, 0.65);
+}
+:global .qtlcustom .custom-graph-desc-l {
+  font-weight: bold;
+}
+:global .qtlcustom .custom-card-title {
+  height: 24px;
+  font-family: Roboto;
+  font-size: 16px;
+  font-weight: 500;
+  font-style: normal;
+  font-stretch: normal;
+  line-height: 1.5;
+  letter-spacing: normal;
+  color: rgba(0, 0, 0, 0.85);
+}
+:global .qtlcustom .custom-graph-view {
+  padding: 24px;
+}
+:global .qtlcustom .custom-graph-btn {
+  text-align: center;
+}
+:global .qtlcustom .custom-card-app-detail p {
+  height: 22px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+:global .qtlcustom .custom-list-adjust .ant-list-items .ant-list-item {
+  display: inherit;
+}
+:global .qtlcustom .custom-list-adjust .ant-list-items .ant-list-item {
+  padding-top: 1px;
+  padding-bottom: 1px;
+}
+:global .qtlcustom .custom-list-adjust .ant-list-items {
+  padding-left: 4px;
+  padding-right: 4px;
+}
+:global .qtlcustom .custom-form-table-adjust .ant-table-empty .ant-table-placeholder {
+  display: none;
+}
+:global .qtlcustom .custom-form-table-adjust .ant-table-empty .ant-table-thead tr th {
+  border-bottom: none;
+}
+:global .qtlcustom .ant-upload-drag .ant-upload-drag-container .custom-modal-form-text2 {
+  font-family: Roboto;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.45);
+}
+:global .custom-left-top-menu-view .custom-left-top-menu a {
+  display: inline;
+}
+:global .custom-modal-form-text {
+  font-family: Roboto;
+  font-size: 14px;
+  font-weight: normal;
+  font-style: normal;
+  font-stretch: normal;
+  line-height: 1.57;
+  letter-spacing: normal;
+  color: rgba(0, 0, 0, 0.65);
+}
+:global .custom-yaml-code {
+  word-wrap: break-word;
+  word-break: normal;
+}
+:global .custom-code-scroll {
+  height: 400px;
+  overflow-y: scroll;
+  background: #f7f7f7;
+  border-radius: 4px;
+  padding: 20px;
+  font-family: Menlo, Consolas, DejaVu Sans Mono, monospace;
+}
+:global .custom-yaml-code-view {
+  background-color: #002140;
+  padding: 20px;
+}
+:global .custom-login-left-view {
+  width: 240px;
+  margin: 0 auto;
+}
+:global .custom-login-left-logo {
+  width: 60px;
+  margin: 64px auto 0 auto;
+}
+:global .custom-login-left-logo img {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+}
+:global .custom-login-left-logoword {
+  width: 208px;
+  margin: 16px auto 0 auto;
+}
+:global .custom-login-left-logoword img {
+  width: 208px;
+  height: 26px;
+  object-fit: contain;
+}
+:global .custom-login-left-btn {
+  margin-top: 3px;
+  width: 76px;
+  height: 32px;
+}
+:global .custom-report-graph-title {
+  font-family: Roboto;
+  font-size: 20px;
+  font-weight: 500;
+  font-style: normal;
+  font-stretch: normal;
+  line-height: 1.4;
+  letter-spacing: normal;
+  color: rgba(0, 0, 0, 0.85);
+  margin-bottom: 8px;
+}
+:global .custom-report-graph-desc {
+  font-family: Roboto;
+  font-size: 14px;
+  font-weight: normal;
+  font-style: normal;
+  font-stretch: normal;
+  line-height: 1.57;
+  letter-spacing: normal;
+  color: rgba(0, 0, 0, 0.85);
+  margin-bottom: 24px;
+  word-break: break-all;
+}
+:global .custom-report-graph-peak-view {
+  border-left: 1px solid rgba(0, 0, 0, 0.15);
+  padding-left: 16px;
+}
+:global .custom-report-graph-peak-view p {
+  margin: 0px;
+}
+:global .custom-report-graph-peak-title {
+  font-family: Roboto;
+  font-size: 12px;
+  font-weight: normal;
+  font-style: normal;
+  font-stretch: normal;
+  line-height: 1.67;
+  letter-spacing: normal;
+  color: rgba(0, 0, 0, 0.45);
+}
+:global .custom-report-graph-peak-time {
+  font-family: Roboto;
+  font-size: 14px;
+  font-weight: normal;
+  font-style: normal;
+  font-stretch: normal;
+  line-height: 1.71;
+  letter-spacing: normal;
+  color: rgba(0, 0, 0, 0.85);
+}
+:global .custom-report-graph-peak-value {
+  font-family: Roboto;
+  font-size: 16px;
+  font-weight: normal;
+  font-style: normal;
+  font-stretch: normal;
+  line-height: 1.5;
+  letter-spacing: normal;
+  color: rgba(0, 0, 0, 0.85);
+}

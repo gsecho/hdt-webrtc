@@ -1,0 +1,75 @@
+.formItem {
+  display: flex;
+}
+.formItem > div:last-of-type {
+  flex: 1;
+}
+.formItem > div:first-of-type {
+  height: 40px;
+  line-height: 40px;
+}
+.formItem .unit {
+  display: inline-block;
+  margin-left: 10px;
+}
+.formItem :global .ant-input-number {
+  width: 100%;
+}
+:global .has-error .targetPort .hdt-error {
+  border-color: #f5222d;
+}
+.targetPort {
+  position: relative;
+}
+.targetPort div :global .ant-select-selection,
+.targetPort div :global .ant-input-number {
+  border-color: #d9d9d9;
+}
+.targetPort div :global .ant-select-selection:hover,
+.targetPort div :global .ant-input-number:hover {
+  border-color: #d9d9d9;
+}
+.targetPort div :global .ant-select-selection:focus,
+.targetPort div :global .ant-input-number:focus {
+  border-color: #40a9ff;
+  -webkit-box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+.targetPort div :global .ant-select-selection:active,
+.targetPort div :global .ant-input-number:active {
+  border-color: #40a9ff;
+  -webkit-box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+.targetPort div :global .ant-input-number:not([disabled]):hover {
+  border-color: #d9d9d9;
+}
+.targetPort div :global .ant-select-arrow {
+  color: #d9d9d9;
+}
+.targetPort .portTable td > i {
+  padding-left: 10px;
+  font-size: 16px;
+  cursor: pointer;
+}
+.targetPort .portTable td > i:hover {
+  color: #50c4c0;
+}
+.targetPort .error {
+  border-color: #f5222d;
+}
+.targetPort .error:hover {
+  border-color: #f5222d;
+  box-shadow: none;
+}
+.targetPort .error:focus {
+  border-color: #f5222d;
+  box-shadow: none;
+}
+.targetPort .errorMsg {
+  color: #f5222d;
+  height: 40px;
+  position: absolute;
+  left: 0;
+  bottom: -32px;
+}

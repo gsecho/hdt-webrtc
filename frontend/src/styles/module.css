@@ -1,0 +1,32 @@
+.statusDot {
+  height: 22px;
+  line-height: 22px;
+  display: inline-block;
+}
+.statusDot div {
+  width: 6px;
+  height: 6px;
+  border-radius: 10px;
+  display: inline-block;
+  margin-right: 8px;
+  box-sizing: border-box;
+}
+.statusDot .green {
+  background-color: #52c41a;
+}
+.statusDot .grey {
+  background-color: #d9d9d9;
+}
+.cardSubTitle .subTitle {
+  font-size: 16px;
+  line-height: 1.5em;
+  font-weight: 500;
+  height: 32px;
+  font-family: Roboto;
+  font-stretch: normal;
+  font-style: normal;
+  letter-spacing: normal;
+}
+.cardSubTitle :global .ant-divider-horizontal {
+  margin: 0px 0px 32px 0px;
+}

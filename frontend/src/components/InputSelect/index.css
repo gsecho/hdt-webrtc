@@ -1,0 +1,45 @@
+.dropdown {
+  position: relative;
+}
+.dropdown .dropContext {
+  width: 100%;
+  position: absolute;
+  top: 40px;
+  left: 0;
+  background-color: #fff;
+  border-radius: 4px;
+  outline: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  margin: 0;
+  padding: 0;
+  color: rgba(0, 0, 0, 0.65);
+  line-height: 1.5;
+  list-style: none;
+  font-feature-settings: 'tnum';
+  box-sizing: border-box;
+  font-size: 14px;
+  font-variant: initial;
+  max-height: 250px;
+  overflow: auto;
+  z-index: 3050;
+}
+.dropdown .dropContext > div {
+  padding: 4px 0;
+}
+.dropdown .dropContext > div > span {
+  padding: 5px 12px;
+  display: block;
+  overflow: hidden;
+  line-height: 22px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+.dropdown .dropContext > div > span:hover {
+  background-color: #f0fffc;
+}
+.dropdown .dropContext .active {
+  background-color: #fafafa;
+  font-weight: 600;
+}

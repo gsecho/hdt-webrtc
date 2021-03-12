@@ -1,0 +1,104 @@
+.dark :global .ant-card {
+  background-color: #f9f9f9;
+}
+.dark :global .custom-graph-bg {
+  border: none;
+}
+.light :global .ant-card {
+  background-color: none;
+}
+.green .diff {
+  background-color: #ddffdd;
+}
+.red .diff {
+  background-color: #fee8e9;
+}
+div .portContent {
+  align-items: flex-start;
+}
+.transportView {
+  padding: 0 24px;
+  word-break: break-all;
+}
+.transportView .title {
+  display: flex;
+  font-family: Roboto;
+  font-size: 16px;
+  font-weight: 500;
+  font-stretch: normal;
+  font-style: normal;
+  line-height: 1.5;
+  letter-spacing: normal;
+  color: rgba(0, 0, 0, 0.85);
+  padding-bottom: 8px;
+}
+.transportView .title div {
+  flex: 1;
+}
+.transportView .content {
+  display: flex;
+  flex-direction: column;
+}
+.transportView .empty {
+  height: 24px;
+}
+.transportView .content > div {
+  display: flex;
+  flex: 1;
+}
+.transportView .content > div div {
+  flex: 1;
+  background-color: #f9f9f9;
+  padding: 0 24px;
+  display: flex;
+}
+.transportView .content > div {
+  min-height: 32px;
+  overflow: hidden;
+}
+.transportView .content .empty {
+  height: 24px;
+  min-height: 24px;
+}
+.transportView .content {
+  font-family: Roboto;
+  font-size: 14px;
+  font-weight: normal;
+  font-stretch: normal;
+  font-style: normal;
+  line-height: 2.29;
+  letter-spacing: normal;
+  padding-bottom: 16px;
+}
+.transportView .content .title {
+  padding-bottom: 0;
+  font-size: 14px;
+  line-height: 1.71;
+  color: rgba(0, 0, 0, 0.85);
+}
+.transportView .content .diff div:first-child {
+  background-color: #fee8e9;
+}
+.transportView .content .diff div:last-child {
+  background-color: #ddffdd;
+}
+.transportView .content > div div :first-child {
+  color: rgba(0, 0, 0, 0.45);
+  width: 130px;
+}
+.transportView .content > div div :last-child {
+  flex: 1;
+  color: rgba(0, 0, 0, 0.65);
+}
+.transportView .content > div div:first-child,
+.transportView .title div:first-child {
+  margin-right: 16px;
+}
+.transportView .content > div:first-child > div {
+  border-top-left-radius: 2px;
+  border-top-right-radius: 2px;
+}
+.transportView .content > div:last-child > div {
+  border-bottom-left-radius: 2px;
+  border-bottom-right-radius: 2px;
+}

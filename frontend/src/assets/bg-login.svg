@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="804" height="307" viewBox="0 0 804 307">
+    <defs>
+        <linearGradient id="w6sy6t8q5a" x1="39.789%" x2="63.494%" y1="22.578%" y2="90.547%">
+            <stop offset="0%" stop-color="#8ADCF7"/>
+            <stop offset="100%" stop-color="#A8A8DF" stop-opacity="0"/>
+        </linearGradient>
+        <linearGradient id="rovtvza5lb" x1="100%" x2="0%" y1="50%" y2="50%">
+            <stop offset="0%" stop-color="#CCE9E6"/>
+            <stop offset="100%" stop-color="#D1D3E9"/>
+        </linearGradient>
+    </defs>
+    <g fill="none" fill-rule="evenodd">
+        <path fill="url(#w6sy6t8q5a)" d="M112.278 307C18.623 272.469 40.13 175.146 40.13 171c36.648-10.094 70.911-34 70.911-34s23.588 28.053 70.754 38.146c0 0 16.113 98.599-69.517 131.854z" opacity=".3"/>
+        <g opacity=".6" transform="rotate(90 337.5 466.5)">
+            <path stroke="#D3DDE7" stroke-linecap="round" stroke-width="2" d="M57.871 10L20 10" transform="rotate(180 39 10)"/>
+            <circle cx="68" cy="10" r="10" fill="#B0C2EE" opacity=".285"/>
+            <circle cx="10.129" cy="10" r="10" fill="#F4EACA"/>
+        </g>
+        <g fill="url(#rovtvza5lb)" opacity=".533" transform="translate(662 196)">
+            <rect width="97" height="25" rx="4"/>
+            <rect width="97" height="25" y="27" rx="4"/>
+            <rect width="97" height="25" y="55" rx="4"/>
+        </g>
+        <g opacity=".6" transform="rotate(90 -67.5 179.5)">
+            <path stroke="#D3DDE7" stroke-linecap="round" stroke-width="2" d="M10 20L10 92"/>
+            <circle cx="10" cy="10" r="10" fill="#B0C2EE" opacity=".709"/>
+            <circle cx="10" cy="102" r="10" fill="#DCB9A3" opacity=".709"/>
+        </g>
+        <g>
+            <path fill="#DFE4F3" d="M0 95H37V101H0z" opacity=".574" transform="translate(139)"/>
+            <path stroke="#FFF" stroke-linecap="square" stroke-linejoin="round" stroke-width="6" d="M3 67l15.5-16.936L33 67M3 41.936L18.5 25 33 41.936M3 16.936L18.5 0 33 16.936M18.5 83L18.5 52" transform="translate(139)"/>
+        </g>
+    </g>
+</svg>

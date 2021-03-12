@@ -1,0 +1,1000 @@
+:global {
+  .keyframes(@name; @arguments) {
+    @-moz-keyframes @name {
+      @arguments();
+    }
+
+    @-webkit-keyframes @name {
+      @arguments();
+    }
+
+    @keyframes @name {
+      @arguments();
+    }
+  }
+
+  .animation(@arguments) {
+    -webkit-animation: @arguments;
+    -moz-animation   : @arguments;
+    animation        : @arguments;
+  }
+
+  .custom-exception-top-divider {
+    width          : 100%;
+    height         : 8px;
+    background     : linear-gradient(-90deg, #512DA8, #4C83FF, #4C83FF, #512DA8);
+    background-size: 400% 400%;
+
+    .keyframes(exceptionTop; {
+        0% {
+          background-position: 0% 50%
+        }
+
+        50% {
+          background-position: 100% 50%
+        }
+
+        100% {
+          background-position: 0% 50%
+        }
+      }
+
+    );
+    // TODO: 函数调用名称会有前缀antd-pro-styles-qtlcommon-
+    .animation(antd-pro-styles-qtlcommon-exceptionTop 15s ease infinite alternate);
+  }
+
+  // 右上角下拉菜单
+  .custom-header-dropdown-menu {
+    padding: 0px;
+  }
+
+  .custom-header-dropdown-menu .ant-dropdown-menu-item {
+    padding: 0px;
+  }
+
+  .custom-header-dropdown-menu .ant-card-body {
+    padding: 0px;
+  }
+
+  .custom-header-dropdown-menu .ant-card-meta {
+    padding-left : 24px;
+    padding-right: 24px;
+  }
+
+  .custom-header-dropdown-menu .custom-divider {
+    margin: 12px 0;
+  }
+
+  .custom-header-dropdown-menu-text p {
+    white-space: normal;
+    word-wrap  : break-word;
+    word-break : break-all;
+  }
+
+  .custom-card-bottom-btn-l {
+    text-align    : left;
+    padding-left  : 24px;
+    padding-bottom: 16px;
+  }
+
+  .custom-card-bottom-btn-r {
+    text-align    : right;
+    padding-right : 24px;
+    padding-bottom: 16px;
+  }
+
+  .custom-header-left-pop {
+    .ant-popover-inner-content {
+      padding-left  : 0px;
+      padding-right : 0px;
+      padding-bottom: 8px;
+    }
+
+    p {
+      padding    : 8px 16px;
+      line-height: 28px;
+      margin     : 0px;
+    }
+
+    p:first-child {
+      padding-top   : 0px;
+      padding-bottom: 0px;
+    }
+
+    p a {
+      font-family   : Roboto;
+      font-size     : 20px;
+      font-weight   : 500;
+      font-style    : normal;
+      font-stretch  : normal;
+      letter-spacing: normal;
+      color         : #2d3446;
+
+      display   : block;
+      margin-top: 1px;
+    }
+
+    .custom-left-top-menu-p {
+      &:hover {
+        background-color: #e6f7ff;
+      }
+    }
+
+    .custom-left-top-menu-logo {
+      width     : 24px;
+      height    : 24px;
+      margin-top: -4px;
+    }
+  }
+
+  // 右上角弹出框
+  .custom-header-action {
+    cursor    : pointer;
+    transition: all 0.3s;
+    font-size : 18px;
+    padding   : calc((48px - 22px) / 2) 8px;
+
+    &:hover {
+      background-color: #e6f7ff;
+    }
+  }
+
+  .custom-header-action2 {
+    font-size     : 22px;
+    padding       : calc((48px - 28px) / 2) 8px;
+    vertical-align: middle;
+  }
+
+  // 覆盖样式
+  .custom-header-pop {
+    .custom-user-avatar {
+      font-family   : Roboto;
+      font-size     : 24px;
+      font-weight   : bold;
+      font-style    : normal;
+      font-stretch  : normal;
+      letter-spacing: normal;
+      text-align    : center;
+      color         : #ffffff;
+    }
+
+    .ant-popover-inner-content {
+      padding: 0px;
+    }
+
+    .ant-card-body {
+      padding: 0px;
+    }
+
+    .ant-card-meta {
+      padding-left : 24px;
+      padding-right: 24px;
+    }
+
+    .custom-divider {
+      margin: 16px 0;
+    }
+
+    p {
+      white-space  : normal;
+      word-wrap    : break-word;
+      word-break   : break-all;
+      margin-bottom: 4px;
+    }
+  }
+  .ant-form-item {
+    margin: 0 2px 10px;
+  }
+  .custom-mt4 {
+    margin-top: 4px;
+  }
+
+  .custom-mb4 {
+    margin-bottom: 4px;
+  }
+
+  .custom-mb32 {
+    margin-bottom: 32px;
+  }
+
+  .custom-mt32 {
+    margin-top: 32px;
+  }
+
+  .custom-mt48 {
+    margin-top: 48px;
+  }
+  .custom-mb2 {
+    margin-bottom: 2px;
+  }
+  .custom-mb6 {
+    margin-bottom: 6px;
+  }
+
+  .custom-mb8 {
+    margin-bottom: 8px;
+  }
+
+  .custom-mb16 {
+    margin-bottom: 16px;
+  }
+
+  .custom-mb24 {
+    margin-bottom: 24px;
+  }
+
+  .custom-mr4 {
+    margin-right: 4px;
+  }
+
+  .custom-mr8 {
+    margin-right: 8px;
+  }
+
+  .custom-mr16 {
+    margin-right: 16px;
+  }
+
+  .custom-mr24 {
+    margin-right: 24px;
+  }
+
+  .custom-float-r {
+    float: right;
+  }
+
+  .custom-pl24 {
+    padding-left: 24px;
+  }
+
+  .custom-pl8 {
+    padding-left: 8px;
+  }
+
+  .custom-pr8 {
+    padding-right: 8px;
+  }
+
+  .custom-pr24 {
+    padding-right: 24px;
+  }
+
+  .custom-pt8 {
+    padding-top: 8px;
+  }
+
+  .custom-pt11 {
+    padding-top: 11px;
+  }
+
+  .custom-pt16 {
+    padding-top: 16px;
+  }
+
+  .custom-pt24 {
+    padding-top: 24px;
+  }
+
+  .custom-pb8 {
+    padding-bottom: 8px;
+  }
+
+  .custom-pb24 {
+    padding-bottom: 24px;
+  }
+
+  .custom-pb32 {
+    padding-bottom: 32px;
+  }
+
+  .custom-ml4 {
+    margin-left: 4px;
+  }
+
+  .custom-ml8 {
+    margin-left: 8px;
+  }
+
+  .custom-ml16 {
+    margin-left: 16px;
+  }
+
+  .custom-mt8 {
+    margin-top: 8px;
+  }
+
+  .custom-mt16 {
+    margin-top: 16px;
+  }
+
+  .custom-mt24 {
+    margin-top: 24px;
+  }
+
+  .custom-mt64 {
+    margin-top: 64px;
+  }
+
+  .custom-graph-bg {
+    background-color: #fff;
+    border-radius   : 4px;
+    border          : solid 1px rgba(0, 0, 0, 0.15);
+  }
+
+  .custom-graph-metrictile {
+    height        : 24px;
+    font-size     : 16px;
+    font-weight   : 500;
+    line-height   : 1.5;
+    letter-spacing: normal;
+    text-align    : center;
+  }
+
+  // 覆盖默认样式
+  .custom-row {
+    margin-right: 0px;
+  }
+
+  .custom-form-no-mb {
+    margin-bottom: 0px;
+  }
+
+  .custom-tag-grey {
+    padding         : 4px 12px;
+    border-radius   : 12px;
+    background-color: #d9d9d9;
+    margin-left     : 8px;
+    // 字体样式
+    font-family     : Roboto;
+    font-size       : 12px;
+    font-weight     : bold;
+    font-style      : normal;
+    font-stretch    : normal;
+    line-height     : 1.67;
+    letter-spacing  : normal;
+    text-align      : center;
+    color           : rgba(0, 0, 0, 0.85);
+  }
+
+  .qtlcustom {
+    .custom-form-no-mb {
+      margin-bottom: 0px;
+    }
+
+    // 隐藏特定的错误信息
+    .custom-form-hide-err .ant-form-explain {
+      display: none;
+    }
+
+    .custom-form-err {
+      color: #f5222d;
+    }
+
+    .no-border .custom-top-breadcrumb-view {
+      border-bottom: 0px none;
+    }
+
+    .antd-pro-components-global-header-index-trigger {
+      &:hover {
+        background-color: #e6f7ff;
+      }
+    }
+
+    .custom-bg-grey {
+      background-color: #d6d8e3;
+    }
+
+    .custom-nopadding-lr {
+      padding-left : 0px;
+      padding-right: 0px;
+
+      &:hover {
+        background-color: #e6f7ff;
+      }
+    }
+
+    a {
+      text-decoration: none;
+    }
+
+    .custom-top-logo {
+      margin-top  : -5px;
+      margin-left : 6px;
+      margin-right: 2px;
+
+      height: 28px;
+      width : 28px;
+    }
+
+    .custom-top-breadcrumb-view {
+      border-bottom: 1px solid rgba(0, 0, 0, 0.15);
+    }
+
+    .custom-top-breadcrumb-title {
+      font-family   : Roboto;
+      font-size     : 14px;
+      font-weight   : normal;
+      font-style    : normal;
+      font-stretch  : normal;
+      line-height   : 1.57;
+      letter-spacing: normal;
+      color         : rgba(0, 0, 0, 0.85);
+      height        : 22px;
+    }
+
+    .custom-top-breadcrumb-menu {
+      font-family   : Roboto;
+      font-size     : 20px;
+      font-weight   : normal;
+      font-style    : normal;
+      font-stretch  : normal;
+      line-height   : 1.4;
+      letter-spacing: normal;
+      color         : rgba(0, 0, 0, 0.85);
+
+      // 文本省略
+      overflow     : hidden;
+      text-overflow: ellipsis;
+      white-space  : nowrap;
+    }
+
+    .ant-breadcrumb a,
+    .ant-breadcrumb a:hover {
+      color: #1890ff;
+    }
+
+    .custom-top-breadcrumb-menu a,
+    .custom-top-breadcrumb-menu a:hover {
+      color: #1890ff;
+    }
+
+    .custom-top-breadcrumb-menu-adjust {
+      height  : 22px;
+      overflow: hidden;
+    }
+
+    .custom-top-breadcrumb-menu-adjust span,
+    .custom-top-breadcrumb-menu-adjust span .ant-breadcrumb-link a {
+      color: #1890ff;
+    }
+
+    .custom-top-breadcrumb-menu span:last-child {
+      color: rgba(0, 0, 0, 0.85);
+    }
+
+    .custom-page-footer-version {
+      height        : 12px;
+      font-family   : Roboto;
+      font-size     : 12px;
+      font-weight   : normal;
+      font-style    : normal;
+      font-stretch  : normal;
+      line-height   : 1;
+      letter-spacing: normal;
+      color         : rgba(0, 0, 0, 0.45);
+    }
+
+    .custom-page-footer {
+      height        : 12px;
+      font-family   : Roboto;
+      font-size     : 12px;
+      font-weight   : normal;
+      font-style    : normal;
+      font-stretch  : normal;
+      line-height   : 1;
+      letter-spacing: normal;
+      text-align    : center;
+      color         : rgba(0, 0, 0, 0.45);
+    }
+
+    .custom-card-nobg {
+      background-color: transparent;
+    }
+
+    .custom-card-nobg .ant-card-body {
+      padding    : 0px;
+    }
+
+    .custom-footer {
+      position: fixed;
+      zIndex  : 1;
+      bottom  : 16px;
+      width   : 100%;
+    }
+
+    .custom-footer .antd-pro-components-global-footer-index-globalFooter {
+      padding       : 0px;
+      margin        : 0px;
+      font-family   : Roboto;
+      font-size     : 12px;
+      font-weight   : normal;
+      font-style    : normal;
+      font-stretch  : normal;
+      line-height   : 1.67;
+      letter-spacing: normal;
+      text-align    : center;
+      color         : rgba(0, 0, 0, 0.45);
+    }
+
+    .custom-footer .ant-layout-footer {
+      background-color: #fff;
+    }
+
+    .custom-exception-logo {
+      margin    : 36px 0 0 36px;
+      width     : 160px;
+      height    : 20px;
+      object-fit: contain;
+    }
+
+    .custom-exception-view {
+      position: relative;
+      width   : 100%;
+      height  : calc(100vh - 64px - 90px);
+    }
+
+    .custom-exception-content {
+      position : absolute;
+      width    : 864px;
+      top      : 50%;
+      left     : 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .custom-exception-view2 {
+      text-align: center;
+
+      .custom-exception-code {
+        font-family   : Roboto;
+        font-size     : 90px;
+        font-weight   : 300;
+        font-style    : normal;
+        font-stretch  : normal;
+        line-height   : 1;
+        letter-spacing: normal;
+        text-align    : center;
+        color         : #512da8;
+      }
+
+      .custom-exception-code2 {
+        font-family   : Roboto;
+        font-size     : 48px;
+        font-weight   : 300;
+        font-stretch  : normal;
+        font-style    : normal;
+        line-height   : 1;
+        letter-spacing: normal;
+        text-align    : center;
+        color         : #512da8;
+      }
+
+      .custom-exception-text {
+        font-family   : Roboto;
+        font-size     : 12px;
+        font-weight   : 500;
+        font-style    : normal;
+        font-stretch  : normal;
+        line-height   : 1.67;
+        letter-spacing: normal;
+        text-align    : center;
+        color         : #512da8;
+
+        width           : 80px;
+        border-radius   : 10px;
+        background-color: rgba(81, 45, 168, 0.1);
+        margin          : 16px auto 0 auto;
+      }
+
+      .custom-exception-message {
+        margin        : 24px auto 0 auto;
+        font-family   : Roboto;
+        font-size     : 16px;
+        font-weight   : normal;
+        font-style    : normal;
+        font-stretch  : normal;
+        line-height   : 1.5;
+        letter-spacing: normal;
+        text-align    : center;
+        color         : rgba(0, 0, 0, 0.85);
+
+        // 自动换行
+        word-wrap : break-word;
+        word-break: break-all;
+      }
+
+      .custom-exception-message2 {
+        width         : 524px;
+        margin        : 24px auto 0 auto;
+        font-family   : Roboto;
+        font-size     : 16px;
+        font-weight   : normal;
+        font-stretch  : normal;
+        font-style    : normal;
+        line-height   : 1.5;
+        letter-spacing: normal;
+        text-align    : center;
+        color         : rgba(0, 0, 0, 0.85);
+      }
+
+      .custom-exception-btn {
+        width : 146px;
+        height: 40px;
+      }
+
+      .custom-font48 {
+        font-family   : Roboto;
+        font-size     : 48px;
+        font-weight   : 300;
+        font-style    : normal;
+        font-stretch  : normal;
+        line-height   : 1;
+        letter-spacing: normal;
+        text-align    : center;
+        color         : #512da8;
+      }
+
+      // 联系我们
+      .custom-font30 {
+        font-family   : Roboto;
+        font-size     : 30px;
+        font-weight   : normal;
+        font-style    : normal;
+        font-stretch  : normal;
+        line-height   : 1;
+        letter-spacing: normal;
+        text-align    : center;
+        color         : #512da8;
+      }
+
+      .custom-exception-contact {
+        height          : 60px;
+        background-color: rgba(0, 0, 0, 0.09);
+        padding         : 8px 16px;
+        width           : 424px;
+      }
+
+      .custom-exception-contact-item-l {
+        font-family   : Roboto;
+        font-size     : 20px;
+        font-weight   : normal;
+        font-style    : normal;
+        font-stretch  : normal;
+        line-height   : 1.4;
+        letter-spacing: normal;
+        color         : rgba(0, 0, 0, 0.85);
+
+        text-align: left;
+      }
+
+      .custom-exception-contact-item-r {
+        font-family   : Roboto;
+        font-size     : 14px;
+        font-weight   : normal;
+        font-style    : normal;
+        font-stretch  : normal;
+        line-height   : 1.57;
+        letter-spacing: normal;
+        color         : rgba(0, 0, 0, 0.65);
+
+        text-align: left;
+      }
+    }
+
+    .custom-table table tbody tr td {
+      word-break: break-all;
+    }
+
+    .custom-graph-download-btn {
+      position: absolute;
+      right   : 0px;
+      z-index : 3;
+    }
+
+
+    .custom-login-view {
+      width           : 100%;
+      height          : 100%;
+      background-image: linear-gradient(to right, #5044c0, #5044c0 22%, #5086e9 88%, #5086e9, #5595eb);
+      position        : relative;
+    }
+
+    .custom-login-logo-view {
+      width   : 976px;
+      height  : 100%;
+      margin  : 0 auto;
+      overflow: hidden;
+    }
+
+    .custom-login-logo {
+      width     : 100%;
+      height    : 900px;
+      object-fit: contain;
+    }
+
+    .custom-login-left {
+      position: absolute;
+      top     : 0px;
+      left    : 0px;
+      width   : 100%;
+    }
+
+    .custom-login-left-desc {
+      font-family   : Roboto;
+      font-size     : 14px;
+      font-weight   : normal;
+      font-style    : normal;
+      font-stretch  : normal;
+      line-height   : 1.57;
+      letter-spacing: normal;
+      color         : rgba(0, 0, 0, 0.65);
+    }
+
+    .custom-graph-title {
+      font-family : Roboto;
+      font-style  : normal;
+      font-stretch: normal;
+      color       : rgba(0, 0, 0, 0.85);
+      padding-left: 16px;
+      font-size   : 18px;
+    }
+
+    .custom-graph-title p {
+      letter-spacing: normal;
+      margin        : 0px;
+      padding       : 0px;
+    }
+
+    .custom-graph-title button {
+      color      : #d9d9d9;
+      float      : right;
+      line-height: 24px;
+    }
+
+    .custom-graph-title .custom-graph-title-key {
+      height     : 24px;
+      font-size  : 16px;
+      font-weight: 500;
+      line-height: 1.5;
+
+    }
+
+    .custom-graph-title .custom-graph-title-val {
+      height     : 28px;
+      font-size  : 20px;
+      font-weight: bold;
+      line-height: 1.4;
+    }
+
+    .custom-graph-title .custom-graph-title-tag {
+      height     : 22px;
+      font-family: Roboto;
+      font-size  : 14px;
+      line-height: 1.57;
+      color      : rgba(0, 0, 0, 0.65);
+    }
+
+    .custom-graph-desc {
+      line-height   : 36px;
+      font-family   : Roboto;
+      font-size     : 14px;
+      font-style    : normal;
+      font-stretch  : normal;
+      line-height   : 1.57;
+      letter-spacing: normal;
+      color         : rgba(0, 0, 0, 0.65);
+    }
+
+    .custom-graph-desc-l {
+      font-weight: bold;
+    }
+
+    .custom-card-title {
+      height        : 24px;
+      font-family   : Roboto;
+      font-size     : 16px;
+      font-weight   : 500;
+      font-style    : normal;
+      font-stretch  : normal;
+      line-height   : 1.5;
+      letter-spacing: normal;
+      color         : rgba(0, 0, 0, 0.85);
+    }
+
+    .custom-graph-view {
+      padding: 24px;
+    }
+
+    .custom-graph-btn {
+      text-align: center;
+    }
+
+    .custom-card-app-detail p {
+      height       : 22px;
+      // 单行文本溢出省略号
+      overflow     : hidden;
+      text-overflow: ellipsis;
+      white-space  : nowrap;
+    }
+
+    // 替换默认样式
+    .custom-list-adjust .ant-list-items .ant-list-item {
+      display: inherit;
+    }
+
+    .custom-list-adjust .ant-list-items .ant-list-item {
+      padding-top   : 1px;
+      padding-bottom: 1px;
+    }
+
+    .custom-list-adjust .ant-list-items {
+      padding-left : 4px;
+      padding-right: 4px;
+    }
+
+    // 覆盖默认样式
+    .custom-form-table-adjust .ant-table-empty .ant-table-placeholder {
+      display: none;
+    }
+
+    .custom-form-table-adjust .ant-table-empty .ant-table-thead tr th {
+      border-bottom: none;
+    }
+
+    // 覆盖默认样式
+    .ant-upload-drag .ant-upload-drag-container .custom-modal-form-text2 {
+      font-family: Roboto;
+      font-size  : 14px;
+      color      : rgba(0, 0, 0, 0.45);
+    }
+  }
+
+  .custom-left-top-menu-view .custom-left-top-menu a {
+    display: inline;
+  }
+
+  .custom-modal-form-text {
+    font-family   : Roboto;
+    font-size     : 14px;
+    font-weight   : normal;
+    font-style    : normal;
+    font-stretch  : normal;
+    line-height   : 1.57;
+    letter-spacing: normal;
+    color         : rgba(0, 0, 0, 0.65);
+  }
+
+  .custom-yaml-code {
+    word-wrap : break-word;
+    word-break: normal;
+  }
+
+  .custom-code-scroll {
+    height       : 400px;
+    overflow-y   : scroll;
+    background   : #f7f7f7;
+    border-radius: 4px;
+    padding      : 20px;
+    font-family  : Menlo, Consolas, DejaVu Sans Mono, monospace;
+  }
+
+  .custom-yaml-code-view {
+    background-color: #002140;
+    padding         : 20px;
+  }
+
+  .custom-login-left-view {
+    width : 300px;
+    margin: 0 auto;
+  }
+
+  .custom-login-left-logo {
+    width : 60px;
+    margin: 64px auto 0 auto;
+  }
+
+  .custom-login-left-logo img {
+    width     : 60px;
+    height    : 60px;
+    object-fit: contain;
+  }
+
+  .custom-login-left-logoword {
+    width : 208px;
+    margin: 16px auto 0 auto;
+  }
+
+  .custom-login-left-logoword img {
+    width     : 208px;
+    height    : 26px;
+    object-fit: contain;
+  }
+
+  .custom-login-left-btn {
+    margin-top: 3px;
+    width     : 76px;
+    height    : 32px;
+    background-color: #1890ff;
+    border-color: #1890ff;
+  }
+  .custom-login-form-forgot {
+    border-color: #1890ff;
+    color: #1890ff;
+  }
+  .custom-login-form-forgot:focus{
+    border-color: #1890ff;
+    color: #1890ff;
+  }
+  .custom-login-form-forgot:hover{
+    border-color: #1890ff;
+    color: #1890ff;
+  }
+  .custom-report-graph-title {
+    font-family   : Roboto;
+    font-size     : 20px;
+    font-weight   : 500;
+    font-style    : normal;
+    font-stretch  : normal;
+    line-height   : 1.4;
+    letter-spacing: normal;
+    color         : rgba(0, 0, 0, 0.85);
+
+    margin-bottom: 8px;
+  }
+
+  .custom-report-graph-desc {
+    font-family   : Roboto;
+    font-size     : 14px;
+    font-weight   : normal;
+    font-style    : normal;
+    font-stretch  : normal;
+    line-height   : 1.57;
+    letter-spacing: normal;
+    color         : rgba(0, 0, 0, 0.85);
+
+    margin-bottom: 24px;
+    word-break: break-all;
+  }
+
+  .custom-report-graph-peak-view {
+    border-left : 1px solid rgba(0, 0, 0, 0.15);
+    padding-left: 16px;
+  }
+
+  .custom-report-graph-peak-view p {
+    margin: 0px;
+  }
+
+  .custom-report-graph-peak-title {
+    font-family   : Roboto;
+    font-size     : 12px;
+    font-weight   : normal;
+    font-style    : normal;
+    font-stretch  : normal;
+    line-height   : 1.67;
+    letter-spacing: normal;
+    color         : rgba(0, 0, 0, 0.45);
+  }
+
+  .custom-report-graph-peak-time {
+    font-family   : Roboto;
+    font-size     : 14px;
+    font-weight   : normal;
+    font-style    : normal;
+    font-stretch  : normal;
+    line-height   : 1.71;
+    letter-spacing: normal;
+    color         : rgba(0, 0, 0, 0.85);
+  }
+
+  .custom-report-graph-peak-value {
+    font-family   : Roboto;
+    font-size     : 16px;
+    font-weight   : normal;
+    font-style    : normal;
+    font-stretch  : normal;
+    line-height   : 1.5;
+    letter-spacing: normal;
+    color         : rgba(0, 0, 0, 0.85);
+  }
+}
