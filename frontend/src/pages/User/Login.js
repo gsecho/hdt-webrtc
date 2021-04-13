@@ -103,15 +103,16 @@ class LoginPage extends PureComponent {
                 <div className="custom-mb16">Portal Login</div>
                 <Form.Item>
                   {getFieldDecorator('name', {
+                    rules: [{ required: true, message: 'Please input your username !' }],
                 })(
-                  <Input suffix={<Icon type="user" style={{ color: 'rgba(0,0,0,.25)' }} />} placeholder="Username" />
+                  <Input prefix={<Icon type="user" style={{ color: 'rgba(0,0,0,.25)' }} />} placeholder="Username" />
                 )}
                 </Form.Item>
                 <Form.Item>
                   {getFieldDecorator('password', {
-                  // rules: [{ required: true, message: 'Please enter password.' }],
+                  rules: [{ required: true, message: 'Please input your Password !' }],
                 })(
-                  <Input suffix={<Icon type="lock" style={{ color: 'rgba(0,0,0,.25)' }} />} type="password" placeholder="Password" />
+                  <Input.Password prefix={<Icon type="lock" style={{ color: 'rgba(0,0,0,.25)' }} />} type="password" placeholder="Password" />
                 )}
                 </Form.Item>
                 <div className="custom-mb2" style={{ color: "red", display: authFailureDisplay }}>Authentication failure</div>

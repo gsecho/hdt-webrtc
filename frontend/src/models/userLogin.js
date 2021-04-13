@@ -62,10 +62,11 @@ export default {
             }else{
               redirect.push("/")
             }
-            
           } else {
             window.location.href = redirectUrl;
           }
+        }else{
+          redirect.push("/")
         }
       }else{
         // 认证失败

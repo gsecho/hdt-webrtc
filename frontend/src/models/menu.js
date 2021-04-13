@@ -110,7 +110,9 @@ export default {
       // TODO: 菜单路由暂时固定, 替换根据路由动态生成的功能
       const routes = [
         { path: "/dashboard", name: "dashboard", icon: "dashboard", exact: true },
-        { path: "/mymeeting", name: "mymeeting", icon: "bar-chart", exact: true },
+        { path: "/meetinglist", name: "meetinglist", icon: "bar-chart", exact: true },
+        { path: "/meetingmanager", name: "meetingmanager", icon: "bar-chart", exact: true },
+        { path: "/meetingroom", name: "meetingroom", icon: "bar-chart", exact: true },
         // { path: "/transport", name: "transports",icon:transportIcon, exact: true },
       ];
       let authority;

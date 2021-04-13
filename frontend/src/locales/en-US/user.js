@@ -1,3 +1,7 @@
+/*
+ * @Author: chenrf
+ * @Date: 2021-03-02 09:38
+ */
 /**
  * 所有list 页面，不包括form、table、modal
  */
@@ -11,7 +15,7 @@ export default {
     'user.proxyuser.btn.change': 'Change',
     'user.proxyuser.btn.stop': 'Stop',
 
-    //help
+    // help
     'user.help.support': 'Support',
     'user.help.content.support': 'Please contact us at support@{brand}.com.',
     'user.help.gettingStarted': 'Getting Started',

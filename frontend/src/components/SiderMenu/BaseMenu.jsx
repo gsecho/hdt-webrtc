@@ -4,10 +4,10 @@ import { Menu, Icon } from 'antd';
 import Link from 'umi/link';
 import { formatMessage } from 'umi/locale';
 import lodash from 'lodash';
-import { urlToList } from '../_utils/pathTools';
-import { getMenuMatches } from './SiderMenuUtils';
 import { isUrl } from '@/utils/utils';
 import mapLogo from '@/assets/location.svg';
+import { urlToList } from '../_utils/pathTools';
+import { getMenuMatches } from './SiderMenuUtils';
 import styles from './index.less';
 
 const { SubMenu } = Menu;
@@ -168,7 +168,7 @@ export default class BaseMenu extends PureComponent {
     const cls = classNames(className, {
       'top-nav-menu': mode === 'horizontal',
     });
-    let menuStyle = { height: '40px', lineHeight: '40px', borderRadius: '4px', textAlign: 'center', marginLeft: '-8px' };
+    const menuStyle = { height: '40px', lineHeight: '40px', borderRadius: '4px', textAlign: 'center', marginLeft: '-8px' };
     if (pathname === '/map') {
       menuStyle.backgroundColor = '#3a3d50';
     }
@@ -191,12 +191,12 @@ export default class BaseMenu extends PureComponent {
       >
         {this.getNavMenuItems(menuData)}
         {/* map */}
-        <Menu.Item style={{ bottom: '15px', position: 'absolute' }} title={collapsed ? 'Global Presence' : ''} className="custom-left-menu-pop" disabled={disabled}>
+        {/* <Menu.Item style={{ bottom: '15px', position: 'absolute' }} title={collapsed ? 'Global Presence' : ''} className="custom-left-menu-pop" disabled={disabled}>
           <Link to="/map" style={menuStyle}>
             <img style={{ height: '22px', width: '16px', marginRight: '8px' }} src={mapLogo} />
             {!collapsed ? <span>{formatMessage({ id: 'menu.map' })}</span> : ''}
           </Link>
-        </Menu.Item>
+        </Menu.Item> */}
       </Menu>
     );
   }

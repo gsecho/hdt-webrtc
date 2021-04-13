@@ -8,5 +8,7 @@ export default {
     'menu.transports': 'Transports',
     'menu.map': 'Global Presence',
     'menu.hdt': 'High-Speed Data Transmission',
-    'menu.mymeeting': 'mymeeting',
+    'menu.meetinglist': 'Meeting List',
+    'menu.meetingmanager': 'Meeting Manager',
+    'menu.meetingroom': 'Meeting Room',
 };
