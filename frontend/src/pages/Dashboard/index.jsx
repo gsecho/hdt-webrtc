@@ -7,7 +7,6 @@ import PageHeaderWrapper from '@/components/PageHeaderWrapper';
 import QtlMetric from '@/components/QtlMetric';
 import * as chartUtil from '@/utils/chart';
 import { rangeTypeList, vplList } from '@/utils/Constants';
-import * as hdtAuthority from '@/utils/hdtAuthority';
 import VplPopup from '@/components/VplPopup';
 import styles from './styles.less'
 
@@ -29,6 +28,27 @@ class Dashboard extends PureComponent {
     };
   }
 
+  
+
+  componentDidMount() {
+    // const { user } = this.props;
+    // if (hdtAuthority.checkCurrent(user.currentUser)) {
+    //   this.initView();
+    // }
+  };
+
+  componentDidUpdate(prevProps) {
+    // const { user } = this.props;
+    // const { searchVpl } = this.state;
+    // if (hdtAuthority.isUserChange(user, prevProps.user)) {
+    //   if (!user.useVPL && searchVpl) {
+    //     this.setVpl(false)
+    //   } else {
+    //     this.initView();
+    //   }
+    // }
+  }
+
   initView = () => {
     const { dispatch, user: { timezone } } = this.props;
     const { vpl } = this.state;
@@ -47,32 +67,14 @@ class Dashboard extends PureComponent {
     })
   };
 
-  componentDidMount() {
-    const { user } = this.props;
-    // if (hdtAuthority.checkCurrent(user.currentUser)) {
-    //   this.initView();
-    // }
-  };
-
-  componentDidUpdate(prevProps) {
-    const { user } = this.props;
-    const { searchVpl } = this.state;
-    // if (hdtAuthority.isUserChange(user, prevProps.user)) {
-    //   if (!user.useVPL && searchVpl) {
-    //     this.setVpl(false)
-    //   } else {
-    //     this.initView();
-    //   }
-    // }
-  }
-
   // 刷新memory metric
   handleDurationChangeForTraffic = (startTime, endTime, interval) => {
     const { dispatch, user: { timezone } } = this.props;
+    const { vpl: tVpl } = this.state;
     dispatch({
       type: 'report/getTraffic',
       payload: {
-        startTime, endTime, interval, timezone, vpl: this.state.vpl
+        startTime, endTime, interval, timezone, vpl: tVpl
       },
     })
   }
@@ -121,14 +123,14 @@ class Dashboard extends PureComponent {
     const bandLoading = loading.effects["report/getBandwidth"] || loading.effects["report/getTrafficAndBand"];
     const requestLoading = loading.effects["report/getRequests"];
 
-    const topRightRadio = (
-      <VplPopup disabled={useVPL}>
-        <Radio.Group className={styles.radio} value={searchVpl} buttonStyle="solid" onChange={this.handleVplChange} disabled={!useVPL}>
-          <Radio.Button value={false}>{formatMessage({ id: 'report.btn.total' })}</Radio.Button>
-          <Radio.Button value>{formatMessage({ id: 'report.btn.vpl' })}</Radio.Button>
-        </Radio.Group>
-      </VplPopup>);
-
+    // const topRightRadio = (
+    //   <VplPopup disabled={useVPL}>
+    //     <Radio.Group className={styles.radio} value={searchVpl} buttonStyle="solid" onChange={this.handleVplChange} disabled={!useVPL}>
+    //       <Radio.Button value={false}>{formatMessage({ id: 'report.btn.total' })}</Radio.Button>
+    //       <Radio.Button value>{formatMessage({ id: 'report.btn.vpl' })}</Radio.Button>
+    //     </Radio.Group>
+    //   </VplPopup>);
+    const topRightRadio =(<div />);
 
     return (
       <div>

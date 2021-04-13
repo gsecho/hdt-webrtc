@@ -1,11 +1,12 @@
+/*
+ * @Author: chenrf
+ * @Date: 2021-03-02 09:38
+ */
 import React, { PureComponent } from 'react';
 import { Table } from 'antd';
 
 class QtlTable extends PureComponent {
-  // static getDerivedStateFromProps(nextProps, preState) {
-  //   return null;
-  // }
-
+  
   initData = {
     // 分页默认参数
     pagination: {
@@ -14,13 +15,6 @@ class QtlTable extends PureComponent {
       pageSizeOptions: ['10', '20', '50', '100', '200'],
       defaultCurrent: 1,
     },
-  };
-
-  handleTableChange = (pagination, filters, sorter) => {
-    const { onChange } = this.props;
-    if (onChange) {
-      onChange(pagination, filters, sorter);
-    }
   };
 
   // 处理pagination参数
@@ -32,11 +26,13 @@ class QtlTable extends PureComponent {
     return newProps;
   };
 
-  // 处理rowKey参数
+  // 如果没有key，则使用该方法生成key，rowKey参数
   generateRowKey = (record) => {
-    let key = 'key' + (new Date()).getTime() + Math.random() * 10;
+    let key;
     if(record && record.id){
       key = record.id;
+    }else{
+      key = `key${(new Date()).getTime() + Math.random() * 10}`;
     }
     return key;
   }
@@ -44,7 +40,7 @@ class QtlTable extends PureComponent {
   render() {
     const { dataSource, pagination, ...rest} = this.props;
 
-    let paginationProps = this.generatePagination(pagination);
+    const paginationProps = this.generatePagination(pagination);
 
     return (
       <div>
@@ -52,7 +48,6 @@ class QtlTable extends PureComponent {
           rowKey={record => this.generateRowKey(record)}
           dataSource={dataSource}
           pagination={paginationProps}
-          onChange={this.handleTableChange}
           {...rest}
         />
       </div>

@@ -1,3 +1,7 @@
+/*
+ * @Author: chenrf
+ * @Date: 2021-03-02 09:38
+ */
 module.exports = {
   // 规则表 http://eslint.cn/docs/rules/
   // https://github.com/yannickcr/eslint-plugin-react/tree/master/docs/rules

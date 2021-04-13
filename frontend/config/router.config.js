@@ -109,10 +109,17 @@ export default [
                 redirect: '/dashboard'
             },
             {
-                path: '/mymeeting',
-                component: './MyMeeting/index',
+                path: '/meetinglist',
+                component: './meetinglist',
             },
-
+            {
+                path: '/meetingmanager',
+                component: './meetingmanager',
+            },
+            {
+                path: '/meetingroom',
+                component: './meetingroom',
+            },
             // {
             //     path: '/contacts',
             //     name: 'contacts',
