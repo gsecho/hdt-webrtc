@@ -3,39 +3,35 @@
  * @Date: 2021-03-09 15:11
  */
 import router from 'umi/router';
+import backend from '../../config/backend';
 
+export function getRedirectLoginUrl(){
+  return `${backend.loginUri}?service=${window.location.href}`;
+}
 
-function push(path){
-    //  重定向调查
-    // console.log(path)
+export function push(path){
+    //  重定向
     router.push(path);
 }
-/**
- * fetch 应答数据处理
- * @param {} response 
- */
-function resDataHandler(response){
-    // environment should not be used
-    const { httpCode } = response;
-    if ((httpCode === 302) || (httpCode === 307)){// 重定向
-      push({
-        pathname: response.message,
-      });
-    }
-    // // 针对account 处于suspended 状态
-    // if (httpCode === 403) {
-    //   push({
-    //     pathname: '/accessdenied',
-    //   });
-    // }
-    return response;
+
+export function loginPageService(){
+  const { pathname } = window.location
+  // 已经在/user/login的页面，就不需要跳转了
+  if(! pathname.startsWith(`${backend.pages}${backend.loginUri}`)){
+    router.push(getRedirectLoginUrl());
+  }
 }
+
+export function logoutPage(){
+  router.push(`${backend.loginUri}`);
+}
+
 /**
  * 通过改变页面url实现跳转
  * @param {*} url 
  */
-function setWindowHref(url){
+export function setWindowHref(url){
   // 使用这个会导致全局数据清空 
   window.location.href = url
 }
-export {push, resDataHandler, setWindowHref}
+

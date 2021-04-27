@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE generatorConfiguration
+        PUBLIC "-//mybatis.org//DTD MyBatis Generator Configuration 1.0//EN"
+        "http://mybatis.org/dtd/mybatis-generator-config_1_0.dtd">
+
+<generatorConfiguration>
+    <properties resource="mybatis-generator/config.properties"/>
+
+    <context id="Mysql" targetRuntime="MyBatis3Simple">
+        <property name="beginningDelimiter" value="`"/>
+        <property name="endingDelimiter" value="`"/>
+
+        <commentGenerator>
+            <property name="suppressAllComments" value="true" />
+            <property name="suppressDate" value="true" />
+        </commentGenerator>
+
+        <!-- 配置数据库链接信息 -->
+        <jdbcConnection driverClass="${jdbc.driverClass}"
+                        connectionURL="${jdbc.url}" userId="${jdbc.user}" password="${jdbc.password}">
+        </jdbcConnection>
+
+        <!-- 指定javaBean生成的位置 -->
+        <javaModelGenerator targetPackage="${targetModelPackage}"
+                            targetProject="src/main/java"/>
+
+        <!-- 制定sql映射文件的生成位置 xml -->
+        <sqlMapGenerator targetPackage="${targetXMLPackage}"
+                         targetProject="src/main/resources/"/>
+
+        <!-- 指定dao接口生成位置 -->
+        <javaClientGenerator targetPackage="${targetInterfacePackage}"
+                             targetProject="src/main/java" type="XMLMAPPER"/>
+
+        <!-- 制定每个表的生成策略 -->
+        <!--<table tableName="view_origin_info" domainObjectName="ViewOriginInfo"-->
+               <!--mapperName="ViewOriginInfoDao">-->
+            <!--<generatedKey column="id" sqlStatement="Mysql" identity="true"/>-->
+        <!--</table>-->
+        <!-- 制定每个表的生成策略 -->
+        <table tableName="rtc_meeting_item" domainObjectName="RtcMeetingItem"
+               mapperName="RtcMeetingItemDao">
+            <generatedKey column="id" sqlStatement="Mysql" identity="true"/>
+        </table>
+
+    </context>
+</generatorConfiguration>

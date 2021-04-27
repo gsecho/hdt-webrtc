@@ -97,18 +97,12 @@ export default class GlobalHeaderRight extends PureComponent {
 
     // 登出
     logout = () => {
-        const { dispatch, user } = this.props;
-        const {logoutUrl} = user.currentUser;
-        // 清空登录信息
+        const { dispatch } = this.props;
+        // const {logoutUrl} = user.currentUser;
+        // // 清空登录信息
         dispatch({
             type: 'user/logout'
-        }).then((resp) => {
-            if (!resp) {
-                // 跳转
-                // window.location.href = encodeURI(logoutUrl);
-                window.location.href = logoutUrl;
-            }
-        });
+        })
     };
 
     editUser = () => {

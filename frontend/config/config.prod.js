@@ -4,9 +4,10 @@ import pageRoutes from './router.config';
 import webpackPlugin from './plugin.config';
 import defaultSettings from '../src/defaultSettings';
 import slash from 'slash2';
-import global from './backend';
+import backend from './backend';
 import git from 'git-rev-sync';
 import path from 'path';
+// UMI_ENV=prod 有这个变量的时候会使用这个config
 
 const gitVersion = git.short();
 const gitVersionLong = git.long();
@@ -14,7 +15,7 @@ const gitBranch = git.branch();
 const gitTag = git.tag();
 const gitIsDirty = git.isDirty();
 const gitIsTagDirty = git.isTagDirty();
-console.log("config.prod.js")
+
 const plugins = [
   [
     'umi-plugin-react',
@@ -74,7 +75,7 @@ let config = {
   plugins,
   define: {
     APP_TYPE: process.env.APP_TYPE || '',
-    ...global.prod,
+    ...backend,
     // 添加版本信息
     gitVersion: gitVersion,
     gitVersionLong: gitVersionLong,
@@ -148,8 +149,9 @@ let config = {
   chainWebpack: webpackPlugin,
 };
 
-if(global.prod.localMode !== 'dev'){
-  config = {...config, extraBabelPlugins: extraBabelPlugins};
-}
+// console.log('prod');
+// 非开发环境关闭log,info输出
+config = {...config, extraBabelPlugins: extraBabelPlugins};
+
 
 export default config;

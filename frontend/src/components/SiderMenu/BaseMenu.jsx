@@ -2,10 +2,7 @@ import React, { PureComponent } from 'react';
 import classNames from 'classnames';
 import { Menu, Icon } from 'antd';
 import Link from 'umi/link';
-import { formatMessage } from 'umi/locale';
-import lodash from 'lodash';
 import { isUrl } from '@/utils/utils';
-import mapLogo from '@/assets/location.svg';
 import { urlToList } from '../_utils/pathTools';
 import { getMenuMatches } from './SiderMenuUtils';
 import styles from './index.less';
@@ -28,21 +25,11 @@ const getIcon = icon => {
 
 export default class BaseMenu extends PureComponent {
   state = {
-    disabled: true,
+    disabled: false,
   };
 
   componentDidMount() {
-    if (!lodash.isEmpty(this.props.user)) {
-      const { hasAccount } = this.props.user;
-      this.setState({ disabled: !hasAccount });
-    }
-  }
-
-  componentDidUpdate(prevProps, prevState) {
-    if (!lodash.isEqual(prevProps.user, this.props.user)) {
-      const { hasAccount } = this.props.user;
-      this.setState({ disabled: !hasAccount });
-    }
+    
   }
 
   /**
@@ -144,7 +131,6 @@ export default class BaseMenu extends PureComponent {
   };
 
   render() {
-    const { disabled } = this.state;
     const {
       openKeys,
       theme,

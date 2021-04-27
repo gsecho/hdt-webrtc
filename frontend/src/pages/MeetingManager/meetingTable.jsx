@@ -6,6 +6,8 @@ import lodash from 'lodash'
 import moment from 'moment'
 import AddMeeting from './addMeeting'
 import EditMeeting from './editMeeting'
+import * as redirect from '@/utils/redirect'
+import * as momentUtils from '@/utils/momentUtils'
 
 import styles from './styles.less'
 
@@ -33,7 +35,7 @@ class MeetingTable extends Component {
   addButtonHandler = () => {
     const { dispatch } =  this.props;
     dispatch({
-      type: 'meetingManager/updateAddModalVisible',
+      type: 'meetingManager/setAddModalVisible',
       payload: true // 关闭
     })
   };
@@ -46,13 +48,12 @@ class MeetingTable extends Component {
   addPageButtonCancel = () => {
     const { dispatch } =  this.props;
     dispatch({
-      type: 'meetingManager/updateAddModalVisible',
+      type: 'meetingManager/setAddModalVisible',
       payload: false // 关闭
     })
   };
 
   editButtonHandler = (lineData) =>{
-    console.log("lineData", lineData);
     const { dispatch } =  this.props;
     this.setState({
       editData: lineData
@@ -62,7 +63,10 @@ class MeetingTable extends Component {
       payload: true // 开启
     })
   };
-
+  gotoButtonHandler = (lineData) =>{
+    // 跳转到 新页面
+    redirect.push(`/meetingroom?id=${lineData.id}&&pwd=${lineData.password}`)
+  }
   editPageButtonOk = e => {
     e.preventDefault();
     this.editformRef.handleSubmit()// 调用下级组件的方法
@@ -81,7 +85,6 @@ class MeetingTable extends Component {
   deleteLine = (info) => {
     // 请求后端删除
     // 重新加载数据.
-    // console.log(this.props);
     const { dispatch } =  this.props;
     const {id: mid} = info;
     dispatch({
@@ -146,17 +149,29 @@ class MeetingTable extends Component {
         dataIndex: 'localTime',
       },
       {
+        title: 'Duration(h)',
+        dataIndex: 'duration',
+      },
+      {
+        title: 'Attendance',
+        dataIndex: 'maxMember',
+      },
+      {
         title: 'Password',
         dataIndex: 'password',
       },
       {
-        title: '状态',
+        title: 'AdminPassword',
+        dataIndex: 'adminPassword',
+      },
+      {
+        title: 'Status',
         dataIndex: 'status',
-        render: (text, record) => {
-            // console.log("record", record)
-            const statusObj = statusList.find(item => item.value === record.status)
-            return (statusObj && statusObj.text) || '';
-          }
+        render: ( _, record) => {
+          // console.log("record", record)
+          const statusObj = statusList.find(item => item.value === record.status)
+          return (statusObj && statusObj.text) || '';
+        }
       },
       {
           title: 'CreateBy',
@@ -168,9 +183,8 @@ class MeetingTable extends Component {
         render: (_, record) =>
         (
           <>
-            <Button type="link" onClick={()=>this.editButtonHandler(record)}>
-              Edit
-            </Button>
+            <Button type="link" onClick={()=>this.editButtonHandler(record)}>Edit</Button>
+            <Button type="link" onClick={()=>this.gotoButtonHandler(record)}>Goto</Button>
             <Divider type="vertical" />
             <Popconfirm title="Sure to delete?" onConfirm={() => this.deleteLine(record)}>
               <a>Delete</a>
@@ -192,22 +206,21 @@ class MeetingTable extends Component {
     if (tableRawList){
       for(let i=0; i<tableRawList.length;i+=1){
         const line = tableRawList[i];
-        const utcOffset = moment().utcOffset();// 可以改成可设置, 如果时间不准可以调这个 设置到特定时区
-        const dateFormate = 'YYYY-MM-DD HH:mm';
-        const startMoment = moment.utc(line.start, dateFormate).utcOffset(utcOffset)
-        const displayTime = startMoment.format(dateFormate);
+        const startMoment = momentUtils.convertUtcStringToLocalMoment(line.startTime)
+        const displayTime = momentUtils.convertUtcStringToLocalString(line.startTime)
         // const serviceStatus = line.status === 0;// 0：正常， 1：挂起， 2：删除 
-
+        let duration = line.durationMin/60;
+        duration = duration === 0 ? 0 : duration;
+        
         tableList.push({
           ... line,
           localTime: displayTime, // 增加字段用于显示 
           start: startMoment, 
+          'duration': duration
         })
       }
     }
     
-    
-
     const rowSelection = {
         selectedRowKeys,
         onChange: this.onSelectChange,

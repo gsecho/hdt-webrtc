@@ -1,0 +1,55 @@
+
+server:
+  servlet:
+    session:
+      timeout: PT10M # 十分钟，默认是30m
+#    context-path: /webrtc # 前缀
+  port: 8010
+
+spring:
+  application:
+    name: webrtc
+  datasource:
+    sql:
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      url: jdbc:mysql://localhost:3306/web_rtc?useUnicode=true&characterEncoding=UTF-8&useSSL=false
+      username: chenrf
+      password: 123456
+      initialSize: 10
+      minIdle: 10
+      maxActive: 50
+      maxWait: 60000
+      timeBetweenEvictionRunsMillis: 30000
+      minEvictableIdleTimeMillis: 150000
+      validationQuery: SELECT 1
+      validationQueryTimeout: 3600
+      testWhileIdle: true
+      testOnBorrow: false
+      testOnReturn: false
+      removeAbandoned: true
+      removeAbandonedTimeout: 1800
+      logAbandoned: true
+      poolPreparedStatements: true
+      maxPoolPreparedStatementPerConnectionSize: 20
+
+  freemarker:
+    content-type: text/html
+    template-loader-path: classpath:/static
+    suffix: .html
+    cache: false
+    settings:
+      template_update_delay: 0
+      default_encoding: UTF-8
+#      classic_compatible: true
+
+
+filter:
+  url:
+    # 所有的配置都以杠号开头
+    # rest 是api请求,加上前缀以后，api请求就是/rest/...
+    # js,css这些是静态数据
+    excludedPatterns : /**/*.js,/**/*.css # 不需要认证可以直接访问的url，使用ant pattern表达式
+    login: /p/user/login
+
+
+

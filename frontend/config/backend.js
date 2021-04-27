@@ -1,46 +1,15 @@
+/*
+ * @Author: chenrf
+ * @Date: 2021-03-02 09:38
+ */
 export default {
-  // dev环境
-  dev: {
-    url: '/hdt',
-    api: '/v1',
+    // 环境
+    pages: '/p', // 网页的访问
+    // api: 'http://localhost:8010/v1'
+    api: '/v1',  // api接口，用于版本控制
+    // static: '/static', // 静态资源路径
 
-    portalUrl: '/hdt',
-    portalApi: '/rest',
+    dataRoot:'content', // 返回的 body 数据格式
 
-    localMode: 'dev',
-    dataRoot:'content',
-  },
-  // it环境
-  it: {
-    url: '/hdt',
-    api: '/v1',
-
-    portalUrl: '/hdt',
-    portalApi: '/rest',
-
-    localMode: 'it',
-    dataRoot:'content',
-  },
-  // qa环境
-  qa: {
-    url: '/hdt',
-    api: '/v1',
-
-    portalUrl: '/hdt',
-    portalApi: '/rest',
-
-    localMode: 'qa',
-    dataRoot:'content',
-  },
-  // prod环境
-  prod: {
-    url: '/hdt',
-    api: '/v1',
-
-    portalUrl: '/hdt',
-    portalApi: '/rest',
-
-    localMode: 'prod',
-    dataRoot:'content',
-  }
+    loginUri : '/user/login'
 };

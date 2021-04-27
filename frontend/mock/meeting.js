@@ -2,10 +2,9 @@
  * @Author: chenrf
  * @Date: 2021-03-18 15:29
  */
-import global from '../config/backend';
+import backend from '../config/backend';
 
-// const {dataRoot} = global.dev;
-const backendUrl = global.dev.url + global.dev.api;
+const backendUrl = backend.api;
 
 export default {
 

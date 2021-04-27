@@ -8,20 +8,23 @@ import {backendUrl} from './globalconfig'
 
 // 请求meeting列表
 export async function reqMeetingList(params) {
-    return request(`${backendUrl}/meetingManager/list?${stringify(params)}`);
-}
-// 删除单个meeting
-export async function removeMeetingById(params) {
-    return request(`${backendUrl}/meetingManager/id`, {
-      method: 'DELETE',
+    // return request(`${backendUrl}/meeting/search?${stringify(params)}`);
+     return request(`${backendUrl}/meeting/search`, {
+      method: 'POST',
       body: {
         ...params,
       },
     });
 }
+// 删除单个meeting
+export async function removeMeetingById(id) {
+    return request(`${backendUrl}/meeting/delete/${id}`, {
+      method: 'DELETE',
+    });
+}
 
 export async function addMeeting(params) {
-    return request(`${backendUrl}/meetingManager/create`, {
+    return request(`${backendUrl}/meeting/create`, {
       method: 'POST',
       body: {
         ...params,
@@ -30,7 +33,7 @@ export async function addMeeting(params) {
 }
 
 export async function editMeeting(params) {
-  return request(`${backendUrl}/meetingManager/update`, {
+  return request(`${backendUrl}/meeting/update`, {
     method: 'POST',
     body: {
       ...params,

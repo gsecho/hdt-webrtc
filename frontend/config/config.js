@@ -4,17 +4,13 @@ import pageRoutes from './router.config';
 import webpackPlugin from './plugin.config';
 import defaultSettings from '../src/defaultSettings';
 import slash from 'slash2';
-import global from './backend';
+import backend from './backend';
 // import git from 'git-rev-sync';
 import path from 'path';
 
-// const gitVersion = git.short();
-// const gitVersionLong = git.long();
-// const gitBranch = git.branch();
-// const gitTag = git.tag();
-// const gitIsDirty = git.isDirty();
-// const gitIsTagDirty = git.isTagDirty();
-// console.log("file: config.js")
+// UMI_ENV=dev 有这个变量的时候会使用config.js或者config.dev.js文件
+// 默认情况就是UMI_ENV=dev
+
 const plugins = [
   [
     'umi-plugin-react',
@@ -51,6 +47,7 @@ const plugins = [
   ],
 ];
 
+// 允许打印的log等级
 const extraBabelPlugins = [
   ['transform-remove-console',
     {
@@ -62,19 +59,22 @@ const extraBabelPlugins = [
 let config = {
   // 修复monaco editor 样式加载bug
   cssLoaderVersion: 2,
+
   // 部署目录相对于根目录的路径，部署到非根目录时需要配置
-  base: '/hdt',
+  base: backend.pages,
+  // publicPath: backend.static+'/', // 静态资源路径
+  // outputPath: backend.pages,
+
   // hash文件后缀
   hash: true,
   // 打包输出路径
   // outputPath: '../customerportalbackend/src/main/resources/static',
-  // 静态资源路径
-  publicPath: '/hdt/',
+  
   // add for transfer to umi
   plugins,
   define: {
     APP_TYPE: process.env.APP_TYPE || '',
-    ...global.dev,
+    ...backend,
     // 添加版本信息
     // gitVersion: gitVersion,
     // gitVersionLong: gitVersionLong,
@@ -95,13 +95,13 @@ let config = {
   externals: {
     '@antv/data-set': 'DataSet',
   },
-  // proxy: {
-  //   '/server/api/': {
-  //     target: 'https://preview.pro.ant.design/',
-  //     changeOrigin: true,
-  //     pathRewrite: { '^/server': '' },
-  //   },
-  // },
+  proxy: { // 关闭mock数据的情况下，代理才会生效
+    '/v1/': {
+      target: 'http://localhost:8010/',
+      changeOrigin: true,
+      // pathRewrite: { '^/v1': 'v9' }, // url字段替换
+    },
+  },
   ignoreMomentLocale: true,
   lessLoaderOptions: {
     javascriptEnabled: true,
@@ -144,8 +144,6 @@ let config = {
   chainWebpack: webpackPlugin,
 };
 
-if(global.dev.localMode !== 'dev'){
-  config = {...config, extraBabelPlugins: extraBabelPlugins};
-}
+
 
 export default config;

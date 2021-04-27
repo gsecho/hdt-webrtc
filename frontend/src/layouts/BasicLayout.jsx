@@ -10,8 +10,6 @@ import pathToRegexp from 'path-to-regexp';
 import Media from 'react-media';
 import { formatMessage, setLocale } from 'umi/locale';
 import Authorized from '@/utils/Authorized';
-import * as hdtAuthority from '@/utils/hdtAuthority';
-// import * as pop from '@/utils/pop';
 import router from 'umi/router';
 import SiderMenu from '@/components/SiderMenu';
 import Footer from './Footer';
@@ -69,6 +67,9 @@ class BasicLayout extends React.Component {
     const { dispatch, route } = this.props;
     // const {dispatch, route} = this.props;
     // 获取 当前用户信息，未发现认证信息会重定向
+    dispatch({// 启动全局定时器
+      type: 'global/forkInterval'
+    })
     dispatch({
       type: 'user/getUserInfo',
     })
@@ -101,15 +102,13 @@ class BasicLayout extends React.Component {
     // user发生变化的时候
     const {user: currentUser} = this.props;
     if (!lodash.isEqual(preProps.user, currentUser) && !lodash.isEmpty(currentUser)) {
-      // if (hdtAuthority.checkCurrent(currentUser.currentUser)) {
+      // if (authority.checkCurrent(currentUser.currentUser)) {
       //   this.redirect();
       // }
     }
   }
 
   componentWillUnmount() {
-    // 清除前端权限
-    hdtAuthority.setAuthority(null);
     // 移除监听事件
     window.removeEventListener('beforeunload', this.handleBrowserUnload);
     window.removeEventListener('click', this.clearRefreshTimer);

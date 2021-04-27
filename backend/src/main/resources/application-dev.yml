@@ -1,0 +1,8 @@
+
+logging:
+  level:
+    root: INFO
+  #    com.quantil: DEBUG
+  root:
+    appender: Console
+    path: .

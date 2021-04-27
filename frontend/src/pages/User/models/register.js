@@ -1,5 +1,5 @@
 import { fakeRegister } from '@/services/api';
-import { setAuthority } from '@/utils/hdtAuthority';
+import { setAuthority } from '@/utils/Authority';
 import { reloadAuthorized } from '@/utils/Authorized';
 
 export default {
