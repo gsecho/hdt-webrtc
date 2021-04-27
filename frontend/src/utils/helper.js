@@ -1,7 +1,6 @@
 import moment from 'moment';
 import crypto from 'crypto';
 import lodash from 'lodash';
-import XLSX from 'xlsx';
 import * as constants from './Constants';
 
 // 单位进制为1000
@@ -9,21 +8,6 @@ const base = 1000;
 // 单位进制为1024
 const normalBase = 1024;
 
-
-// 获取timezone 选项列表
-export function getTimezoneOptionList() {
-  const arr = [];
-  for (let i = -12; i < 13; i+=1) {
-    let obj = {};
-    if (i >= 0) {
-      obj = { text: `UTC+${  i}`, value: i };
-    } else {
-      obj = { text: `UTC${  i}`, value: i };
-    }
-    arr.push(obj);
-  }
-  return arr;
-}
 
 // 生成timezone
 export function generateTimezoneText(timezone, preStr = 'UTC') {
@@ -44,26 +28,6 @@ export function generateTimezoneText(timezone, preStr = 'UTC') {
 }
 
 
-
-/**
- * 读取本地文件内容
- * @param  {[type]} file     file
- * @param  {[type]} function 回调函数
- */
-export function readLocalFile(file, fun) {
-  const reader = new FileReader();
-  reader.onload = function (e) {
-    const content = e.target.result;
-    if (content !== '' || content.length > 0) {
-      const arr = content.split(',');
-      // 文件内容，已base64加密
-      const obj = arr[1];
-      fun(obj);
-    }
-  };
-  // 以DataURL的形式读取文件
-  reader.readAsDataURL(file);
-}
 
 /**
  * 生成header参数
@@ -387,69 +351,6 @@ export function tranMomentToUtcStr(moment, timezone = 0, resultFormat = 'YYYY-MM
 }
 
 
-// 导出excel
-export function exportExcel(headers = [], data = [], fileName = '') {
-  if (headers.length > 0 && data.length > 0) {
-    const h = headers.map((v, i) => Object.assign({}, { v, position: String.fromCharCode(65 + i) + 1 }))
-      .reduce((prev, next) => Object.assign({}, prev, { [next.position]: { v: next.v } }), {});
-
-    const d = data.map((v, i) => {
-      const arr = Object.entries(v);
-      return arr.map((item, index) => ({ v: item[1], position: String.fromCharCode(65 + index) + (i + 2) }));
-    }).reduce((prev, next) => prev.concat(next))
-      .reduce((prev, next) => Object.assign({}, prev, { [next.position]: { v: next.v } }), {});
-    // 合并 headers 和 data
-    const output = Object.assign({}, h, d);
-    // 获取所有单元格的位置
-    const outputPos = Object.keys(output);
-    // 计算出范围
-    const ref = `${outputPos[0]  }:${  outputPos[outputPos.length - 1]}`;
-    // 构建 workbook 对象
-    const wb = {
-      SheetNames: ['application vips'],
-      Sheets: {
-        'application vips': Object.assign({}, output, { '!ref': ref })
-      }
-    };
-    // 导出 Excel
-    if (fileName.length === 0) {
-      fileName = generateRandomStr();
-    }
-    XLSX.writeFile(wb, `${fileName  }.xlsx`);
-  }
-}
-
-
-
-/**
- * 检查request url 是否需要触发计时器刷新
- * @param url
- * @returns {boolean}  true表示需要刷新，false表示不需要刷新
- */
-export function checkRequestUrlForTimer(url) {
-  let res = true;
-  const pat = /(.*)?\/rest\/user\/logout(.*)?/g;
-  const flag = pat.test(url);
-  res = !flag;
-  return res;
-}
-
-// 检查窗口大小
-export function checkWindow() {
-  let winWidth = 0;
-  if (window.innerWidth) {
-    winWidth = window.innerWidth;
-  } else if ((document.body) && (document.body.clientWidth)) {
-    winWidth = document.body.clientWidth;
-  } else if (document.documentElement && document.documentElement.clientWidth) {
-    winWidth = document.documentElement.clientWidth;
-  }
-
-  if (winWidth.valueOf() <= 1200) {
-    // 触发事件
-    window.dispatchEvent(new Event('resize'));
-  }
-}
 
 // 获取浏览器窗口可视区域高度，不包括滚动条
 export function getWindowHeight() {

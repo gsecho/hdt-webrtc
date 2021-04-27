@@ -6,6 +6,8 @@ import menuIcon from '@/assets/menuIcon.svg';
 import hdtLogo from '@/assets/hdt.svg';
 import * as helper from '@/utils/helper';
 // import adapter from 'webrtc-adapter'
+import * as redirect from '@/utils/redirect'
+import * as tokenUtils from '@/utils/tokenUtils'
 import RightContent from './RightContent';
 import EnterMeeting from './EnterMeeting'
 import styles from './index.less';
@@ -16,7 +18,9 @@ import styles from './index.less';
 class GlobalHeader extends PureComponent {
     
     componentDidMount() {
-        
+        if(!tokenUtils.tokenValidate()){ // 如果url在router.js中有跳转，这里的跳转会失败
+            redirect.loginPageService()
+        }
     }
 
     componentWillUnmount() {

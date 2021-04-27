@@ -45,7 +45,7 @@ export default {
         *deleteMeetingById({ payload }, { call, put, select }){
             const data = yield select(state =>state.meetingManager.data)
             const { id } = payload
-            const response = yield call(removeMeetingById, {'id': id});
+            const response = yield call(removeMeetingById, id);
             if (response.httpCode === 200) {
                 yield put({type: 'readMeetingList', payload: {'pageNum': data.pageNum, 'pageSize': data.pageSize } });
             }

@@ -1,5 +1,6 @@
 import { queryNotices } from '@/services/api';
 
+
 export default {
   namespace: 'global',
 
@@ -7,9 +8,55 @@ export default {
     collapsed: false,
     notices: [],
     loadedAllNotices: false,
+    timerFlag: false,
+    globalInterval: null,
   },
 
   effects: {
+    /**
+     * 可以调小基础间隔，变成一个公共定时器
+     * @param {*} param1 
+     */
+    * forkInterval(_, { fork, cancelled, put, select }) {
+      const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+      let globalInterval = yield select(state =>state.global.globalInterval)
+      if(globalInterval == null){// 没创建的情况下才创建定时器
+        // eslint-disable-next-line func-names
+        globalInterval = yield fork(function* () {
+          try {
+            while (true) {
+              yield delay(60000);// 60s
+              yield put({
+                type: 'user/refreshToken',
+              });
+            }
+          } finally {
+            if (yield cancelled()) {// 取消之后的操作
+              // 这里什么都不做
+            }
+            yield put({
+              type: 'setGlobalInterval',
+              payload: null
+            })
+          }
+        });
+        // yield put({
+        //   type: 'setGlobalInterval',
+        //   payload: globalInterval
+        // })
+      }
+      
+    },
+    /**
+     * 取消定时器
+     * @param {*} param1 
+     */
+    * clearInterval(_ , { select, cancel }) {
+      let globalInterval = yield select(state =>state.global.globalInterval)
+      yield cancel(globalInterval);
+      globalInterval = null;
+    },
+    
     *fetchNotices(_, { call, put, select }) {
       const data = yield call(queryNotices);
       const loadedAllNotices = data && data.length && data[data.length - 1] === null;
@@ -96,6 +143,12 @@ export default {
   },
 
   reducers: {
+    setGlobalInterval( state, {payload}){
+      return {
+        ...state,
+        globalInterval: payload,
+      };
+    },
     changeLayoutCollapsed(state, { payload }) {
       return {
         ...state,

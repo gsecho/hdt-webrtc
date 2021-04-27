@@ -6,7 +6,7 @@
  */
 import React from 'react';
 import { connect } from 'dva';
-import {Card, Result, Spin, Form, Button } from 'antd'
+import {Card, Result, Spin, Form } from 'antd'
 import lodash from 'lodash'
 import PageHeaderWrapper from '@/components/PageHeaderWrapper';
 import {ROOM_STEP} from '@/utils/globalConsts'

@@ -5,8 +5,8 @@ import logoWord from '@/assets/cdnw.svg';
 import logo from '@/assets/cdnwLogo.svg';
 
 
-@connect(({ userLogin, loading }) => ({
-  userLogin,
+@connect(({ user, loading }) => ({
+  user,
   loading,
 }))
 @Form.create()
@@ -60,7 +60,7 @@ class LoginPage extends PureComponent {
       // 发起登陆请求
       const { dispatch } = this.props;
       dispatch({
-        type: 'userLogin/login',
+        type: 'user/login',
         payload: {...values}
       });
     });
@@ -82,7 +82,7 @@ class LoginPage extends PureComponent {
   render() {
     const {
       form: { getFieldDecorator },
-      userLogin: { authFailureDisplay },
+      user: { authFailureDisplay },
     } = this.props;
     
     const { loginDrawer, drawerWidth } = this.state;
@@ -102,7 +102,7 @@ class LoginPage extends PureComponent {
               <Form onSubmit={this.handleLogin}>
                 <div className="custom-mb16">Portal Login</div>
                 <Form.Item>
-                  {getFieldDecorator('name', {
+                  {getFieldDecorator('username', {
                     rules: [{ required: true, message: 'Please input your username !' }],
                 })(
                   <Input prefix={<Icon type="user" style={{ color: 'rgba(0,0,0,.25)' }} />} placeholder="Username" />

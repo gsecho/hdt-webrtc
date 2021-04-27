@@ -1,6 +1,8 @@
 import React from 'react';
 import { connect } from 'dva';
 import { DatePicker, Form, Input, Select, Switch, Icon } from 'antd';
+import * as utils from '@/utils/utils';
+import * as momentUtils from '@/utils/momentUtils';
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -17,7 +19,7 @@ const formLayout = {
     layout: 'horizontal',
     colon: false
 };
-const dateFormat = 'YYYY/MM/DD HH:mm';
+const dateFormat = 'YYYY-MM-DD HH:mm';
 
 @connect(({ loading }) => ({
     loading
@@ -27,8 +29,8 @@ class EditMeeting extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            // startDate: new Date(),
-            durationItems: []
+            durationItems: [],
+            maxMemberList: [2, 4, 6]
         };
     }
     
@@ -62,18 +64,22 @@ class EditMeeting extends React.Component {
           if (err) {
             console.log('Received values of form: ', values);
           }else{
-              const currentTime = values.start.utc().format(dateFormat)
-              const {dispatch } =  this.props;
+              const currentTime = momentUtils.convertLocalStringToUtcString(values.start)
+              const { dispatch } =  this.props;
               console.log('Received values of form: ', values);
               dispatch({
                   type: 'meetingManager/updateMeeting',
                   payload: { 
-                      'subject': values.subject,
-                      'start': currentTime , 
-                      'duration': values.duration,
-                      'content': values.content,
-
-                  },
+                    'id': values.id,
+                    'subject': values.subject,
+                    'startTime': currentTime , 
+                    'durationMin': utils.meetingDurationIndexToMin(values.duration),
+                    'content': values.content,
+                    'maxMember': values.maxMember,
+                    'password': values.password,
+                    'adminPassword': values.adminPassword,
+                    'status': values.switchStatus ? 0: 1,
+                },
               })
           }
         });
@@ -81,17 +87,19 @@ class EditMeeting extends React.Component {
   };
 
     render(){
-        // console.log(this.props);
-        const {durationItems} = this.state;
+      
+        const {durationItems, maxMemberList} = this.state;
         const {
             form: { getFieldDecorator },
             data: editData,
-          } = this.props;
+        } = this.props;
+        const switchStatus = editData.status === 0 ? true : false;
+        editData.switchStatus = switchStatus
         return(
           <>
-            <Form {...formLayout} onSubmit={this.handleLogin}>
+            <Form {...formLayout} >
               <Form.Item label="Id">
-                {getFieldDecorator('Id', {
+                {getFieldDecorator('id', {
                     initialValue: editData.id,
                 })(
                   <Input disabled />
@@ -99,7 +107,7 @@ class EditMeeting extends React.Component {
               </Form.Item>
 
               <Form.Item label="Subject">
-                {getFieldDecorator('Subject', {
+                {getFieldDecorator('subject', {
                     rules: [{ required: true}],
                     initialValue: editData.subject,
                 })(
@@ -117,7 +125,7 @@ class EditMeeting extends React.Component {
                 }
               </Form.Item>
               
-              <Form.Item label="duration">
+              <Form.Item label="Duration">
                 {getFieldDecorator('duration', {
                     rules: [{ required: true, message: 'Please select your duration!' }],
                     initialValue: editData.duration,
@@ -140,21 +148,49 @@ class EditMeeting extends React.Component {
                   </Select>,
                 )}
               </Form.Item>
-              
-              {/* <Form.Item label="status">
-                {getFieldDecorator('serviceStatus', {
+              <Form.Item label="Attendance">
+                {getFieldDecorator('maxMember', {
+                    rules: [{ required: true, message: 'Please select your attendance !' }],
+                    initialValue: editData.maxMember,
+                })(
+                  <Select 
+                    key='0'
+                    onChange={this.handleSelectAttendance}
+                  >
+                    { 
+                        maxMemberList.map( val => <Option key={val} value={val}>{val} </Option> )
+                    }
+                  </Select>,
+                )}
+              </Form.Item>
+              <Form.Item label="Password">
+                {getFieldDecorator('password', {
+                    initialValue: editData.password,
+                })(
+                  <Input />
+                )}
+              </Form.Item>
+              <Form.Item label="AdminPassword">
+                {getFieldDecorator('adminPassword', {
+                    initialValue: editData.adminPassword,
+                })(
+                  <Input />
+                )}
+              </Form.Item>
+              <Form.Item label="Status">
+                {getFieldDecorator('switchStatus', {
                         rules: [{ required: true}],
-                        valuePropName: 'checked',
-                        initialValue: editData.serviceStatus ,
+                        valuePropName: 'checked', initialValue: editData.switchStatus
                     })(
                       <Switch
                         checkedChildren={<Icon type="check" />}
                         unCheckedChildren={<Icon type="close" />}
                       />
+                      // <Switch checkedChildren="active" unCheckedChildren="suspended" defaultChecked />
                     )
                 }
-              </Form.Item> */}
-              <Form.Item label="会议内容">
+              </Form.Item>
+              <Form.Item label="Content">
                 {getFieldDecorator('content', {
                     rules: [{ required: true, message: 'Please input meeting content!' }],
                     initialValue: editData.content,

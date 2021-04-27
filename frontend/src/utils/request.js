@@ -1,33 +1,36 @@
 import fetch from 'dva/fetch';
 import { getLocale } from 'umi/locale';
 import lodash from 'lodash';
+import * as tokenUtils from './tokenUtils'
 import * as redirect from './redirect'
+
+// const backendUrl = backend.api;
 
 /**
  * 获取不需要拦截的request url (TODO,可以改成配置文件)
  */
 function getAllowRequestUrl() {
+  // 参数含义看这里 https://www.runoob.com/jsref/jsref-obj-regexp.html
+  // 增加 /^\/v1\/user\/info/的原因，如有是/的时候是会重定向的，这时候redirect会失效
   return [
-    /\/rest\/user\/customers(.*)?/g,
-    /\/rest\/user\/current(.*)?/g,
-    /\/rest\/user\/logout(.*)?/g,
-    /\/hdt\/v1\/login\/account/g,
+    /^\/v1\/user\/login/,
+    /^\/v1\/user\/register/
   ];
 }
 
 /**
  * 检查request url 是否需要拦截
  * @param url           request url
- * @returns {boolean}  true表示需要拦截，false表示不需要拦截
+ * @returns {boolean}  true表示允许通过，false表示需要再判断
  */
-function checkRequestUrl(url) {
-  let res = true;
+function checkAllowRequestUrl(url) {
+  let res = false;
   const exceptUrl = getAllowRequestUrl();
   if (exceptUrl.length > 0) {
     for (let i = 0; i < exceptUrl.length; i+=1) {
       const flag = exceptUrl[i].test(url);
-      if (flag) {
-        res = false;
+      if (flag) {// 匹配到不需要user的url
+        res = true;
         break;
       }
     }
@@ -36,31 +39,12 @@ function checkRequestUrl(url) {
 }
 
 
-// const cachedSave = (response, hashcode) => 
-//   /**
-//    * Clone a response data and store it in sessionStorage
-//    * Does not support data other than json, Cache only json
-//    */
-//   // const contentType = response.headers.get('Content-Type');
-//   // if (contentType && contentType.match(/application\/json/i)) {
-//   //   // All data is saved as text
-//   //   response
-//   //     .clone()
-//   //     .text()
-//   //     .then(content => {
-//   //       sessionStorage.setItem(hashcode, content);
-//   //       sessionStorage.setItem(`${hashcode}:timestamp`, Date.now());
-//   //     });
-//   // }
-//    response
-// ;
-
-
 async function httpClient(url, option) {
   /**
    * Produce fingerprints based on url and parameters
    * Maybe url has the same parameters
    */
+  // console.log(token);
   let locale = getLocale();
   // 后端不支持-，需要替换成_
   locale = locale.replace('-', '_');
@@ -76,6 +60,11 @@ async function httpClient(url, option) {
     },
     ...option,
   };
+  const localToken = tokenUtils.getToken()
+  if(localToken !== null){
+    options.headers.token = localToken
+  }
+
   const newOptions = lodash.merge({}, options);
   if (
     newOptions.method === 'POST' ||
@@ -122,24 +111,12 @@ async function httpClient(url, option) {
           return newData;
         })
         return parser;
-      }if ((response.status === 302) || (response.status === 307)){
-        // 302 Found (Previously "Moved temporarily")
-        // 307 Temporary Redirect (since HTTP/1.1)
-        const location = response.headers.get("Location"); // 重定向地址
-        const body = {}
-        body.httpCode = response.status;
-        body.message = location;
-        return body;
       }
-        const error = {};
-        error.httpCode = response.status;
-        error.message = response.statusText
-        return error
-    })
-    .then((data)=>{
-      redirect.resDataHandler(data);
-      // console.log(data)
-      return data;
+      // 重定向放401 ==> fetch 捕获不到302和307 
+      const error = {};
+      error.httpCode = response.status;
+      error.message = response.statusText
+      return error
     })
     .catch(e => ({
         httpCode: -1, // 自定义一个错误码
@@ -155,43 +132,40 @@ async function httpClient(url, option) {
  * @param {*} path 发起的http的path
  * @return {*}
  */
-async function reqFilter(path){
-  let interceptFlag = false;// 拦截标志
-  const isCheck = checkRequestUrl(path);
-  if (!isCheck) {
+function reqFilter(path){
+  let interceptFlag = true;
+  const isAllow = checkAllowRequestUrl(path);
+  // console.log(isAllow);
+  if (isAllow) {
     // 不需要拦截
+    interceptFlag = false;
   } else {
-    // 拦截请求
-    // TODO: 通过session Storage获取user
-    let userStr = sessionStorage.getItem('userInfo');
-    if(userStr === null){
-      // 缺少用户信息，需要你先 请求 用户信息 
-      const resData = await httpClient("/hdt/v1/user/info", {}); // TODO 修改 这个url的 读取位置 
-      const { httpCode } = resData;
-      if (httpCode === 200 ){
-          const {code, content} = resData.body
-          if (code === 0){
-            sessionStorage.setItem('userInfo', JSON.stringify(content)) // 存入seasion中
-          }
-      }
-      userStr = sessionStorage.getItem('userInfo');
-      if(userStr === null){
-        interceptFlag = true;
-      }  
+    // 再次判断
+    // eslint-disable-next-line no-lonely-if
+    if(tokenUtils.tokenValidate()){
+      interceptFlag = false;
     }
   }
-  if(interceptFlag){
-    return {
-      intercept: true,
-      content: {
-        httpCode: -2,
-        message: "Account Info Missing"
-      }
-    }
-  }
+  if (!interceptFlag){
     return {
       intercept: false
     }
+  }
+  return {
+    intercept: true,
+    content: {
+      httpCode: -2,
+      message: "Account Info Missing"
+    }
+  }
+}
+function httpResInteceptor(res){
+  // 401 在这里统一实现重定向
+  if (res.httpCode === 401) {
+    // 可以在这里加入排除的url判断
+    tokenUtils.removeTokenAuthority()
+    redirect.loginPageService();
+  }
 }
 
 /**
@@ -205,9 +179,12 @@ export default async function request(url, option) {
   const result = reqFilter(url)
   const { intercept } = result
   if(intercept){ // 拦截 
-    return result;
+    return result.content;
   }
 
   const res = await httpClient(url, option);
+  tokenUtils.refreshClickTime()
+  // 增加一个http请求结果的拦截
+  httpResInteceptor(res)
   return res;
 }

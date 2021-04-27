@@ -1,11 +1,13 @@
 import React from 'react';
 import { connect } from 'dva';
 import { DatePicker, Form, Input, Select } from 'antd';
+import * as utils from '@/utils/utils'
+import * as momentUtils from '@/utils/momentUtils'
 
 const { TextArea } = Input;
 const { Option } = Select;
 
-const dateFormat = 'YYYY/MM/DD HH:mm';
+const dateFormat = 'YYYY-MM-DD HH:mm';
 
 const formLayout = {
     labelCol: { 
@@ -28,7 +30,8 @@ class AddMeeting extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            durationItems: []
+            durationItems: [],
+            maxMemberList: [2, 4, 6]
         };
     }
     
@@ -50,35 +53,39 @@ class AddMeeting extends React.Component {
         console.log('onOk: ', value);
     }
 
-    handleSelectChange = value => {
+    handleSelectDuration = value => {
         console.log(value);
     };
 
-    handleSubmit = () => {
-        const { form: { validateFields} } = this.props;
-         validateFields((err, values) => {
-            if (err) {
-              console.log('Received values of form: ', values);
-            }else{
-                const currentTime = values.start.utc().format(dateFormat)
-                const {dispatch } =  this.props;
-                dispatch({
-                    type: 'meetingManager/createMeeting',
-                    payload: { 
-                        'subject': values.subject,
-                        'start': currentTime , 
-                        'duration': values.duration,
-                        'content': values.content,
+    handleSelectAttendance = value => {
+      console.log(value);
+  };
 
-                    },
-                })
-            }
-          });
-        
+    handleSubmit = () => {
+      const { form: { validateFields} } = this.props;
+        validateFields((err, values) => {
+          if (err) {
+            console.log('Received values of form: ', values);
+          }else{
+            const currentTime = momentUtils.momentToUtcString(values.start)
+            const {dispatch } =  this.props;
+            console.log(values);
+            dispatch({
+                type: 'meetingManager/createMeeting',
+                payload: { 
+                    'subject': values.subject,
+                    'startTime': currentTime , 
+                    'durationMin': utils.meetingDurationIndexToMin(values.duration),
+                    'content': values.content,
+                    'maxMember': values.maxMember,
+                },
+            })
+          }
+        });
     };
 
     render(){
-        const {durationItems} = this.state;
+        const {durationItems, maxMemberList} = this.state;
         const {
             form: { getFieldDecorator },
           } = this.props;
@@ -128,10 +135,22 @@ class AddMeeting extends React.Component {
                   </Select>,
                 )}
               </Form.Item>
-              <Form.Item label="会议内容">
-                {getFieldDecorator('content', {
-                    rules: [{ required: true, message: 'Please input meeting content!' }],
+              <Form.Item label="attendance">
+                {getFieldDecorator('maxMember', {
+                    rules: [{ required: true, message: 'Please select your attendance !' }],
                 })(
+                  <Select 
+                    key='0'
+                    onChange={this.handleSelectAttendance}
+                  >
+                    { 
+                        maxMemberList.map( val => <Option key={val} value={val}>{val} </Option> )
+                    }
+                  </Select>,
+                )}
+              </Form.Item>
+              <Form.Item label="会议内容">
+                {getFieldDecorator('content', {})(
                   <TextArea rows={4} placeholder="请输入至少五个字符" />
                 )}
               </Form.Item>

@@ -1,0 +1,26 @@
+InternalError:
+  - "We encountered an internal error. Please try again."
+  - 500
+MissingAuthHeader:
+  - "The HTTP authorization header is missing."
+  - 400
+UnAuthorized:
+  - "Invalid authentication / authorization credentials."
+  - 401
+MissingArgument:
+  - "Required parameter is missing."
+  - 400
+InvalidArgument:
+  - "There is a problem with a parameter name or value."
+  - 400
+InvalidURI:
+  - "Could not parse the specified URI."
+  - 400
+AccessDenied:
+  - "This user is not allowed to perform this request."
+  - 403
+
+
+
+
+

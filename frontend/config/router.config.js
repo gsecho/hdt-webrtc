@@ -98,14 +98,10 @@ export default [
     {
         path: '/',
         component: '../layouts/BasicLayout',
-        // Routes: ['src/pages/Authorized'],
-        // authority: ['admin', 'user'],
+        Routes: ['src/pages/Authorized'],
+        authority: ['admin', 'user'],
         routes: [{
                 path: '/',
-                redirect: '/dashboard'
-            },
-            {
-                path: '/home',
                 redirect: '/dashboard'
             },
             {
@@ -119,6 +115,7 @@ export default [
             {
                 path: '/meetingroom',
                 component: './meetingroom',
+                authority: ['admin'],
             },
             // {
             //     path: '/contacts',
