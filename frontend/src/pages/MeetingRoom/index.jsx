@@ -9,7 +9,6 @@ import { connect } from 'dva';
 import {Card, Result, Spin, Form } from 'antd'
 import lodash from 'lodash'
 import PageHeaderWrapper from '@/components/PageHeaderWrapper';
-import {ROOM_STEP} from '@/utils/globalConsts'
 import styles from './styles.less'
 
 class VideoOutput extends React.Component {
@@ -40,7 +39,7 @@ class VideoOutput extends React.Component {
 class MeetingRoom extends React.Component {
 
   state={
-    videosHeight: '0px',
+    videosWidth: '0px',
   }
   
   componentDidMount(){
@@ -56,16 +55,16 @@ class MeetingRoom extends React.Component {
       },
     })
     this.setState({
-      videosHeight: this.getVideosHeight(),
+      videosWidth: this.getVideosWidth(),
     })
     window.addEventListener('resize', this.handleResize.bind(this));
   }
 
-  getVideosHeight = () => document.body.clientWidth-256-24*2;
+  getVideosWidth = () => (document.body.clientWidth-256-24*4);
 
   handleResize = () => {
     this.setState({
-      videosHeight: this.getVideosHeight(),
+      videosWidth: this.getVideosWidth(),// 有效宽度
     })
   }
 
@@ -85,53 +84,56 @@ class MeetingRoom extends React.Component {
   }
 
   render() {
-    
-    const { meetingRoom: {step, roomAuthed, total, members } } = this.props
-    const {videosHeight} = this.state;
-    // 我们这里的视频长宽比1.33, 程序默认使用480*360
-    const lengthWidthRatio = 1.33;
+    const { meetingRoom: {roomAuthed, maxMembers: total, members } } = this.props
+    const {videosWidth} = this.state;
+    // 我们这里的视频长宽比, 程序默认使用480*360
+    const lengthWidthRatio = 16/9;
 
-    const videos = []    
-    Object.keys(members).forEach( key => {
-      const member = members[key] 
-      if(!lodash.isUndefined(member.stream)){
+    const videos = []
+    members.forEach( (member, i) => {
+      if((!lodash.isEmpty(member)) && (!lodash.isUndefined(member.stream))){
         const video = {};
         video.src = member.stream;
         video.id = member.id;
         videos.push(video);
+      }else{
+        videos.push({'id': -200+i });
       }
-    });
+    })
 
     for(let i=videos.length; i< total; i+=1){
       videos.push({'id': -100+i });
     }
-   const flexInfo = this.getFlexDisplayInfo(videos.length);  
-   const videoHeight = videosHeight/(flexInfo.columnNum*lengthWidthRatio);
+    const flexInfo = this.getFlexDisplayInfo(videos.length);  
+    const videoHeight = (videosWidth/lengthWidthRatio)/(flexInfo.columnNum);
   
-  let pageBg;
-  if(step !== ROOM_STEP.END){
-    pageBg=<Spin spinning> </Spin>
-  }
-  else if (roomAuthed){
-      pageBg=<div className="custom-content-view">
-        <Card className="qtl-card" style={{ padding: '0px' }}>
-          <div className='custom-video-grid'>
-            {
-              videos.map((video) => 
-                <div className="custom-videoflex" style={{  flexBasis: flexInfo.basis}}>
-                  <VideoOutput 
-                    key={video.id}
-                    video={video.src} 
-                    height={videoHeight}
-                  />
-                </div>
-              )
-            }
-          </div>
-        </Card>
-      </div>
+    let pageBg;
+    if (lodash.isUndefined(roomAuthed)){
+      pageBg = <Spin spinning> </Spin>
+    }else if (roomAuthed){
+      if(!total){
+        pageBg = <Spin spinning> </Spin>
+      } else{
+        pageBg=<div className="custom-content-view">
+          <Card className="qtl-card" style={{ padding: '0px' }}>
+            <div className='custom-video-grid'>
+              {
+                videos.map((video) => 
+                  <div className="custom-videoflex" style={{  flexBasis: flexInfo.basis}}>
+                    <VideoOutput 
+                      key={video.id}
+                      video={video.src} 
+                      height={videoHeight}
+                    />
+                  </div>
+                )
+              }
+            </div>
+          </Card>
+        </div>
+      }
     }
-    else{
+    else {
       pageBg =  <>
         <Result
           status="500"

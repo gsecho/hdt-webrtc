@@ -13,6 +13,7 @@ public class CoreConstants {
     public static final String DATE_FORMAT = "YYYY-MM-dd HH:mm:ss";
 
     public static final String USER_NAME = "username"; // token解析后的name存放到attribute中
+    public static final String USER_ID = "userId";
     public static final Integer DB_RECORD_ENABLE = 0;
     public static final Integer DB_RECORD_DISABLE = 1;
     public static final Integer DB_RECORD_DELETE = 2;

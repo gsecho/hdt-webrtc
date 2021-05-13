@@ -38,7 +38,7 @@ export default {
     },
 
     // 获取namespace 列表
-    [`GET ${backendUrl}/meetingManager/list`]: (req, res) => {
+    [`POST ${backendUrl}/meeting/search`]: (req, res) => {
         // console.log(req.query); // 获取get的参数
         // console.log(req.body); // 获取post的参数
         const {pageNum, pageSize} = req.query

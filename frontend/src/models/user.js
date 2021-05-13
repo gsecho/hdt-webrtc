@@ -44,8 +44,8 @@ export default {
               }
               
               const urlParams = new URL(window.location.href);
-              const params = utils.getPageQuery();
-              const { service } = params;
+              const service = utils.getPageQuery(urlParams.search);
+            //   const { service } = params;
               if (service) {
                 const redirectUrlParams = new URL(service);
                 if (redirectUrlParams.origin === urlParams.origin) {

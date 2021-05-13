@@ -11,5 +11,15 @@ export default {
 
     dataRoot:'content', // 返回的 body 数据格式
 
-    loginUri : '/user/login'
+    loginUri : '/user/login',
+    
+    ws:{
+        // url : 'wss://myrtc.com:18010/ws', // websocket url
+        uri : '/ws', // websocket url
+        sendPrefix: '/message',// 发送通道的前缀
+        userPrefix: '/u',         // 接收通道的前缀
+        userChannel: '/user/channel',
+    },
+
+
 };
