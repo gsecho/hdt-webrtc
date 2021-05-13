@@ -6,15 +6,22 @@ server:
 #    context-path: /webrtc # 前缀
   port: 8010
 
+rest:
+  stun:
+    url: http://webrtc-test.quantil.com:2018/p2p-proxy
+    # ms
+    readTimeout: 300000
+    connectTimeout: 300000
+    retryCount: 3
+    ssl:
+      protocols: TLSv1.2
+
+
 spring:
   application:
     name: webrtc
   datasource:
     sql:
-      driver-class-name: com.mysql.cj.jdbc.Driver
-      url: jdbc:mysql://localhost:3306/web_rtc?useUnicode=true&characterEncoding=UTF-8&useSSL=false
-      username: chenrf
-      password: 123456
       initialSize: 10
       minIdle: 10
       maxActive: 50

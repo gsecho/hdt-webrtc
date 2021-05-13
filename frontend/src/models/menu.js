@@ -2,7 +2,6 @@ import memoizeOne from 'memoize-one';
 import isEqual from 'lodash/isEqual';
 import { formatMessage } from 'umi/locale';
 import Authorized from '@/utils/Authorized';
-import transportIcon from '@/assets/transport.svg';
 import { menu } from '../defaultSettings';
 
 const { check } = Authorized;
@@ -109,11 +108,11 @@ export default {
 
       // TODO: 菜单路由暂时固定, 替换根据路由动态生成的功能
       const routes = [
-        { path: "/dashboard", name: "dashboard", icon: "dashboard", exact: true },
-        { path: "/meetinglist", name: "meetinglist", icon: "bar-chart", exact: true },
-        { path: "/meetingmanager", name: "meetingmanager", icon: "bar-chart", exact: true },
-        { path: "/meetingroom", name: "meetingroom", icon: "bar-chart", exact: true },
-        // { path: "/transport", name: "transports",icon:transportIcon, exact: true },
+        // { path: "/dashboard", name: "dashboard", icon: "dashboard", exact: true },
+        // { path: "/meetinglist", name: "meetinglist", icon: "bar-chart", exact: true },
+        // { path: "/meetingmanager", name: "meetingmanager", icon: "bar-chart", exact: true },
+        { path: "/meetingmanager", name: "dashboard", icon: "dashboard", exact: true },
+        { path: "/meetingroom", name: "meetingroom", icon: "bar-chart", exact: true, disabled: true },
       ];
       let authority;
       const menuData = filterMenuData(memoizeOneFormatter(routes, authority));

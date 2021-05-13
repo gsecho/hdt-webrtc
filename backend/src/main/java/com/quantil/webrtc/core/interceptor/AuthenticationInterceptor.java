@@ -65,6 +65,7 @@ public class AuthenticationInterceptor implements HandlerInterceptor {
         }
         // 传递用户ID到后端
         httpServletRequest.setAttribute(CoreConstants.USER_NAME, userName);
+        httpServletRequest.setAttribute(CoreConstants.USER_ID, userName);
         return true;
     }
 

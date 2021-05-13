@@ -5,8 +5,12 @@
 import { parse, stringify } from 'qs';
 
 
-export function getPageQuery() {
-  return parse(window.location.href.split('?')[1]);
+export function getPageQuery(value) {
+    const paramConst = "service";
+    // var str = "?service=https://myrtc.com:18010/p/meetingroom?id=6&&pwd=fd651518-2049-458c-9415-a4d05fa9ec69";
+    const index = value.indexOf(paramConst)
+    return value.substring(index+paramConst.length+1)
+  // return parse(window.location.href.split('?')[1]);
 }
 
 export function getQueryPath(path = '', query = {}) {
@@ -24,10 +28,6 @@ export function isUrl(path) {
   return reg.test(path);
 }
 
-export function getTimeMs(){
-  // 时钟从 1970 年 1 月 1 日午夜开始计算的 ms值  
-  return (new Date()).getTime();
-}
 
 
 /**

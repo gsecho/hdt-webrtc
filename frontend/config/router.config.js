@@ -102,7 +102,7 @@ export default [
         authority: ['admin', 'user'],
         routes: [{
                 path: '/',
-                redirect: '/dashboard'
+                redirect: '/meetingmanager'
             },
             {
                 path: '/meetinglist',
@@ -117,63 +117,11 @@ export default [
                 component: './meetingroom',
                 authority: ['admin'],
             },
-            // {
-            //     path: '/contacts',
-            //     name: 'contacts',
-            //     component: './Exception/Contact',
-            //     hideInMenu: true,
-            // },
-            // {
-            //     path: '/nosubscription',
-            //     name: 'nosubscription',
-            //     component: './Exception/Nobuy',
-            //     hideInMenu: true,
-            // },
-            // {
-            //     path: '/accessdenied',
-            //     name: 'accessdenied',
-            //     component: './Exception/AccessDenied',
-            //     hideInMenu: true,
-            // },
             {
                 path: '/dashboard',
                 name: 'dashboard',
                 component: './Dashboard/index',
             },
-            // {
-            //     path: '/reports',
-            //     name: 'reports',
-            //     component: './Reports/index',
-            // },
-            // {
-            //     path: '/transport',
-            //     name: 'transport',
-            //     component: './Transport/list',
-            // },
-            // {
-            //     path: '/transport/preview/:transportId',
-            //     name: 'previewTransport',
-            //     component: './Transport/edit/Preview',
-            //     hideInMenu: true,
-            // },
-            // {
-            //     path: '/transport/add',
-            //     name: 'addTransport',
-            //     component: './Transport/add',
-            //     hideInMenu: true,
-            // },
-            // {
-            //     path: '/transport/view/:transportId',
-            //     name: 'viewTransport',
-            //     component: './Transport/view',
-            //     hideInMenu: true,
-            // },
-            // {
-            //     path: '/transport/history/compare/:transportId',
-            //     name: 'historyCompare',
-            //     component: './Transport/history/HistoryCompare',
-            //     hideInMenu: true,
-            // },
             // {
             //     path: '/transport/:transportId',
             //     name: 'editTransport',

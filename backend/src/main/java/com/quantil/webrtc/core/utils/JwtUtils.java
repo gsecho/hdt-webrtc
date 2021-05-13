@@ -26,7 +26,7 @@ public class JwtUtils {
      载荷内容：暂时null
      加密密钥：这个人的id加上一串字符串
      */
-    public static String createToken(String userName) {
+    public static String createToken(String userName, String id) {
 
         Calendar nowTime = Calendar.getInstance();
         nowTime.add(Calendar.MINUTE, expireMin);
@@ -37,7 +37,7 @@ public class JwtUtils {
         return JWT.create().withAudience(userName)//签发对象
                    .withIssuedAt(new Date())    //发行时间
                    .withExpiresAt(expiresDate)  //截止时间
-//                   .withClaim("Username", rtcUser.getUsername())
+                   .withClaim("id", id)
                    .sign(Algorithm.HMAC256(secret));   //签名和加密
     }
 

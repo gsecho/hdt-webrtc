@@ -65,6 +65,16 @@ export function getTokenExpiredSecond(){
     return ERROR_VALUE
   }
 }
+export function getTokenAudience(){
+  const token = getToken()
+  try {
+    const decoded = jwtDecode(token);
+    return decoded.aud
+  }catch(e){
+    removeTokenAuthority()
+    return ERROR_VALUE
+  }
+}
 // ***************************** CLICK_TIME ***************************** //
 // 存的是秒值
 export function getClickTime(){

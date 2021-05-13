@@ -2,14 +2,16 @@
  * @Author: chenrf
  * @Date: 2021-03-26 15:18
  */
-import { ROOM_STEP }  from '@/utils/globalConsts'
+import * as tokenUtils  from '@/utils/tokenUtils'
 import lodash from 'lodash'
-// import { getMeetingRoomCip } from '@/services/meetingRoom'
-// const STEP_INIT = 0;
-// const STEP_ROOMAUTH = 1;
-// const STEP_ROOMEND = 2;
-// const STEP_WEBSOCKET = 3;
-// const STEP_END = 4;
+import stomp from 'stompjs'
+import { getClientIp } from '@/services/meetingRoom';
+import * as meetingUtils  from '@/services/meetingUtils'
+import backend from '../../config/backend';
+
+const wsUri = backend.ws.uri
+const wsSendPrefix = backend.ws.sendPrefix
+const wsUserChannel = `${backend.ws.userPrefix}${backend.ws.userChannel}` // 订阅通道
 
 export default {
     namespace: 'meetingRoom',
@@ -19,37 +21,69 @@ export default {
      * const data = yield select(state =>state.meetingManager.data)
      */
     state: {
-        step: ROOM_STEP.INIT , // 0：起始, 1： roomAuth，2：套接字连接， 3:结束
-        roomAuthed: false, // roomid和passwd校验结果(http)
-        ws: undefined,
+        stompClient: undefined,
+        roomAuthed: undefined, // roomid和passwd校验结果(http)
         
-        myId: 12, // 我的id
-        roomId : 654,
-        total : 6,
+        myId: 12, // 我的id--发消息时候放from位置
+        roomId : 0,
+        password: undefined,
+        maxMember : undefined,
         speaker: 10, // 当前主讲人
         admin: [],  // 管理员（有权力关闭会议）[10, 1], 
         speeker: -1,
         myinfo: {}, // 数据内容与members的类似
-        members: {},
-        // // 与会人员：Id，名称，头像，在线状态，video状态，audio状态
+        members: [],
+        // 与会人员：Id，名称，头像，在线状态，video状态，audio状态
         // {'id': 2, 'name': 'xiaoming', 'avatar': '/..../path/2.png', 'online': true, 'video': true, "audio": false, peerConnect: {}, stream: undefined, candidates:[] }
     },
     effects: {
-        *auth( params , { put}){// 通过http接口验证： 用户名，密码信息
-            let flag = true;
-            const curStep = ROOM_STEP.END;
-            flag = true;
 
+        *checkSocketWork(_, { fork, cancelled, select, put, take, cancel }) {
+            const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+            // eslint-disable-next-line func-names
+            const timeTask = yield fork(function* () {
+              try {
+                while (true) {
+                  yield delay(60000);// 60s
+                  const stompClient = yield select(state =>state.meetingRoom.stompClient)
+                  if(lodash.isUndefined(stompClient) || lodash.isNull(stompClient)){
+                    // nothing
+                  }else{
+                    tokenUtils.refreshClickTime()
+                  }
+                }
+              } finally {
+                if (yield cancelled()) {// 取消之后的操作
+                  // 这里什么都不做
+                  console.log("-----   cancelled   -----");
+                }
+              }
+            });
+            yield take("STOP_TIME_TASK");
+            yield cancel(timeTask)
+        },
+        *wbOpenedHander( { payload } , { put, call }){
+            const { stompClient } = payload
             yield put({
                 type: 'setMeetingRoomState',
-                payload: { 
-                    'step' : curStep,
-                    'roomAuthed': flag,
-                 }
+                payload: {
+                    'stompClient': stompClient, 
+                    'roomAuthed': true,
+                }
             });
+            const response = yield call(getClientIp);
+            if (response.httpCode === 200) {
+                const {body: { content } } = response
+                stompClient.send(`${wsSendPrefix}/current-meeting`, {} , JSON.stringify({'content': content}));// 上次自己的ip，同时请求当前room的连接信息
+            }
         },
-        *wbOpenedHander( {payload: { target } } , { put, select }){
-            // TODO 由于id和join都是一起发的，导致这个还没打开，就执行了join，所以移到这里，后续自己的后台需要改到id信令的时候做
+        *wbMessageCurrentMeeting( {payload} , { put }){
+            // 获取到当前room已经连接的用户信息
+            // 发起连接
+            // const meetingRoom = yield select(state => state.meetingRoom)
+            // console.log(meetingRoom);
+            const {to:myId, content, content:{members}} = payload
+            // 开启本地流数据
             const localStream = yield navigator.mediaDevices.getUserMedia({
                 audio: true,
                 // video: true,
@@ -58,268 +92,341 @@ export default {
                     'height': 360
                 }
             });
+            
+            // 先存储currentMeeting信息
             yield put({
                 type: 'setMeetingRoomState',
                 payload: {
-                    'stream' : localStream,
+                    ...content,
                 }
             });
-            const meetingRoom = yield select(state =>state.meetingRoom)
-            const {roomId} = meetingRoom;
-            target.send(JSON.stringify({"type": "login", "user": '123', "key": 'password' }));
-            // TODO 
-            const wanIP ='59.61.78.135';
-            if (wanIP != null) {
-                target.send(JSON.stringify({"type": "wanIP", "ip": wanIP}));
-            }
-            target.send(JSON.stringify({"type": "room", "room": roomId}));
+            // 存储自己的流数据
             yield put({
-                type: 'setMeetingRoomState',
+                type: 'setMeetingMemberStream',
                 payload: {
-                    'step' : ROOM_STEP.END,
+                    'id': myId,
+                    'stream' :localStream ,
+                }
+            });
+            
+            // eslint-disable-next-line no-restricted-syntax
+            for(const member of members) {
+                const peerId = member.id
+                member.peerConnect = new RTCPeerConnection()
+                if(myId === peerId){
+                    // eslint-disable-next-line no-continue
+                    continue;
+                }
+                yield put({
+                    type: 'wbRtcPeerConnectHandler',
+                    payload: {
+                        'myId' : myId,// from、to尽量只用在 ws传递中，内部用有意义的字段描述
+                        'peerId' : peerId,
+                        'offer': undefined,
+                    }
+                });
+            }
+        },
+        *wbMessageOffer( {payload} , { put}){
+            const {from: peerId, to: myId, content} = payload
+
+            yield put({
+                type: 'wbRtcPeerConnectHandler',
+                payload: {
+                    'myId' : myId,
+                    'peerId' : peerId,
+                    'offer': content
                 }
             });
         },
-        *wbMessageHander( {payload: {target, data}} , { put, select}){
-            const meetingRoom = yield select(state =>state.meetingRoom)
-            const obj = JSON.parse(data)
-            if (obj.type === "id") { // 服务器分配给该客户端的id，这个后面会换成固定的id
-                
+        *wbMessageAnswer( {payload} , { select}){
+            const meetingRoom = yield select(state => state.meetingRoom)
+            const {members} = meetingRoom;
+            const {from: peerId, content} = payload
+            const member = meetingUtils.getMemberFromList(peerId, members)
+            if(!member){
+                return;
+            }
+            const { peerConnect } = member
+            peerConnect.setRemoteDescription(new RTCSessionDescription(content));
+        },
+        *wbMessageCandidate( {payload} , { select}){
+            const meetingRoom = yield select(state => state.meetingRoom)
+            const {members} = meetingRoom;
+            const {from: peerId, content} = payload
+            const member = meetingUtils.getMemberFromList(peerId, members)
+            if(!member){
+                return;
+            }
+            const { peerConnect } = member
+            peerConnect.addIceCandidate(new RTCIceCandidate(content));
+        },
+        *wbRtcPeerConnectHandler( {payload} , { select }){
+            const meetingRoom = yield select(state => state.meetingRoom)
+            const {stompClient, members} = meetingRoom;
+            const {myId, peerId, offer} = payload
+            const member = meetingUtils.getMemberFromList(peerId, members)
+            if(!member){
+                return;
+            }
+            const { peerConnect } = member;
+            peerConnect.onicecandidate = e=> { // 事件触发执行 
+                if (e.candidate != null) {
+                    console.log(`onicecandidate: send candidate${e.candidate}`);
+                    stompClient.send(`${wsSendPrefix}/candidate`, {}, JSON.stringify({"from": myId, "to": peerId, "content": e.candidate}));
+                }
+            };
+            peerConnect.ondatachannel = e => {
+                console.log('Data channel is created!');
+                e.channel.onopen = () => {
+                  console.log('Data channel is open and ready to be used.');
+                };
 
-                const myId = obj.id;
-                yield put({
-                    type: 'setMeetingRoomState',
-                    payload: {
-                        'myId' : myId,
-                    }
-                });
-                
-                yield put({
-                    type: 'setMeetingMemberId',
-                    payload: {
-                        'id': myId,
-                    }
-                });
-                const member = meetingRoom.members[myId]
-                member.stream = meetingRoom.stream
-            }else if (obj.type === "join") {
-                const peerId = obj.join;
-                // 有客户端请求room的时候，服务器会告知请求者 每个设备的id，让他去发起connet连接
-                // 测试demo的每次发一个join.id，后续可以改成一次发送全部
-                const peerConnect = new RTCPeerConnection();
-                yield put({
-                    type: 'setMeetingMemberPeerConnect',
-                    payload: {
-                        'id': peerId, // 已经连接到room的客户id
-                        'peerConnect' : peerConnect,
-                    }
-                });
-                peerConnect.onicecandidate = e=> { // 有事件触发执行  
-                    // console.log(e);
-                    if (e.candidate != null) {
-                        console.log(`send candidate${e.candidate.candidate}`);
-                        target.send(JSON.stringify({"type": "message", "to": peerId, "message": {"action": "candidate", "candidate": e.candidate}}));
-                    }
+                e.channel.close = () => {
+                    console.log('Data channel is close.');// TODO
                 };
-                const {myId} = meetingRoom
-                console.log(meetingRoom );
-                peerConnect.addStream(meetingRoom.members[myId].stream);// 加入local流数据
-                peerConnect.onaddstream = e => {
-                    console.log(e);
-                    const member = meetingRoom.members[peerId];
-                    member.stream = e.stream
-                    if (e.candidate != null) {
-                        console.log(`send candidate${e.candidate.candidate}`);
-                        // 请求都加上from
-                        target.send(JSON.stringify({"type": "message", "to": peerId, "message": {"action": "candidate", "candidate": e.candidate}}));
+              };
+            const myInfo = meetingUtils.getMemberFromList(myId, meetingRoom.members)
+            if(myInfo !== null){
+                peerConnect.addStream(myInfo.stream);// 加入local流数据
+            }
+            const peerMember = meetingUtils.getMemberFromList(peerId, meetingRoom.members)
+            peerConnect.onaddstream = e => {
+                peerMember.stream = e.stream
+            };
+
+            if(offer){
+                // 应答 offer 
+                peerConnect.setRemoteDescription(new RTCSessionDescription(offer));
+                peerConnect.createAnswer().then(
+                    (desc) =>{
+                        peerConnect.setLocalDescription(desc);// 这个需要从state中取得
+                        stompClient.send(`${wsSendPrefix}/answer`, {}, JSON.stringify({"from": myId, "to": peerId, "content": desc}));
                     }
-                };
-                
+                );
+            }else{
                 peerConnect.createOffer({
                     offerToReceiveAudio: 1,
                     offerToReceiveVideo: 1
                 }).then( (desc) => {
                     peerConnect.setLocalDescription(desc);
-                    target.send(JSON.stringify({"type": "message", "to": peerId, "message": {"action": "offer", "offer": desc}}));
+                    stompClient.send(`${wsSendPrefix}/offer`, {}, JSON.stringify({"from": myId, "to": peerId, "content": desc}));
                 });
-                
-                target.send(JSON.stringify({"type": "message", "to": peerId, "message": {"action": "connect"}}));
-            }else if (obj.type === "message") {
-                if (obj.message.action === "connect") {// 其他客户端主动请求连接
-                    const peerId = obj.from;
-                    const peerConnect = new RTCPeerConnection();
-                    peerConnect.onicecandidate = e=> { // 有事件触发执行  
-                        // console.log(e);
-                        if (e.candidate != null) {
-                            // console.log("send candidate " + event.candidate.candidate);
-                            target.send(JSON.stringify({"type": "message", "to": peerId, "message": {"action": "candidate", "candidate": e.candidate}}));
-                        }
-                    };
-                    yield put({
-                        type: 'setMeetingMemberId',
-                        payload: {
-                            'id': peerId,
-                        }
-                    });
-                    const {myId} = meetingRoom
-                    peerConnect.addStream(meetingRoom.members[myId].stream);// 加入local流数据
-                    peerConnect.onaddstream = e => {
-                        // console.log(e);
-                        const member = meetingRoom.members[peerId];
-                        member.stream = e.stream
-                    };
-                    
-                    yield put({
-                        type: 'setMeetingMemberPeerConnect',
-                        payload: {
-                            'id': peerId, // 已经连接到room的客户id
-                            'peerConnect' : peerConnect,
-                        }
-                    });
-                }else if (obj.message.action === "offer") { // 其他客户端主动请求发起offer 
-                    const remoteDesc = new RTCSessionDescription(obj.message.offer)
-                    const member = meetingRoom.members[obj.from]
-                    member.peerConnect.setRemoteDescription(remoteDesc)
-                    member.peerConnect.createAnswer().then(
-                        (desc) =>{
-                            member.peerConnect.setLocalDescription(desc);// 这个需要从state中取得
-	                        target.send(JSON.stringify({"type": "message", "to": obj.from, "message": {"action": "answer", "answer": desc}}));
-                        }
-                    );
-                }else if (obj.message.action === "answer") {
-                    const remoteDesc = new RTCSessionDescription(obj.message.answer)
-                    const member = meetingRoom.members[obj.from]
-                    // console.log(member);
-                    member.peerConnect.setRemoteDescription(remoteDesc)
-                }else if (obj.message.action === "candidate") {
-                    const member = meetingRoom.members[obj.from]
-                    // 每个member的candidate，这里可以有多个，一般是 网卡数量+自定义
-                    member.peerConnect.addIceCandidate(new RTCIceCandidate(obj.message.candidate));
-                }
-                // console.log(obj);
-            }else if (obj.type === "leave") {
-                meetingRoom.members[obj.leave].peerConnect.close()
-                // 清除数据 
-                delete meetingRoom.members[obj.leave]
-            } 
-        }
+            }
+        },
+        
     },
 
     reducers: {
+        // setTimeTaskState(state, {payload}) {
+        //     return {
+        //       ...state,
+        //       timeTask: payload
+        //     };
+        // },
         setMeetingRoomState(state, {payload}) {
-            // console.log(state, payload);
             return {
               ...state,
               ...payload
             };
         },
-        setMeetingMemberId(state, {payload}) {
-            console.log(state);
-            const { members } = state
-            const member = members[payload.id]
-            if(lodash.isUndefined(member)){
-                members[payload.id]=  {'id': payload.id }
+        clearMeetingRoomState(){
+            return {
+                members: []
             }
-            return state;
         },
-        setMeetingMemberPeerConnect(state, {payload}) {
+        createMeetingMember(state, {payload}) {
+            // payload  {  content:{id, username} }
+            const {content} = payload
+            content.peerConnect = new RTCPeerConnection()
             const { members } = state
-            const member = members[payload.id]
-            if(lodash.isUndefined(member)){
-                members[payload.id]= payload ;
-            }else{
-                member.peerConnect = payload.peerConnect;
+            meetingUtils.addMemberToList(content, members)
+            return {// 触发更新
+                ...state
             }
-            return state;
         },
-        setMeetingMemberStream(state, {payload}) {
-            console.log(state);
+        removeMeetingMember(state, {payload}) {
+            const {content} = payload
             const { members } = state
-            const member = members[payload.id]
-            if(!lodash.isUndefined(member)){
-                member.stream = payload.stream;
+            meetingUtils.removeMemberFromList(content, members)
+            return {// 触发更新
+                ...state
             }
-            return state;
         },
-        setMeetingMemberCandidate(state, {payload}) {
-            const { members } = state
-            const member = members[payload.id]
-            if(!lodash.isUndefined(member)){
-                member.candidates.push(payload.candidate);
+        closeMeeting(state ) { // TODO 改成对特定链路关闭
+            if(state.stompClient){
+                state.stompClient.disconnect();
             }
-            return state;
-        },
-        setMeetingMemberState(state, {payload}) { 
-            // 后续的修改（除了删除）都用这个
-            // 方法： 在effect中修改数据，组装数据，然后传递到这个函数修改
+            
             const { members } = state
-            let member = members[payload.id]
-            if(!lodash.isUndefined(member)){
-                member =  payload// 替换原来的数据
-            }
-            return state;
-        },
-        deleteMeetingMember(state, {payload}) { 
-            const { members } = state
-            const member = members[payload.id]
-            if(!lodash.isUndefined(member)){
-                if(!lodash.isUndefined(member).peerConnect){
+            members.forEach(member =>{ // 注意，这里是异步操作
+                if(!lodash.isEmpty(member)){
+                    const {stream} = member
+                    if(stream) {
+                        const tracks = stream.getTracks()
+                        if(tracks){
+                            tracks.forEach( track=>{
+                                track.stop()
+                            })
+                        }
+                    }
+                }
+                if(member.peerConnect){
                     member.peerConnect.close()
                 }
-                delete members[payload.id]
+            })
+            state.members.splice(0, members.length) // 清空
+            return {
+                ...state
             }
-            return state;
-        }
+        },
+        setMeetingMember(state, {payload}) { // 一次传入members,应答meeting表的时候调用
+            // eslint-disable-next-line no-restricted-syntax
+            for(const member of payload){
+                member.peerConnect = new RTCPeerConnection()
+            }
+
+            return {
+                ...state,
+                members: {
+                    ...payload
+                }
+            };
+        },
+        // setMeetingMemberPeerConnect(state, {payload}) {
+        //     const { members } = state
+        //     const member = meetingUtils.getMemberFromList(payload.id, members)
+        //     if(member){
+        //         member.peerConnect = payload.peerConnect;
+        //     }else{
+        //         console.log("null");
+        //     }
+        //     return {// 触发更新
+        //         ...state
+        //     }
+        // },
+        setMeetingMemberStream(state, {payload}) {
+            // console.log(state);
+            const { members } = state
+            const member = meetingUtils.getMemberFromList(payload.id, members)
+            if(member){
+                member.stream = payload.stream;
+            }
+            return {// 触发更新
+                ...state
+            }
+        },
     },
     subscriptions: {
         setup ({ dispatch, history }) {
-            const {location} = history;
-            // console.log(history);
-            const roomId = location.query.id // 如果没有该参数值是undefined, 需要显示输入用户名和密码的界面
-            const roomPwd = location.query.pwd
-            if(lodash.isUndefined(roomId) || lodash.isUndefined(roomPwd)){
-                // 错误情况
-            }else{
-                const ws = new WebSocket("wss://webrtc-signal.quantil.com:8181");
-                dispatch({
-                    type: 'setMeetingRoomState',
-                    payload: { 
-                        'ws' : ws,
-                        'roomId': roomId,
-                        'password': roomPwd,
+            const PRE_URI = 'PRE_URI'
+            history.listen(location => {
+                const {pathname} = location
+                const meetingUri = '/meetingroom'
+                if(pathname !== meetingUri){ // 退出 meetingUri
+                    const uri = sessionStorage.getItem(PRE_URI)
+                    if((uri != null)&&(uri.indexOf(meetingUri))){
+                        dispatch({
+                            type: 'STOP_TIME_TASK'
+                        })
+                        dispatch({
+                            type: 'closeMeeting'
+                        })
+                        dispatch({
+                            type: 'clearMeetingRoomState'
+                        })
                     }
-                 });
-                ws.onopen =  (e) => {
-                    // console.log(e);
+                }else{
                     dispatch({
-                        type: 'wbOpenedHander',
-                        payload: {
-                            target: e.target,
-                            // 目前看 target，srcElement，currentTarget，三者是一样的
-                            // srcEle: e.srcElement,
-                            // currentTarget: e.currentTarget,
+                        type: 'clearMeetingRoomState'
+                    })
+                    const uri = history.createHref(location)
+                    sessionStorage.getItem(PRE_URI)
+                    sessionStorage.setItem(PRE_URI, uri)
+                    const roomId = location.query.id // 如果没有该参数值是undefined, 需要显示输入用户名和密码的界面
+                    const roomPwd = location.query.pwd
+                    const userName = tokenUtils.getTokenAudience()
+                    if(userName === null){
+                        return;
+                    }
+                    if(lodash.isUndefined(roomId) || lodash.isUndefined(roomPwd)){
+                        // 错误情况
+                    }else{
+                        const clientId =  meetingUtils.getRandomClientName(roomId, userName)
+                        const headers = {
+                            'roomId': roomId,
+                            'password': roomPwd,
+                            'clientId': clientId,
+                            'token': tokenUtils.getToken()
+                        };
+                        const ws = new WebSocket(`wss://${window.location.host}${wsUri}`);
+                        const stompClient = stomp.over(ws);
+                        const successFunction = ()=>{
+                            stompClient.subscribe(wsUserChannel, respnose => {
+                                // 展示返回的信息，只要订阅了 /user/getResponse 目标，都可以接收到服务端返回的信息
+                                // console.log(respnose.body)
+                                const data = JSON.parse(respnose.body);
+                                switch(data.type){
+                                    case 'current-meeting':
+                                        dispatch({ type : 'wbMessageCurrentMeeting', payload: data});
+                                        break;
+                                    case 'offer':
+                                        dispatch({ type : 'wbMessageOffer', payload: data});
+                                        break;
+                                    case 'answer':
+                                        dispatch({ type : 'wbMessageAnswer', payload: data});
+                                        break;
+                                    case 'candidate':
+                                        dispatch({ type : 'wbMessageCandidate', payload: data});
+                                        break;
+                                    case 'enter':
+                                        dispatch({ type : 'createMeetingMember', payload: data});
+                                        break;
+                                    case 'leave':
+                                        dispatch({ type : 'removeMeetingMember', payload: data});
+                                        break;
+                                    case 'close':
+                                        dispatch({ type : 'closeMeeting', payload: data});
+                                        break;
+                                    default:
+                                        console.log('default');
+                                        break;
+                                }
+                            });
+                            dispatch({
+                                type: 'checkSocketWork', // 开启连接校验定时器
+                            });
+                            dispatch({
+                                type: 'wbOpenedHander',
+                                payload: { 
+                                    'ws' : ws, // websocket连接
+                                    'stompClient': stompClient,// stomp连接
+                                    'roomId': roomId,
+                                    'password': roomPwd,
+                                    'myId': clientId,
+                                }
+                            });
                         }
-                     });
-                }
-                ws.onerror = ()=> {
-                    console.log('error');
-                }
-    
-                ws.onmessage = e=> {
-                    dispatch({
-                        type: 'wbMessageHander',
-                        payload: {
-                            target: e.target,
-                            data: e.data,
+                        const stompErrorCallback = e =>{
+                            console.log("stompErrorCallback", e);
+                            dispatch({
+                                type: 'STOP_TIME_TASK'
+                            })
+                            dispatch({
+                                type: 'closeMeeting'
+                            })
+                            dispatch({
+                                type: 'setMeetingRoomState',
+                                payload: {
+                                    'roomAuthed': false,
+                                }
+                            })
                         }
-                     });
+
+                        stompClient.connect(headers, successFunction, stompErrorCallback);
+                    }
                 }
-            
-                ws.onclose = e => {
-                    console.log('Connection closed', e);
-                }
-            }
-            
+            })
         },
       },
 }

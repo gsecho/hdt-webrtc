@@ -38,8 +38,8 @@
             <!--<generatedKey column="id" sqlStatement="Mysql" identity="true"/>-->
         <!--</table>-->
         <!-- 制定每个表的生成策略 -->
-        <table tableName="rtc_meeting_item" domainObjectName="RtcMeetingItem"
-               mapperName="RtcMeetingItemDao">
+        <table tableName="rtc_meeting_item-" domainObjectName="RtcMeetingItem-"
+               mapperName="RtcMeetingItemDao-">
             <generatedKey column="id" sqlStatement="Mysql" identity="true"/>
         </table>
 

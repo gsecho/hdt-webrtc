@@ -8,6 +8,7 @@ import com.quantil.webrtc.api.v1.meeting.dao.RtcMeetingItemDao;
 import com.quantil.webrtc.core.bean.base.ResponseResult;
 import com.quantil.webrtc.core.constant.CoreConstants;
 import com.quantil.webrtc.core.utils.ResponseUtils;
+import com.quantil.webrtc.core.utils.ToolUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
@@ -31,6 +32,12 @@ public class MeetingController {
     @Autowired
     RtcMeetingItemDao meetingItemDao;
 
+    /**
+     * 创建会议室
+     * @param item
+     * @param request
+     * @return
+     */
     @PostMapping("/create")
     public ResponseResult createItem(@RequestBody RtcMeetingItem item, HttpServletRequest request){
         item.setPassword(UUID.randomUUID().toString());
@@ -43,7 +50,12 @@ public class MeetingController {
         return ResponseUtils.formatOkResponse();
     }
 
-
+    /**
+     * 检索创建的会议
+     * @param searchReq
+     * @param request
+     * @return
+     */
     @PostMapping("/search")
     public ResponseResult searchList(@Validated @RequestBody RtcMeetingSearchReq searchReq, HttpServletRequest request){
         String userName = (String)request.getAttribute(CoreConstants.USER_NAME);
@@ -57,6 +69,12 @@ public class MeetingController {
         return ResponseUtils.formatOkResponse(map);
     }
 
+    /**
+     * 更新会议室信息
+     * @param item
+     * @param request
+     * @return
+     */
     @PostMapping("/update")
     public ResponseResult updateItem(@RequestBody RtcMeetingItem item, HttpServletRequest request){
         String userName = (String)request.getAttribute(CoreConstants.USER_NAME);
@@ -64,6 +82,13 @@ public class MeetingController {
         meetingItemDao.updateByPrimaryKey(item);
         return ResponseUtils.formatOkResponse();
     }
+
+    /**
+     * 删除已创建的会议
+     * @param id
+     * @param request
+     * @return
+     */
     @DeleteMapping("/delete/{id}")
     public ResponseResult updateItem(@PathVariable("id") Integer id, HttpServletRequest request){
         String userName = (String)request.getAttribute(CoreConstants.USER_NAME);
@@ -73,5 +98,16 @@ public class MeetingController {
         rtcMeetingItem.setStatus(CoreConstants.DB_RECORD_DELETE);
         meetingItemDao.updateByPrimaryKey(rtcMeetingItem);
         return ResponseUtils.formatOkResponse();
+    }
+
+    /**
+     * 前端通过这个接口获取自己的ip信息
+     * @param request
+     * @return
+     */
+    @GetMapping("/client-ip")
+    public ResponseResult getClientIp(HttpServletRequest request){
+        String clientIp = ToolUtils.getClientIP(request);
+        return ResponseUtils.formatOkResponse(clientIp);
     }
 }

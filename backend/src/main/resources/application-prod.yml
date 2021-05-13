@@ -1,4 +1,10 @@
 
+
+server:
+  ssl:
+    key-store: classpath:keystore.jks
+    key-store-password: Quantil#2020
+
 logging:
   level:
     root: INFO
@@ -6,3 +12,11 @@ logging:
   root:
     appender: RollingFile
     path: .
+
+spring:
+  datasource:
+    sql:
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      url: jdbc:mysql://qa.db.host:63751/web_rtc?useUnicode=true&characterEncoding=UTF-8&useSSL=false
+      username: root
+      password: mileweb2016!@#

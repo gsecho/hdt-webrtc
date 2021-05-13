@@ -6,6 +6,7 @@ import com.quantil.webrtc.core.bean.base.ResponseResult;
 import com.quantil.webrtc.core.bean.db.RtcUser;
 import com.quantil.webrtc.core.constant.CoreConstants;
 import com.quantil.webrtc.core.dao.RtcUserDao;
+import com.quantil.webrtc.core.exception.RestApiException;
 import com.quantil.webrtc.core.utils.JwtUtils;
 import com.quantil.webrtc.core.utils.PasswordHelper;
 import com.quantil.webrtc.core.utils.ResponseUtils;
@@ -55,7 +56,7 @@ public class UserController {
         // TODO
         // 频繁操作判断
         if ((rtcUser != null) && (PasswordHelper.doMatch(loginAuthReq, rtcUser))) {
-            String token = JwtUtils.createToken(rtcUser.getUsername());
+            String token = JwtUtils.createToken(rtcUser.getUsername(), rtcUser.getId().toString());
             LoginAuthRes loginAuthRes = new LoginAuthRes();
             loginAuthRes.setToken(token);
             List<String> authority = new ArrayList<>();
@@ -64,13 +65,15 @@ public class UserController {
             loginAuthRes.setAuthority(authority);
             return ResponseUtils.formatOkResponse(loginAuthRes);
         }
-        return ResponseUtils.formatBadResponse();
+        throw new RestApiException("401 UnAuthorized", "failed", 401);
+//        return ResponseUtils.formatBadResponse();
     }
 
     @GetMapping("refresh-token")
     public ResponseResult refreshToken(HttpServletRequest request){
         String userName = (String)request.getAttribute(CoreConstants.USER_NAME);
-        String token = JwtUtils.createToken(userName);
+        String userId = (String)request.getAttribute(CoreConstants.USER_ID);
+        String token = JwtUtils.createToken(userName, userId);
         LoginAuthRes loginAuthRes = new LoginAuthRes();
         loginAuthRes.setToken(token);
         List<String> authority = new ArrayList<>();

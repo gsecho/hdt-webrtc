@@ -24,9 +24,6 @@ const getIcon = icon => {
 };
 
 export default class BaseMenu extends PureComponent {
-  state = {
-    disabled: false,
-  };
 
   componentDidMount() {
     
@@ -56,7 +53,6 @@ export default class BaseMenu extends PureComponent {
    * get SubMenu or Item
    */
   getSubMenuOrItem = item => {
-    const { disabled } = this.state;
     // doc: add hideChildrenInMenu
     if (item.children && !item.hideChildrenInMenu && item.children.some(child => child.name)) {
       const { name } = item;
@@ -79,7 +75,7 @@ export default class BaseMenu extends PureComponent {
       );
     }
 
-    return <Menu.Item key={item.path} disabled={disabled}>{this.getMenuItemPath(item)}</Menu.Item>;
+    return <Menu.Item key={item.path} disabled={!!item.disabled}>{this.getMenuItemPath(item)}</Menu.Item>;
   };
 
   /**

@@ -34,27 +34,25 @@ export default {
             if (yield cancelled()) {// 取消之后的操作
               // 这里什么都不做
             }
-            yield put({
-              type: 'setGlobalInterval',
-              payload: null
-            })
           }
         });
-        // yield put({
-        //   type: 'setGlobalInterval',
-        //   payload: globalInterval
-        // })
+        yield put({
+          type: 'setGlobalInterval',
+          payload: globalInterval
+        })
       }
-      
     },
     /**
      * 取消定时器
      * @param {*} param1 
      */
-    * clearInterval(_ , { select, cancel }) {
-      let globalInterval = yield select(state =>state.global.globalInterval)
+    * clearInterval(_ , { select, cancel, put }) {
+      const globalInterval = yield select(state =>state.global.globalInterval)
       yield cancel(globalInterval);
-      globalInterval = null;
+      yield put({
+        type: 'setGlobalInterval',
+        payload: null
+      })
     },
     
     *fetchNotices(_, { call, put, select }) {
