@@ -28,6 +28,6 @@ export default ({ children }) => {
   const result = <Authorized authority={children.props.route.authority} noMatch={<Redirect to={redirectUrl} />}>
     {children}
   </Authorized>
-  // console.log(result); 
+  // console.log("Authorized:",result); 
   return result;
 };

@@ -1,11 +1,11 @@
 package com.quantil.webrtc;
 
+import com.quantil.webrtc.core.constant.CoreConstants;
 import com.quantil.webrtc.core.utils.Md5Utils;
 import com.quantil.webrtc.signal.bean.MeetingMember;
 import org.junit.Test;
 
 import java.util.ArrayList;
-import java.util.UUID;
 
 /**
  * @author chenrf
@@ -32,13 +32,22 @@ public class UserPasswordTest {
         System.out.println("end--");
     }
     @Test
-    public void helloEcho(){
-        System.out.println(UUID.randomUUID().toString());
+    public void shiroMd5RandomSalt(){
         String username = "lisi";
         String rawString = "123456"; // password
-        String saltString = "63cbff35c4aaadff8faa7f8ce32e260";
+        String saltString = CoreConstants.MD5_SALT;
         int hashIterations = 2;
         String result = Md5Utils.algorithm(rawString, username+":"+saltString, hashIterations);
+        System.out.println(result);
+    }
+
+    @Test
+    public void springSecurityEncode(){
+        String username = "lisi";
+        String rawString = "123456"; // password
+        String saltString = CoreConstants.MD5_SALT;
+        int hashIterations = 2;
+        String result = Md5Utils.algorithm(rawString, saltString, hashIterations);
         System.out.println(result);
     }
 }

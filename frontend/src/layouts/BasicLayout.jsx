@@ -9,15 +9,16 @@ import classNames from 'classnames';
 import pathToRegexp from 'path-to-regexp';
 import Media from 'react-media';
 import { formatMessage, setLocale } from 'umi/locale';
+import { getAuthority } from '@/utils/Authority';
 import Authorized from '@/utils/Authorized';
 import router from 'umi/router';
 import SiderMenu from '@/components/SiderMenu';
+import faviconUtils from  '@/utils/faviconUtils'
 import Footer from './Footer';
 import Header from './Header';
 import Context from './MenuContext';
 import Redirect404 from '../pages/Exception/Redirect404';
 import { menu, title } from '../defaultSettings';
-
 import styles from './BasicLayout.less';
 // 引入自定义样式
 import '@/styles/qtlcommon.less';
@@ -74,22 +75,17 @@ class BasicLayout extends React.Component {
       type: 'user/getUserInfo',
     })
     // 配置siderMenu的列表
+    const authorityList = getAuthority()
+
     dispatch({
       type: 'menu/getMenuData',
       payload: {
-        routes: route.routes,
-        authority: route.authority,
+        // routes: route.routes,
+        authority: authorityList,
       }
     });
 
-    // // 添加监听事件
-    // window.addEventListener('beforeunload', this.handleBrowserUnload);
-    // window.addEventListener('click', this.clearRefreshTimer);
-
-    // sessionStorage.setItem('clickFlag', 0);
-    // sessionStorage.setItem('timerClickFlag', 0);
-
-    // this.updateTemplate();
+    faviconUtils();
   }
 
   componentDidUpdate(preProps) {
@@ -123,25 +119,6 @@ class BasicLayout extends React.Component {
       location,
       breadcrumbNameMap,
     };
-  }
-
-  // 针对quantil 域名，更改模板
-  updateTemplate = () => {
-    let iconUrl = '';
-
-    const {hostname} = window.location;
-    if (hostname.indexOf('.quantil.com') !== -1) {
-      iconUrl = '/hdt/quantilFavicon.png';
-    }
-    if (hostname.indexOf('.cdnetworks.com') !== -1) {
-      iconUrl = '/hdt/cdnwFavicon.png';
-    }
-    // 设置favicon
-    const link = document.querySelector("link[rel*='icon']") || document.createElement('link');
-    link.type = 'image/x-icon';
-    link.rel = 'icon';
-    link.href = iconUrl;
-    document.getElementsByTagName('head')[0].appendChild(link);
   }
 
   clearRefreshTimer = () => {

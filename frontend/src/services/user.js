@@ -39,11 +39,25 @@ export async function reqUserInfo() {
     return request(`${backendUrl}/user/info`);
 }
 
-export async function queryCurrent() {
-    return request(`${backendUrl}/user/info`);
-}
-export async function query() {
-    return request(`${backendUrl}/users`);
+export async function requestUserList(params) {
+    return request(`${backendUrl}/user/list`, {
+        method: 'POST',
+        body: params,
+      });
 }
 
+export async function deleteUser(params) {
+    const {id} = params
+    return request(`${backendUrl}/user/${id}`, {
+        method: 'DELETE',
+        // body: params,
+      });
+}
+
+export async function createUser(params) {
+  return request(`${backendUrl}/user/create`, {
+      method: 'POST',
+      body: params,
+    });
+}
 

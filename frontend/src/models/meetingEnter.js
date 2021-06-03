@@ -19,7 +19,7 @@ export default {
     effects: {
         *auth( params , { call, put}){// 通过http接口验证： 用户名，密码信息
             const response = yield call(postAuthMeetingEnter, params.payload);
-            if (response.httpCode === 200) {
+            if ((response.httpCode === 200) && (response.body.code === 0)) {
                 yield put({
                     type: 'setEnterMeeting',
                     payload: {
@@ -27,7 +27,7 @@ export default {
                         enterAuthFailFlag: false,
                     }
                 });
-                const url = `/meetingroom?id=${params.payload.id}&&pwd=${params.payload.password}`
+                const url = `/room?id=${params.payload.id}&pwd=${params.payload.password}`
                 // console.log(url);
                 redirect.push(url)
             }else{

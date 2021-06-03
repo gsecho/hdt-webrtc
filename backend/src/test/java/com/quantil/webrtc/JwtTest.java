@@ -14,9 +14,9 @@ public class JwtTest {
     public void tokenVerify(){
         Integer id = 99;
         System.out.println(id.toString());
-        String token = JwtUtils.createToken("haha", id.toString());
-        System.out.println(token);
-        String userId = JwtUtils.verify(token);
-        System.out.println(userId);
+        String token = JwtUtils.createToken("haha", id.toString(), "user");
+        System.out.println("token: "+token);
+        String userId = JwtUtils.verifyAndGetUsername(token);
+        System.out.println("result:"+userId);
     }
 }

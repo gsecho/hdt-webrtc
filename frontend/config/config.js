@@ -61,9 +61,9 @@ let config = {
   cssLoaderVersion: 2,
 
   // 部署目录相对于根目录的路径，部署到非根目录时需要配置
-  base: backend.pages,
-  // publicPath: backend.static+'/', // 静态资源路径
-  // outputPath: backend.pages,
+  base: backend.pages,  // 访问路径
+  // publicPath: backend.publicPath,  // 静态资源路径,index.html中的静态资源会有这个路径
+  // outputPath: backend.outputPath, // 指定编译后文件存放路径
 
   // hash文件后缀
   hash: true,

@@ -66,14 +66,14 @@ public class MeetingRoomService {
     public boolean connectHandler(SimpMessageHeaderAccessor simpMessageHeaderAccessor, StompHeaderAccessor stompHeaderAccessor){
         String token = stompHeaderAccessor.getNativeHeader(WebSocketConstants.TOKEN).get(0);
         if (StringUtils.isNotBlank(token)) {
-            String userName = JwtUtils.verify(token);
+            String userName = JwtUtils.verifyAndGetUsername(token);
             if(StringUtils.isBlank(userName)) {
                 throw new RuntimeException();// 这样stomp客户端才能快速收到连接失败消息
             }else{
                 String roomIdString = stompHeaderAccessor.getNativeHeader(WebSocketConstants.ROOM_ID).get(0);
                 String password = stompHeaderAccessor.getNativeHeader(WebSocketConstants.PASSWORD).get(0);
                 String clientId = stompHeaderAccessor.getNativeHeader(WebSocketConstants.CLIENT_ID).get(0);
-                RtcMeetingItem meetingItem = rtcMeetingItemDao.selectByPrimaryKey(Integer.valueOf(roomIdString));
+                RtcMeetingItem meetingItem = rtcMeetingItemDao.selectByPrimaryKey(Long.valueOf(roomIdString));
                 if (meetingItem.getPassword().equals(password)) {
                     WebSocketUserPrincipal userPrincipal = new WebSocketUserPrincipal();
                     userPrincipal.setUsername(userName);
@@ -234,7 +234,7 @@ public class MeetingRoomService {
                     stunData.setPort1(candidateBody2.getPort());
                     stunData.setIp2(toMember.getUserPrincipal().getIp());
                     stunData.setPort2(candidateBody1.getPort());
-                    stunData.setUser("test");
+                    stunData.setUser(meetingRoom.getRtcMeetingItem().getCreateBy());
                     StunData stunDataRes = stunHttpService.post(stunData);
                     // 应答给发送方
                     WebSocketRequestGenerator<Candidate> resFrom = new WebSocketRequestGenerator<Candidate>();

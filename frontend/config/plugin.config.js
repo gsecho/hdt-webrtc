@@ -37,4 +37,5 @@ export default config => {
       languages: ['yaml', 'json', 'typescript', 'javascript'],
     }
   ]);
+  
 };

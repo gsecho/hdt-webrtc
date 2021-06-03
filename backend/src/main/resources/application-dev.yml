@@ -1,8 +1,15 @@
 
+
+#server:
+#  ssl:
+#    key-store: classpath:keystore.jks
+#    key-store-password: Quantil#2020
+
 logging:
   level:
     root: INFO
-  #    com.quantil: DEBUG
+    com.quantil.webrtc: DEBUG
+    com.alibaba.druid: DEBUG
   root:
     appender: Console
     path: .

@@ -4,11 +4,11 @@ import com.quantil.webrtc.core.bean.db.RtcUser;
 import java.util.List;
 
 public interface RtcUserDao {
-    int deleteByPrimaryKey(Integer id);
+    int deleteByPrimaryKey(Long id);
 
     int insert(RtcUser record);
 
-    RtcUser selectByPrimaryKey(Integer id);
+    RtcUser selectByPrimaryKey(Long id);
 
     RtcUser selectByUsername(String name);
 

@@ -69,6 +69,7 @@ const filterMenuData = menuData => {
   return menuData
     .filter(item => item.name && !item.hideInMenu)
     .map(item => check(item.authority, getSubMenu(item)))
+    // .filter( item => {console.log(item); return true}) // 调试
     .filter(item => item);
 };
 /**
@@ -104,18 +105,17 @@ export default {
   effects: {
     *getMenuData({ payload }, { put }) {
       // 根据路由动态生成
-      // const { routes, authority } = payload;
+      const { authority } = payload;
 
       // TODO: 菜单路由暂时固定, 替换根据路由动态生成的功能
-      const routes = [
-        // { path: "/dashboard", name: "dashboard", icon: "dashboard", exact: true },
-        // { path: "/meetinglist", name: "meetinglist", icon: "bar-chart", exact: true },
-        // { path: "/meetingmanager", name: "meetingmanager", icon: "bar-chart", exact: true },
-        { path: "/meetingmanager", name: "dashboard", icon: "dashboard", exact: true },
-        { path: "/meetingroom", name: "meetingroom", icon: "bar-chart", exact: true, disabled: true },
+      const routes = [       
+        { path: "/dashboard", name: "dashboard", icon: "dashboard", authority: ['user'], exact: true },
+        { path: "/room", name: "room", icon: "bar-chart", exact: true, authority: ['user'], disabled: true, hideInMenu: true },
+        { path: "/users", name: "users", icon: "user", authority: ['admin' ], exact: true },
       ];
-      let authority;
-      const menuData = filterMenuData(memoizeOneFormatter(routes, authority));
+      
+      const menuData = filterMenuData(memoizeOneFormatter(routes, authority));// memoizeOne 角色有变更渲染
+      // console.log(menuData);
       const breadcrumbNameMap = memoizeOneGetBreadcrumbNameMap(menuData);
       yield put({
         type: 'save',
