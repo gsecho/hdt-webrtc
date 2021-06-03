@@ -1,23 +1,26 @@
 package com.quantil.webrtc.api.v1.user;
 
-import com.quantil.webrtc.core.annotation.PassToken;
-import com.quantil.webrtc.core.bean.LoginAuthRes;
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
+import com.quantil.webrtc.api.v1.meeting.bean.RtcMeetingItem;
 import com.quantil.webrtc.core.bean.base.ResponseResult;
 import com.quantil.webrtc.core.bean.db.RtcUser;
 import com.quantil.webrtc.core.constant.CoreConstants;
 import com.quantil.webrtc.core.dao.RtcUserDao;
-import com.quantil.webrtc.core.exception.RestApiException;
-import com.quantil.webrtc.core.utils.JwtUtils;
-import com.quantil.webrtc.core.utils.PasswordHelper;
+import com.quantil.webrtc.core.security.SecurityUtils;
+import com.quantil.webrtc.core.security.auth.CustomUserDetails;
+import com.quantil.webrtc.core.security.auth.MD5PasswordEncoder;
 import com.quantil.webrtc.core.utils.ResponseUtils;
-import com.quantil.webrtc.core.bean.LoginAuthReq;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
 
 
 /**
@@ -34,53 +37,18 @@ public class UserController {
     RtcUserDao rtcUserDao;
 
     @GetMapping("info")
-    public ResponseResult login(HttpServletRequest request){
-        String userName = (String)request.getAttribute(CoreConstants.USER_NAME);
-        // TODO 测试数据
+    public ResponseResult login(){
+        CustomUserDetails customUserDetails = SecurityUtils.getPrincipalCustomUserDetails();
         UserInfo userInfo = new UserInfo();
-        userInfo.setId(2654);
-        userInfo.setName(userName);
-        userInfo.setNickName("Nick");
-        ArrayList<String> roles = new ArrayList<>();
-        roles.add("admin");
-        roles.add("user");
-        roles.add("write");
-        userInfo.setRoles(roles);
+        userInfo.setId(customUserDetails.getUserId());
+        userInfo.setName(customUserDetails.getUsername());
+        userInfo.setNickName(customUserDetails.getUsername());
+//        ArrayList<String> roles = new ArrayList<>();
+//        for (GrantedAuthority authority : customUserDetails.getAuthorities()) {
+//            roles.add(authority.getAuthority());
+//        }
+//        userInfo.setRoles(roles);
         return ResponseUtils.formatOkResponse(userInfo);
-    }
-
-    @PassToken
-    @PostMapping("login")
-    public ResponseResult login(@RequestBody LoginAuthReq loginAuthReq){
-        RtcUser rtcUser = rtcUserDao.selectByUsername(loginAuthReq.getUsername());
-        // TODO
-        // 频繁操作判断
-        if ((rtcUser != null) && (PasswordHelper.doMatch(loginAuthReq, rtcUser))) {
-            String token = JwtUtils.createToken(rtcUser.getUsername(), rtcUser.getId().toString());
-            LoginAuthRes loginAuthRes = new LoginAuthRes();
-            loginAuthRes.setToken(token);
-            List<String> authority = new ArrayList<>();
-            authority.add("admin");
-            authority.add("user");
-            loginAuthRes.setAuthority(authority);
-            return ResponseUtils.formatOkResponse(loginAuthRes);
-        }
-        throw new RestApiException("401 UnAuthorized", "failed", 401);
-//        return ResponseUtils.formatBadResponse();
-    }
-
-    @GetMapping("refresh-token")
-    public ResponseResult refreshToken(HttpServletRequest request){
-        String userName = (String)request.getAttribute(CoreConstants.USER_NAME);
-        String userId = (String)request.getAttribute(CoreConstants.USER_ID);
-        String token = JwtUtils.createToken(userName, userId);
-        LoginAuthRes loginAuthRes = new LoginAuthRes();
-        loginAuthRes.setToken(token);
-        List<String> authority = new ArrayList<>();
-        authority.add("admin");
-        authority.add("user");
-        loginAuthRes.setAuthority(authority);
-        return ResponseUtils.formatBadResponse(loginAuthRes);
     }
 
     @PostMapping("logout")
@@ -89,5 +57,34 @@ public class UserController {
         // TODO
         return ResponseUtils.formatOkResponse();
     }
+    @PostMapping("list")
+    public ResponseResult userList(@Validated @RequestBody UserListReq req){
+        PageHelper.startPage(req.getPageNum(), req.getPageSize());
+        PageInfo<RtcMeetingItem>pages = new PageInfo(rtcUserDao.selectAll());
 
+        HashMap<String, Object> map = new HashMap<>();
+        map.put("total", pages.getTotal());
+        map.put("list", pages.getList());
+        return ResponseUtils.formatOkResponse(map);
+    }
+    @DeleteMapping("{id}")
+    public ResponseResult deleteUser(@PathVariable("id") Long id){
+        int res = rtcUserDao.deleteByPrimaryKey(id);
+        log.info("res:{}", res);
+        return ResponseUtils.formatOkResponse();
+    }
+
+    @PostMapping("create")
+    public ResponseResult createUser(@RequestBody UserCreateReq userCreateReq){
+        RtcUser rtcUser = new RtcUser();
+        rtcUser.setUsername(userCreateReq.getUsername());
+        rtcUser.setSalt(CoreConstants.MD5_SALT);
+        MD5PasswordEncoder md5PasswordEncoder = new MD5PasswordEncoder();
+        String password = md5PasswordEncoder.encode(userCreateReq.getPassword());
+        rtcUser.setPassword(password);
+        rtcUser.setStatus(CoreConstants.DB_RECORD_ENABLE);
+        int resCode = rtcUserDao.insert(rtcUser);
+        log.info("resCode: {}", resCode);
+        return ResponseUtils.formatOkResponse();
+    }
 }

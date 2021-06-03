@@ -42,7 +42,6 @@ export default {
     
     // 登陆请求 
     [`POST ${backendUrl}/user/login`]: (req, res) => {
-  
         const { password, username, remember } = req.body;
         console.log("/user/login", req.body)
         const localToken = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI1NDM2NiIsImV4cCI6MTYzNzQyMzYzNSwiaWF0IjoxNjE5NDIzNjM2fQ.r5ru4eICxy2twOxbzxxinfENA-kxScCxb_xUO7JQEug';

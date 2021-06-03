@@ -69,7 +69,7 @@ class AddMeeting extends React.Component {
           }else{
             const currentTime = momentUtils.momentToUtcString(values.start)
             const {dispatch } =  this.props;
-            console.log(values);
+            // console.log(values);
             dispatch({
                 type: 'meetingManager/createMeeting',
                 payload: { 
@@ -149,9 +149,10 @@ class AddMeeting extends React.Component {
                   </Select>,
                 )}
               </Form.Item>
-              <Form.Item label="会议内容">
+              <Form.Item label="content">
                 {getFieldDecorator('content', {})(
-                  <TextArea rows={4} placeholder="请输入至少五个字符" />
+                  <TextArea rows={4}  />
+                  // <TextArea rows={4} placeholder="请输入至少五个字符" />
                 )}
               </Form.Item>
             </Form>

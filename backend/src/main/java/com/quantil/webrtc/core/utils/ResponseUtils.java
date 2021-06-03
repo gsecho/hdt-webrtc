@@ -35,7 +35,7 @@ public class ResponseUtils {
 
   /* bad */
   public static ResponseResult formatBadResponse() {
-    return formatResponse(CODE_SUCCESS, CODE_FAIL_MESSAGE, null);
+    return formatResponse(CODE_FAIL, CODE_FAIL_MESSAGE, null);
   }
 
   public static ResponseResult formatBadResponse(String message, Object content) {
@@ -43,6 +43,6 @@ public class ResponseUtils {
   }
 
   public static ResponseResult formatBadResponse(Object content) {
-    return formatResponse(CODE_SUCCESS, CODE_FAIL_MESSAGE, content);
+    return formatResponse(CODE_FAIL, CODE_FAIL_MESSAGE, content);
   }
 }

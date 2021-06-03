@@ -6,7 +6,7 @@ import java.util.Date;
 
 @Data
 public class RtcUser {
-    private Integer id;
+    private Long id;
 
     private String username;
 

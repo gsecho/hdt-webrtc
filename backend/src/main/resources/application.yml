@@ -1,4 +1,5 @@
 
+
 server:
   servlet:
     session:
@@ -18,6 +19,8 @@ rest:
 
 
 spring:
+  http:
+    encoding: utf-8
   application:
     name: webrtc
   datasource:

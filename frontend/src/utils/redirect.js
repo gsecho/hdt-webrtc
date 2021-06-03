@@ -6,6 +6,7 @@ import router from 'umi/router';
 import backend from '../../config/backend';
 
 export function getRedirectLoginUrl(){
+  // return `${backend.pages}${backend.loginUri}?service=${window.location.href}`;
   return `${backend.loginUri}?service=${window.location.href}`;
 }
 

@@ -74,7 +74,7 @@ async function httpClient(url, option) {
   ) {
     if (!(newOptions.body instanceof FormData)) {
       newOptions.headers = {
-        'Content-Type': 'application/json; charset=utf-8',
+        'Content-Type': 'application/json;charset=utf-8',// 加上utf8避免乱码
         ...newOptions.headers,
       };
       if (typeof (newOptions.body) !== 'string') {
@@ -95,7 +95,7 @@ async function httpClient(url, option) {
     // .then(resetTimer)
     .then((response) => {
       // 正常就进入下一个环节，错误就进入catch
-      if ((response.status === 200) || (response.status === 400)) {// 200 OK , 400 Bad Request
+      if ((response.status === 200) || (response.status === 400) || (response.status === 500) ) {// 200 OK , 400 Bad Request
         // body：详细
         // -- status: 忽略（后端历史问题，可能会删除）
         // code: 后端app状态码， 

@@ -4,7 +4,6 @@ import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.alibaba.fastjson.support.config.FastJsonConfig;
 import com.alibaba.fastjson.support.spring.FastJsonHttpMessageConverter;
 import com.quantil.webrtc.core.constant.CoreConstants;
-import com.quantil.webrtc.core.interceptor.AuthenticationInterceptor;
 import com.quantil.webrtc.core.interceptor.MdcInterceptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
@@ -27,13 +26,12 @@ public class InterceptorConfig implements WebMvcConfigurer {
 
     @Autowired
     private MdcInterceptor mdcInterceptor;
-    @Autowired
-    private AuthenticationInterceptor authenticationInterceptor;
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // 静态资源直接通过
-        registry.addResourceHandler("*.css", "*.js")//url路径
+        // 静态资源直接通过,这个是优先级很低，是没有匹配的url以后才会匹配这个
+        registry.addResourceHandler("/**css", "/**js", "/**png")//url路径
+//        registry.addResourceHandler("/**")//url路径
                 .addResourceLocations("classpath:/static/");//对应目录
     }
 
@@ -50,12 +48,6 @@ public class InterceptorConfig implements WebMvcConfigurer {
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-
-
-        // token认证
-        registry.addInterceptor(authenticationInterceptor)
-            .addPathPatterns("/**").order(3);
-
         // 配置log打印时候的id信息
         registry.addInterceptor(mdcInterceptor).order(10);
     }

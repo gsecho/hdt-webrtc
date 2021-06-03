@@ -4,11 +4,7 @@
  */
 export default {
     'menu.dashboard': 'Dashboard',
-    'menu.reports': 'Reports',
-    'menu.transports': 'Transports',
-    'menu.map': 'Global Presence',
-    'menu.hdt': 'High-Speed Data Transmission',
-    'menu.meetinglist': 'Meeting List',
-    'menu.meetingmanager': 'Meeting Manager',
-    'menu.meetingroom': 'Meeting Room',
+    'menu.hdt': 'High-Speed WebRtc',
+    'menu.room':  'Room',
+    'menu.users': 'Users',
 };

@@ -18,6 +18,7 @@ import javax.sql.DataSource;
  * 数据配置
  */
 @Configuration
+// 扫描dao
 @MapperScan(basePackages = {"com.quantil.webrtc.core.dao", "com.quantil.webrtc.api.v1.meeting.dao"},
             sqlSessionFactoryRef = "sysSqlSessionFactory")
 public class DruidDBConfig {

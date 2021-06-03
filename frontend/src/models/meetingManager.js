@@ -89,6 +89,6 @@ export default {
               ...state,
               editModalVisible: payload
             };
-        },
+        },        
     }
 }

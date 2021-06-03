@@ -1,6 +1,7 @@
 package com.quantil.webrtc.core.interceptor;
 
 import com.quantil.webrtc.core.bean.db.DbBase;
+import com.quantil.webrtc.core.constant.CoreConstants;
 import org.apache.ibatis.executor.Executor;
 import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.mapping.SqlCommandType;
@@ -32,6 +33,7 @@ public class PreSaveInterceptor implements Interceptor {
         if(type == SqlCommandType.INSERT){
             dbBase.setCreateDt(date);
             dbBase.setUpdateDt(date);
+            dbBase.setStatus(CoreConstants.DB_RECORD_ENABLE);
         }else if(type == SqlCommandType.UPDATE){
             dbBase.setUpdateDt(date);
         }
@@ -41,7 +43,7 @@ public class PreSaveInterceptor implements Interceptor {
     public Object intercept(Invocation invocation) throws Throwable {
         // 写入自己的逻辑
 //        logger.info("PreSaveInterceptor");
-//        Object target = invocation.getTarget(); //被代理对象 -- 这里是CachingExecutor
+//        Object target = invocation.getTarget(); //被代理对象 -- 这里是 CachingExecutor
 //        Method method = invocation.getMethod(); //代理方法   -- 这里是 Executor
 //        Object[] args = invocation.getArgs(); //方法参数
         // 自定义操作

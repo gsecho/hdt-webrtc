@@ -21,24 +21,29 @@ export default {
      * const data = yield select(state =>state.meetingManager.data)
      */
     state: {
+        // 进入页面以后 clearMeetingRoomState 会清空数据
         stompClient: undefined,
         roomAuthed: undefined, // roomid和passwd校验结果(http)
         
-        myId: 12, // 我的id--发消息时候放from位置
+        curSource: undefined, // 当前发送的流，camera、screen 
+        micEnabled: true, // 麦克风状态
+        myId: 0, // 我的id--发消息时候放from位置
         roomId : 0,
         password: undefined,
         maxMember : undefined,
         speaker: 10, // 当前主讲人
         admin: [],  // 管理员（有权力关闭会议）[10, 1], 
         speeker: -1,
-        myinfo: {}, // 数据内容与members的类似
+        // myinfo: {}, // 数据内容与members的类似
         members: [],
         // 与会人员：Id，名称，头像，在线状态，video状态，audio状态
-        // {'id': 2, 'name': 'xiaoming', 'avatar': '/..../path/2.png', 'online': true, 'video': true, "audio": false, peerConnect: {}, stream: undefined, candidates:[] }
+        // {'id': 2, 'name': 'xiaoming', 'avatar': '/..../path/2.png', 'online': true, 'video': true, "audio": false, peerConnect: {}, stream: undefined, candidates:[], muted: false, screenStream: undefined }
     },
     effects: {
-
-        *checkSocketWork(_, { fork, cancelled, select, put, take, cancel }) {
+        /**
+         * 监测websocket是否一直连接着，通话中，保持登陆状态
+         */
+        *checkSocketWork(_, { fork, cancelled, select, take, cancel }) {
             const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
             // eslint-disable-next-line func-names
             const timeTask = yield fork(function* () {
@@ -60,8 +65,9 @@ export default {
               }
             });
             yield take("STOP_TIME_TASK");
-            yield cancel(timeTask)
+            yield cancel(timeTask);
         },
+        /** websocket连接成功处理 */
         *wbOpenedHander( { payload } , { put, call }){
             const { stompClient } = payload
             yield put({
@@ -77,6 +83,9 @@ export default {
                 stompClient.send(`${wsSendPrefix}/current-meeting`, {} , JSON.stringify({'content': content}));// 上次自己的ip，同时请求当前room的连接信息
             }
         },
+        /**
+         * 请求current-meeting后的应答，如果有连接，需要逐个发起webrtc请求
+         */
         *wbMessageCurrentMeeting( {payload} , { put }){
             // 获取到当前room已经连接的用户信息
             // 发起连接
@@ -98,14 +107,17 @@ export default {
                 type: 'setMeetingRoomState',
                 payload: {
                     ...content,
+                    'myId': myId,
                 }
             });
+            // 先存一份myId和stream数据
             // 存储自己的流数据
             yield put({
                 type: 'setMeetingMemberStream',
                 payload: {
                     'id': myId,
                     'stream' :localStream ,
+                    'muted': true,
                 }
             });
             
@@ -127,9 +139,52 @@ export default {
                 });
             }
         },
+        /**
+         * 替换流数据操作（ camera <--> screen ）
+         */
+        *replaceTrack( {payload, callback} , { select, put } ){
+            const meetingRoom = yield select(state => state.meetingRoom)
+            const { myId, members } = meetingRoom
+            if(payload.target === 'camera'){
+                const member = meetingUtils.getMemberFromList(myId, members );
+                yield put({
+                    type: 'replaceMeetingMemberStream',
+                    payload: {
+                        'id': myId,
+                        'target': 'camera',
+                        'stream' :member.stream ,
+                    }
+                });
+                yield put({ type: 'setMeetingRoomState', payload: { curSource: 'camera' } });
+            }else if(payload.target === 'screen'){
+                let screenStream;
+                try {
+                    screenStream = yield navigator.mediaDevices.getDisplayMedia({
+                        video:{
+                            'width': 1280,
+                            'height': 720
+                        }
+                    });
+                } catch(err) {
+                    console.log(err);
+                    return;
+                }
+
+                // console.log(screenStream);
+                yield put({
+                    type: 'replaceMeetingMemberStream',
+                    payload: {
+                        'id': myId,
+                        'target': 'screen',
+                        'stream' :screenStream ,
+                    }
+                });
+                callback(screenStream.getVideoTracks()[0]) // 把流数据返回给前端，停止的时候才能在回调中发送 disaptch 
+                yield put({ type: 'setMeetingRoomState', payload: { curSource: 'screen' } });
+            }
+        },
         *wbMessageOffer( {payload} , { put}){
             const {from: peerId, to: myId, content} = payload
-
             yield put({
                 type: 'wbRtcPeerConnectHandler',
                 payload: {
@@ -172,7 +227,7 @@ export default {
             const { peerConnect } = member;
             peerConnect.onicecandidate = e=> { // 事件触发执行 
                 if (e.candidate != null) {
-                    console.log(`onicecandidate: send candidate${e.candidate}`);
+                    // console.log(`onicecandidate: send candidate${e.candidate}`);
                     stompClient.send(`${wsSendPrefix}/candidate`, {}, JSON.stringify({"from": myId, "to": peerId, "content": e.candidate}));
                 }
             };
@@ -188,7 +243,12 @@ export default {
               };
             const myInfo = meetingUtils.getMemberFromList(myId, meetingRoom.members)
             if(myInfo !== null){
-                peerConnect.addStream(myInfo.stream);// 加入local流数据
+                if(myInfo.screenStream){
+                    peerConnect.addStream(myInfo.screenStream);// 加入scrren流
+                }else{
+                    peerConnect.addStream(myInfo.stream);// 加入camera流数据
+                }
+                
             }
             const peerMember = meetingUtils.getMemberFromList(peerId, meetingRoom.members)
             peerConnect.onaddstream = e => {
@@ -218,12 +278,6 @@ export default {
     },
 
     reducers: {
-        // setTimeTaskState(state, {payload}) {
-        //     return {
-        //       ...state,
-        //       timeTask: payload
-        //     };
-        // },
         setMeetingRoomState(state, {payload}) {
             return {
               ...state,
@@ -232,6 +286,7 @@ export default {
         },
         clearMeetingRoomState(){
             return {
+                micEnabled: true,
                 members: []
             }
         },
@@ -293,27 +348,64 @@ export default {
                 }
             };
         },
-        // setMeetingMemberPeerConnect(state, {payload}) {
-        //     const { members } = state
-        //     const member = meetingUtils.getMemberFromList(payload.id, members)
-        //     if(member){
-        //         member.peerConnect = payload.peerConnect;
-        //     }else{
-        //         console.log("null");
-        //     }
-        //     return {// 触发更新
-        //         ...state
-        //     }
-        // },
         setMeetingMemberStream(state, {payload}) {
             // console.log(state);
             const { members } = state
             const member = meetingUtils.getMemberFromList(payload.id, members)
             if(member){
                 member.stream = payload.stream;
+                member.muted = payload.muted
             }
             return {// 触发更新
                 ...state
+            }
+        },
+        /**
+         * 只替换RTCRtpSender流
+         * @param {*} state 
+         * @param {*} param1 
+         */
+        replaceMeetingMemberStream(state, {payload : {id, target, stream: targetStream}}) {
+            const { members } = state
+            // eslint-disable-next-line no-restricted-syntax
+            for (const member of members) {
+                if(id === member.id){                    
+                    // nothing
+                    if(target === 'camera'){
+                        member.screenStream = null;
+                    }else if(target === 'screen'){
+                        member.screenStream = targetStream;
+                    }
+                }else{
+                    const sends = member.peerConnect.getSenders(); // RTCRtpSender
+                    if(sends){
+                        // eslint-disable-next-line no-restricted-syntax
+                        for (const rtpSender of sends) {
+                            if(rtpSender.track !== null && rtpSender.track.kind === 'video'){
+                                // const { track } = rtpSender
+                                rtpSender.replaceTrack(targetStream.getVideoTracks()[0])
+                            }
+                        }
+                    }
+                }
+            }
+            // console.log(members);
+            return {// 触发更新
+                ...state
+            }
+        },
+        micControl(state) {
+            const {myId, members, micEnabled} = state;
+            const member = meetingUtils.getMemberFromList(myId, members)
+            if(micEnabled){ // true  开mic ---> 静mic
+                member.stream.getAudioTracks()[0].enabled = false
+            }else{// false  静mic ---> 开mic 
+                member.stream.getAudioTracks()[0].enabled = true
+            }
+            
+            return {
+                ...state,
+                'micEnabled': !micEnabled, // 覆盖前面的数据，所有需要放后面
             }
         },
     },
@@ -322,7 +414,7 @@ export default {
             const PRE_URI = 'PRE_URI'
             history.listen(location => {
                 const {pathname} = location
-                const meetingUri = '/meetingroom'
+                const meetingUri = '/room'
                 if(pathname !== meetingUri){ // 退出 meetingUri
                     const uri = sessionStorage.getItem(PRE_URI)
                     if((uri != null)&&(uri.indexOf(meetingUri))){

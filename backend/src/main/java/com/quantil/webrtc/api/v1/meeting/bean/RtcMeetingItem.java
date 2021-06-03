@@ -1,12 +1,13 @@
 package com.quantil.webrtc.api.v1.meeting.bean;
 
+import com.quantil.webrtc.core.bean.db.DbBase;
 import lombok.Data;
 
 import java.util.Date;
 
 @Data
-public class RtcMeetingItem {
-    private Integer id;
+public class RtcMeetingItem extends DbBase {
+    private Long id;
 
     private String password;
 
@@ -21,18 +22,5 @@ public class RtcMeetingItem {
     private String adminPassword;
 
     private Integer maxMember;
-
-    private Integer status;
-
-    private Date createDt;
-
-    private String createBy;
-
-    private Date updateDt;
-
-    private String updateBy;
-
-    private String remark;
-
 
 }

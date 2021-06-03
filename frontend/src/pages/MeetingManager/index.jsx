@@ -15,7 +15,7 @@ class MeetingManager extends React.Component {
       render() {
         return (
           <div>
-            <PageHeaderWrapper pageHeaderClass="no-border" childrenClass="custom-mt116">
+            <PageHeaderWrapper pageHeaderClass="no-border">
               <div className="custom-content-view">
                 <MeetingTable />
               </div>

@@ -1,13 +1,14 @@
 import React, { Component } from 'react'
 import { connect } from 'dva';
-import { Button, Divider, Card, Modal, Popconfirm } from 'antd';
+import { Button, Divider, Card, Modal, Popconfirm, message } from 'antd';
 import QtlTable from '@/components/QtlTable';
 import lodash from 'lodash'
-import moment from 'moment'
-import AddMeeting from './addMeeting'
-import EditMeeting from './editMeeting'
 import * as redirect from '@/utils/redirect'
 import * as momentUtils from '@/utils/momentUtils'
+import { CopyToClipboard } from 'react-copy-to-clipboard';
+import CreateMeeting from './createMeeting'
+import EditMeeting from './editMeeting'
+
 
 import styles from './styles.less'
 
@@ -20,7 +21,7 @@ class MeetingTable extends Component {
   
   state = {
       selectedRowKeys: [], // Check here to configure the default column
-      editData: {} 
+      editData: {} ,
   };
       
   componentDidMount(){
@@ -53,6 +54,17 @@ class MeetingTable extends Component {
     })
   };
 
+  copyShareUrl = (lineData) =>{
+    const {href} = window.location;
+    const index = href.lastIndexOf('/')
+    const prefixUrl = href.substring(0, index);
+    return `${prefixUrl}/room?id=${lineData.id}&pwd=${lineData.password}`
+  }
+
+  shareButtonHandler = () =>{
+    message.success('copy success!');
+  }
+
   editButtonHandler = (lineData) =>{
     const { dispatch } =  this.props;
     this.setState({
@@ -63,10 +75,12 @@ class MeetingTable extends Component {
       payload: true // 开启
     })
   };
+
   gotoButtonHandler = (lineData) =>{
     // 跳转到 新页面
-    redirect.push(`/meetingroom?id=${lineData.id}&&pwd=${lineData.password}`)
+    redirect.push(`/room?id=${lineData.id}&pwd=${lineData.password}`)
   }
+
   editPageButtonOk = e => {
     e.preventDefault();
     this.editformRef.handleSubmit()// 调用下级组件的方法
@@ -125,6 +139,7 @@ class MeetingTable extends Component {
   }
     
   render(){
+    
     // 显示meeting record的状态，如果要看 现在是 0:active, 1:processing, 2:end, suspended:3 ，这个需要自己实时去算
     // 0:active, 1:processing, 2:end, suspended:3  
     const statusList = (() => [
@@ -137,8 +152,12 @@ class MeetingTable extends Component {
     ])();
     const meetingColumns = [
       {
-          title: 'Id',
+          title: 'RoomId',
           dataIndex: 'id',
+      },
+      {
+        title: 'Password',
+        dataIndex: 'password',
       },
       {
         title: 'Subject',
@@ -155,10 +174,6 @@ class MeetingTable extends Component {
       {
         title: 'Attendance',
         dataIndex: 'maxMember',
-      },
-      {
-        title: 'Password',
-        dataIndex: 'password',
       },
       {
         title: 'AdminPassword',
@@ -183,7 +198,13 @@ class MeetingTable extends Component {
         render: (_, record) =>
         (
           <>
-            <Button type="link" onClick={()=>this.editButtonHandler(record)}>Edit</Button>
+            <CopyToClipboard
+              text={this.copyShareUrl(record)}	// 点击复制时的内容,可自行设置或传入
+              onCopy={this.shareButtonHandler}
+            >
+              <Button type="link" key="copy">Share</Button>
+            </CopyToClipboard>
+            <Divider type="vertical" />
             <Button type="link" onClick={()=>this.gotoButtonHandler(record)}>Goto</Button>
             <Divider type="vertical" />
             <Popconfirm title="Sure to delete?" onConfirm={() => this.deleteLine(record)}>
@@ -241,21 +262,22 @@ class MeetingTable extends Component {
         <>
           <Card className="qtl-card">
             <div className="custom-mb16">
-              <Button type='primary' icon="plus" style={{ lineHeight: '1.5' }} onClick={this.addButtonHandler}>新建会议</Button>
-              <Button type='primary' icon="delete" style={{ lineHeight: '1.5', marginLeft: '5px' }} onClick={this.batchDelete} disabled={!hasSelected}>批量删除</Button>
+              <Button type='primary' icon="plus" style={{ lineHeight: '1.5' }} onClick={this.addButtonHandler}>create meeting</Button>
+              {/* <Button type='primary' icon="delete" style={{ lineHeight: '1.5', marginLeft: '5px' }} onClick={this.batchDelete} disabled={!hasSelected}>批量删除</Button> */}
             </div>
             <QtlTable
               loading={meetingListFlag}
               dataSource={tableList}
               // scroll={{}}
+              // bordered
               columns={meetingColumns}
               pagination={paginationProps}
               onChange={this.tablePageChange}
-              rowSelection={rowSelection}
+              // rowSelection={rowSelection}
               size="middle"
             />
             <Modal
-              title="创建会议"
+              title="create meeting"
               visible={addModalVisible}
               onOk={this.addPageButtonOk}
               onCancel={this.addPageButtonCancel}
@@ -264,10 +286,10 @@ class MeetingTable extends Component {
               // bodyStyle={done ? { padding: '72px 0' } : { padding: '28px 0 0' }}
             >
               {/* <AddMeeting tempFunc={(form) => {this.addformRef = form}} /> */}
-              <AddMeeting wrappedComponentRef={(form) => {this.addformRef = form}} />
+              <CreateMeeting wrappedComponentRef={(form) => {this.addformRef = form}} />
             </Modal>
             <Modal
-              title="修改会议"
+              title="modify"
               visible={editModalVisible}
               onOk={this.editPageButtonOk}
               onCancel={this.editPageButtonCancel}

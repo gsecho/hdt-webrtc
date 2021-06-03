@@ -78,7 +78,7 @@ export function getTokenAudience(){
 // ***************************** CLICK_TIME ***************************** //
 // 存的是秒值
 export function getClickTime(){
-    return localStorage.getItem(CLICK_SENOND_STING);// 没有token返回null
+    return localStorage.getItem(CLICK_SENOND_STING);
   }
 export function setClickTime(value){
   localStorage.setItem(CLICK_SENOND_STING, value)
@@ -107,21 +107,30 @@ export function needRefreshToken(){
     const curSecond = getCurrentSecond()
     const exp = getTokenExpiredSecond()
     const clickTime = getClickTime()
-    if(clickTime === ERROR_VALUE){
+    // 没有clickTime，退出
+    if(clickTime === ERROR_VALUE){ 
         return 2;
     }
-      // 读取最后一次操作
-      const dtOp = curSecond - clickTime
-      if(dtOp > opTimeOut){
-        return 2;
-      }
+    // 读取最后一次操作，超过 opTimeOut 则退出
+    const dtOp = curSecond - parseInt(clickTime, 10)
+    if(dtOp > opTimeOut){
+      return 2;
+    }
 
-      const dt = exp - curSecond;
-      if((dt >= 0) && (dt <= refreshTimeDt)){// （单位s）在规定时间内,请求刷新token
-          // request
-          return 0;
-      }
-      return 1;
+    /**
+     * 接下去是token相关
+    */ 
+    // token超时
+    if(curSecond > exp){
+      return 2;
+    }
+
+    const dt = exp - curSecond;
+    if(dt <= (refreshTimeDt)){// （单位s）在规定时间内,请求刷新token(目前的短于规定)
+        // request
+        return 0;
+    }
+    return 1;
 }
 
 export function removeTokenAuthority(){

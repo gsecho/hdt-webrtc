@@ -8,8 +8,9 @@ server:
 logging:
   level:
     root: INFO
-  #    com.quantil: DEBUG
-  root:
+    com.quantil.webrtc: DEBUG
+    com.alibaba.druid: DEBUG
+  root:  # 作用于 logback-spring.xml配置文件
     appender: RollingFile
     path: .
 

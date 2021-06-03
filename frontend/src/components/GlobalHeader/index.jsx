@@ -44,7 +44,8 @@ class GlobalHeader extends PureComponent {
         dispatch({
             type: 'meetingEnter/setEnterMeeting',
             payload: {
-                enterRoomVisible : true
+                enterRoomVisible : true,
+                enterAuthFailFlag: false,
             }
         })
     };
@@ -81,10 +82,10 @@ class GlobalHeader extends PureComponent {
                 </span>
                 <img src={hdtLogo} className="custom-top-logo" />
                 <span style={{color:'#000000', display: 'inline-block', width: '50px', textAlign: 'center', fontSize: '22px' }}>RTC</span>
-                <Button type="link" icon="plus" sytle={{ marginLeft: '10px'}} onClick={this.enterRoomHander}>加入会议</Button>
+                <Button type="link" icon="plus" sytle={{ marginLeft: '10px'}} onClick={this.enterRoomHander}>enter meeting</Button>
                 <RightContent {...this.props} /> 
                 <Modal
-                    title="加入会议"
+                    title="enter meeting"
                     visible={enterRoomVisible}
                     onOk={this.enterRoomOk}
                     onCancel={this.enterRoomCannel}

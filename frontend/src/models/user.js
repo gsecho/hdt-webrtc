@@ -6,8 +6,6 @@ import * as user from '@/services/user';
 import * as redirect from '@/utils/redirect'
 import * as utils from '@/utils/utils'
 import * as tokenUtils from '@/utils/tokenUtils'
-import { setAuthority } from '@/utils/Authority';
-// import * as tokenUtils from '@/utils/tokenUtils'
 import { reloadAuthorized } from '@/utils/Authorized';
 import lodash from 'lodash'
 import backend from '../../config/backend'
@@ -24,7 +22,10 @@ export default {
         userInfo: {},
         status: undefined,
         authFailureDisplay: 'none', // 认证错误信息 显示/隐藏
-        
+        // user manager 的信息{ total,list }
+        users: {pageNum: 1, pageSize: 10, total: 0, list:[]},// page信息放这里是因为，增删改查需要刷新页面
+        createVisible: false,
+        editVisible: false,
         // // 上一个跳转路由
         // lastRouter: '',
         // // 下一跳转路由
@@ -37,12 +38,16 @@ export default {
             const response = yield call(user.reqUserLogin, payload);
             // Login successfully
             if (response.httpCode === 200) {
+              put({
+                type: 'setAuthDisplay',
+                payload: false
+              })
+              
               const {body: { content: {token, authority} } } = response
               if(!lodash.isUndefined(token)){
                 tokenUtils.tokenAuthorityRefresh(token, authority);
                 reloadAuthorized();// 目录控制
               }
-              
               const urlParams = new URL(window.location.href);
               const service = utils.getPageQuery(urlParams.search);
             //   const { service } = params;
@@ -116,6 +121,55 @@ export default {
             tokenUtils.removeTokenAuthority()
             redirect.logoutPage()
         },
+        /**
+         * payload: pageSize, pageNum
+         */
+        *getUserlist({ payload }, { put, call }) {
+          const userResponse = yield call(user.requestUserList, payload);
+          // console.log(userResponse);
+          if (userResponse.httpCode === 200) {
+            const {body: { content }} = userResponse
+            // content: { total,list }
+            yield put({
+              type: 'setUsers',
+              payload: content, 
+            });
+          }
+        },
+        /**
+         * payload: { id }
+         */
+        *deleteUser({ payload }, { select, put, call }) {
+          const userResponse = yield call(user.deleteUser, payload);
+          if (userResponse.httpCode === 200) {
+            const {pageNum, pageSize} = yield select(state =>state.user.users)
+            yield put({
+              type: 'getUserlist',
+              payload: {
+                'pageNum': pageNum,
+                'pageSize': pageSize
+              },
+            });
+          }
+        },
+        *createUser({ payload }, { select, put, call }) {
+          const userResponse = yield call(user.createUser, payload);
+          console.log(userResponse);
+          if (userResponse.httpCode === 200) {
+            yield put({
+              type: 'setCreateUserVisible',
+              payload: false // 隐藏
+            });
+            const {pageNum, pageSize} = yield select(state =>state.user.users)
+            yield put({
+              type: 'getUserlist',
+              payload: {
+                'pageNum': pageNum,
+                'pageSize': pageSize
+              },
+            });
+          }
+        }
     },
 
     reducers: {
@@ -131,7 +185,14 @@ export default {
               ...state,
               userInfo: {}
             };
-          },
+        },
+        setUsers(state, { payload }) {
+          // 登出 清除用户信息
+          return {
+            ...state,
+            users: payload
+          };
+        },
         /**
          * 设置/清除 认证错误信息显示标志
          * @param {s} state 
@@ -143,5 +204,17 @@ export default {
                 authFailureDisplay: payload
             }
         },
+        setCreateUserVisible(state, {payload}){
+          return {
+            ...state,
+            createVisible: payload
+          }
+        },
+        setEditUserVisible(state, {payload}){
+          return {
+            ...state,
+            editVisible: payload
+          }
+        }
     },
 };

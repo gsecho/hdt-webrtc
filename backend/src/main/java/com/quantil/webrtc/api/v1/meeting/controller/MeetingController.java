@@ -7,10 +7,14 @@ import com.quantil.webrtc.api.v1.meeting.bean.RtcMeetingSearchReq;
 import com.quantil.webrtc.api.v1.meeting.dao.RtcMeetingItemDao;
 import com.quantil.webrtc.core.bean.base.ResponseResult;
 import com.quantil.webrtc.core.constant.CoreConstants;
+import com.quantil.webrtc.core.security.SecurityUtils;
+import com.quantil.webrtc.core.security.auth.CustomUserDetails;
 import com.quantil.webrtc.core.utils.ResponseUtils;
 import com.quantil.webrtc.core.utils.ToolUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,6 +36,7 @@ public class MeetingController {
     @Autowired
     RtcMeetingItemDao meetingItemDao;
 
+
     /**
      * 创建会议室
      * @param item
@@ -43,8 +48,7 @@ public class MeetingController {
         item.setPassword(UUID.randomUUID().toString());
         item.setAdminPassword(UUID.randomUUID().toString().substring(0, 8));
         item.setStatus(CoreConstants.DB_RECORD_ENABLE);
-        String userName = (String)request.getAttribute(CoreConstants.USER_NAME);
-        item.setCreateBy(userName);
+        item.setCreateBy(SecurityUtils.getPrincipalName());
         int resCode = meetingItemDao.insert(item);
         log.info("createItem resCode:%d", resCode);
         return ResponseUtils.formatOkResponse();
@@ -53,17 +57,16 @@ public class MeetingController {
     /**
      * 检索创建的会议
      * @param searchReq
-     * @param request
      * @return
      */
     @PostMapping("/search")
-    public ResponseResult searchList(@Validated @RequestBody RtcMeetingSearchReq searchReq, HttpServletRequest request){
-        String userName = (String)request.getAttribute(CoreConstants.USER_NAME);
-        searchReq.setCreateBy(userName);
+    public ResponseResult searchList(@Validated @RequestBody RtcMeetingSearchReq searchReq){
+        searchReq.setCreateBy(SecurityUtils.getPrincipalName());
         PageHelper.startPage(searchReq.getPageNum(), searchReq.getPageSize());
-        HashMap<String, Object> map = new HashMap<>();
+        searchReq.setCreateBy(SecurityUtils.getPrincipalName());
         PageInfo<RtcMeetingItem>pages =  new PageInfo(meetingItemDao.selectByStartTime(searchReq));
 
+        HashMap<String, Object> map = new HashMap<>();
         map.put("total", pages.getTotal());
         map.put("list", pages.getList());
         return ResponseUtils.formatOkResponse(map);
@@ -72,13 +75,11 @@ public class MeetingController {
     /**
      * 更新会议室信息
      * @param item
-     * @param request
      * @return
      */
     @PostMapping("/update")
-    public ResponseResult updateItem(@RequestBody RtcMeetingItem item, HttpServletRequest request){
-        String userName = (String)request.getAttribute(CoreConstants.USER_NAME);
-        item.setUpdateBy(userName);
+    public ResponseResult updateItem(@RequestBody RtcMeetingItem item){
+        item.setUpdateBy(SecurityUtils.getPrincipalName());
         meetingItemDao.updateByPrimaryKey(item);
         return ResponseUtils.formatOkResponse();
     }
@@ -86,14 +87,12 @@ public class MeetingController {
     /**
      * 删除已创建的会议
      * @param id
-     * @param request
      * @return
      */
     @DeleteMapping("/delete/{id}")
-    public ResponseResult updateItem(@PathVariable("id") Integer id, HttpServletRequest request){
-        String userName = (String)request.getAttribute(CoreConstants.USER_NAME);
+    public ResponseResult updateItem(@PathVariable("id") Long id){
         RtcMeetingItem rtcMeetingItem = new RtcMeetingItem();
-        rtcMeetingItem.setUpdateBy(userName);
+        rtcMeetingItem.setUpdateBy(SecurityUtils.getPrincipalName());
         rtcMeetingItem.setId(id);
         rtcMeetingItem.setStatus(CoreConstants.DB_RECORD_DELETE);
         meetingItemDao.updateByPrimaryKey(rtcMeetingItem);
@@ -109,5 +108,20 @@ public class MeetingController {
     public ResponseResult getClientIp(HttpServletRequest request){
         String clientIp = ToolUtils.getClientIP(request);
         return ResponseUtils.formatOkResponse(clientIp);
+    }
+
+    /**
+     * 确认 roomId和password是否正确
+     * @param reqItem
+     * @return
+     */
+    @PostMapping("/authenticate")
+    public ResponseResult authenticate(@RequestBody RtcMeetingItem reqItem){
+        RtcMeetingItem item = meetingItemDao.selectByPrimaryKey(reqItem.getId());
+        if ((item != null) && (item.getPassword().equals(reqItem.getPassword()))) {
+            return ResponseUtils.formatOkResponse();
+        }else{
+            return ResponseUtils.formatBadResponse();
+        }
     }
 }
