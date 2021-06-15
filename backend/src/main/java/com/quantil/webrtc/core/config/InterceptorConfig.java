@@ -58,7 +58,6 @@ public class InterceptorConfig implements WebMvcConfigurer {
         fastJsonConfig.setSerializerFeatures(SerializerFeature.DisableCircularReferenceDetect);
         fastJsonConfig.setDateFormat(CoreConstants.DATE_FORMAT);
         List<MediaType> mediaTypes = new ArrayList<>();
-//        mediaTypes.add(new MediaType("application", "*+json"));
         mediaTypes.add(MediaType.APPLICATION_JSON);
         fastJsonHttpMessageConverter.setSupportedMediaTypes(mediaTypes);
         fastJsonHttpMessageConverter.setFastJsonConfig(fastJsonConfig);

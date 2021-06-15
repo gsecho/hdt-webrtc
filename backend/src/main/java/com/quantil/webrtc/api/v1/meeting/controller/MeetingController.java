@@ -8,13 +8,11 @@ import com.quantil.webrtc.api.v1.meeting.dao.RtcMeetingItemDao;
 import com.quantil.webrtc.core.bean.base.ResponseResult;
 import com.quantil.webrtc.core.constant.CoreConstants;
 import com.quantil.webrtc.core.security.SecurityUtils;
-import com.quantil.webrtc.core.security.auth.CustomUserDetails;
 import com.quantil.webrtc.core.utils.ResponseUtils;
 import com.quantil.webrtc.core.utils.ToolUtils;
+import com.quantil.webrtc.signal.MeetingRoomService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -35,7 +33,8 @@ public class MeetingController {
     // 因为这个controller基本上没什么数据处理，所以没有再创建service层
     @Autowired
     RtcMeetingItemDao meetingItemDao;
-
+    @Autowired
+    MeetingRoomService meetingRoomService;
 
     /**
      * 创建会议室
@@ -124,4 +123,10 @@ public class MeetingController {
             return ResponseUtils.formatBadResponse();
         }
     }
+
+    @GetMapping("/room-info/{id}")
+    public ResponseResult getRoomInfo(@PathVariable("id") String id){
+        return ResponseUtils.formatOkResponse(meetingRoomService.getRoomInfo(id));
+    }
+
 }

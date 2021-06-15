@@ -5,17 +5,13 @@
     <id column="id" jdbcType="BIGINT" property="id" />
     <result column="username" jdbcType="VARCHAR" property="username" />
     <result column="password" jdbcType="VARCHAR" property="password" />
-    <result column="salt" jdbcType="VARCHAR" property="salt" />
     <result column="status" jdbcType="INTEGER" property="status" />
     <result column="create_dt" jdbcType="TIMESTAMP" property="createDt" />
+    <result column="create_by" jdbcType="VARCHAR" property="createBy" />
     <result column="update_dt" jdbcType="TIMESTAMP" property="updateDt" />
+    <result column="update_by" jdbcType="VARCHAR" property="updateBy" />
     <result column="remark" jdbcType="VARCHAR" property="remark" />
   </resultMap>
-
-  <!--<sql id="AllParams">-->
-      <!--id, username, password, salt, status, create_dt, update_dt, remark -->
-  <!--</sql>-->
-
   <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
     delete from rtc_user
     where id = #{id,jdbcType=BIGINT}
@@ -24,38 +20,42 @@
     <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Long">
       SELECT LAST_INSERT_ID()
     </selectKey>
-    insert into rtc_user (username, password, salt,
-      status, create_dt, update_dt,
-      remark)
-    values (#{username,jdbcType=VARCHAR}, #{password,jdbcType=VARCHAR}, #{salt,jdbcType=VARCHAR},
-      #{status,jdbcType=INTEGER}, #{createDt,jdbcType=TIMESTAMP}, #{updateDt,jdbcType=TIMESTAMP},
-      #{remark,jdbcType=VARCHAR})
+    insert into rtc_user (username, password, status, 
+      create_dt, create_by, update_dt, 
+      update_by, remark)
+    values (#{username,jdbcType=VARCHAR}, #{password,jdbcType=VARCHAR}, #{status,jdbcType=INTEGER}, 
+      #{createDt,jdbcType=TIMESTAMP}, #{createBy,jdbcType=VARCHAR}, #{updateDt,jdbcType=TIMESTAMP}, 
+      #{updateBy,jdbcType=VARCHAR}, #{remark,jdbcType=VARCHAR})
   </insert>
   <update id="updateByPrimaryKey" parameterType="com.quantil.webrtc.core.bean.db.RtcUser">
     update rtc_user
     set username = #{username,jdbcType=VARCHAR},
       password = #{password,jdbcType=VARCHAR},
-      salt = #{salt,jdbcType=VARCHAR},
       status = #{status,jdbcType=INTEGER},
       create_dt = #{createDt,jdbcType=TIMESTAMP},
+      create_by = #{createBy,jdbcType=VARCHAR},
       update_dt = #{updateDt,jdbcType=TIMESTAMP},
+      update_by = #{updateBy,jdbcType=VARCHAR},
       remark = #{remark,jdbcType=VARCHAR}
     where id = #{id,jdbcType=BIGINT}
   </update>
   <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
-    select id, username, password, salt, status, create_dt, update_dt, remark
+    select id, username, password, status, create_dt, create_by, update_dt, update_by, 
+    remark
     from rtc_user
     where id = #{id,jdbcType=BIGINT}
   </select>
-
   <select id="selectByUsername" parameterType="java.lang.String" resultMap="BaseResultMap">
-    select id, username, password, salt, status, create_dt, update_dt, remark
+    select id, username, password, status, create_dt, create_by, update_dt, update_by,
+    remark
     from rtc_user
-    where username = #{username,jdbcType=VARCHAR}
+    where username = #{username,jdbcType=VARCHAR} and status = 0
   </select>
 
   <select id="selectAll" resultMap="BaseResultMap">
-    select id, username, password, salt, status, create_dt, update_dt, remark
+    select id, username, password, status, create_dt, create_by, update_dt, update_by, 
+    remark
     from rtc_user
+    where status = 0
   </select>
 </mapper>

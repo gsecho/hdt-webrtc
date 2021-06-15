@@ -1,5 +1,6 @@
 package com.quantil.webrtc.core.security.xss;
 
+import com.quantil.webrtc.core.constant.CoreConstants;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import javax.servlet.ReadListener;
@@ -76,7 +77,7 @@ public class XssRequestWrapper extends HttpServletRequestWrapper {
 
         @Override
         public void setReadListener(ReadListener readListener) {
-
+            // do nothing
         }
     }
 
@@ -84,7 +85,7 @@ public class XssRequestWrapper extends HttpServletRequestWrapper {
     public String[] getParameterValues(String parameter) {
         String[] values = super.getParameterValues(parameter);
         if (values == null) {
-            return null;
+            return CoreConstants.STRING_ARRAY_EMPTY;
         }
         int count = values.length;
         String[] encodedValues = new String[count];

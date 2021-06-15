@@ -21,7 +21,6 @@ public class StunHttpService {
     private RestTemplate restTemplate;
 
     public StunData post(StunData data){
-//        ResponseEntity<StunData> responseEntity = restTemplate.postForEntity(url, data, StunData.class);
         ResponseEntity<String> responseEntity = restTemplate.postForEntity(url, data, String.class);
         String abc = responseEntity.getBody();
         return JSON.parseObject(abc, StunData.class);

@@ -3,7 +3,6 @@ CREATE TABLE `rtc_user` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `username` varchar(128) NOT NULL,  # 注意:name是保留字
   `password` varchar(128) DEFAULT NULL,
-  `salt` varchar(200) DEFAULT NULL,
   `status` int(11) DEFAULT NULL,
   `create_dt` datetime DEFAULT NULL,
   `create_by` varchar(128) DEFAULT NULL,

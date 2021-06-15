@@ -13,6 +13,7 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import javax.sql.DataSource;
+import java.io.IOException;
 
 /**
  * 数据配置
@@ -32,7 +33,7 @@ public class DruidDBConfig {
 
     @Bean(name = "sysSqlSessionFactory")
     public SqlSessionFactory getSqlSessionFactory(@Qualifier("sysDataSource") DataSource dataSource)
-            throws Exception {
+            throws IOException, Exception {
         //这里自定义了sysSqlSessionFactory是为了支持多数据源
         final SqlSessionFactoryBean sessionFactory = new SqlSessionFactoryBean();
         sessionFactory.setDataSource(dataSource);

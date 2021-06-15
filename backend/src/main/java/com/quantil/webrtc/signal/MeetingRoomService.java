@@ -1,6 +1,5 @@
 package com.quantil.webrtc.signal;
 
-import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.quantil.webrtc.api.v1.meeting.bean.RtcMeetingItem;
 import com.quantil.webrtc.api.v1.meeting.dao.RtcMeetingItemDao;
@@ -12,17 +11,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
-
-import java.security.Principal;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -53,7 +46,47 @@ public class MeetingRoomService {
         webSocketResponse.setContent(content);
         return webSocketResponse;
     }
+    public boolean connectMeetingRoomHandler(String roomIdString, RtcMeetingItem meetingItem, WebSocketUserPrincipal userPrincipal) {
+        MeetingRoom meetingRoom = roomMap.get(roomIdString);
+        if (meetingRoom == null) {// room创建
+            meetingRoom = new MeetingRoom();// 新建meetingRoom信息
+            meetingRoom.setRtcMeetingItem(meetingItem);
+        }
+        List<MeetingMember> roomMembers = meetingRoom.getMembers();
+        Integer emptyIndex = null;
+        for (int i = 0; i < roomMembers.size(); i++) {
+            MeetingMember meetingMember = roomMembers.get(i);
+            if (meetingMember == null) {
+                if(emptyIndex == null){
+                    emptyIndex = i;
+                }
+                continue;
+            }
+            if (meetingMember.getUserPrincipal().getUsername().equals(userPrincipal.getUsername())) { // 重复则替换
+                meetingMember.getUserPrincipal().setEnable(false);// 先设置为disable
+                deleteQueue.add(meetingMember.getUserPrincipal());
 
+                userPrincipal.setIndex(i);
+                meetingMember.setUserPrincipal(userPrincipal);  // 替换新的
+                return true;
+            }
+        }
+
+        if(roomMembers.size() >= meetingRoom.getRtcMeetingItem().getMaxMember()){
+            return false;
+        }
+        MeetingMember member = new MeetingMember();
+        member.setUserPrincipal(userPrincipal);
+        if(emptyIndex == null){
+            userPrincipal.setIndex(roomMembers.size());
+            roomMembers.add(member);
+        }else{
+            userPrincipal.setIndex(emptyIndex);
+            roomMembers.set(emptyIndex, member);
+        }
+        roomMap.put(roomIdString, meetingRoom);
+        return true;
+    }
     /**
      * websocket连接处理，携带参数token，roomId，password，还有randomId
      *  1. token校验，room校验
@@ -82,46 +115,46 @@ public class MeetingRoomService {
 
                     stompHeaderAccessor.setUser(userPrincipal);
                     simpMessageHeaderAccessor.setUser(userPrincipal);
-
-                    MeetingRoom meetingRoom = roomMap.get(roomIdString);
-                    if (meetingRoom == null) {// room创建
-                        meetingRoom = new MeetingRoom();// 新建meetingRoom信息
-                        meetingRoom.setRtcMeetingItem(meetingItem);
-                    }
-                    List<MeetingMember> roomMembers = meetingRoom.getMembers();
-                    Integer emptyIndex = null;
-                    for (int i = 0; i < roomMembers.size(); i++) {
-                        MeetingMember meetingMember = roomMembers.get(i);
-                        if (meetingMember == null) {
-                            if(emptyIndex == null){
-                                emptyIndex = i;
-                            }
-                            continue;
-                        }
-                        if (meetingMember.getUserPrincipal().getUsername().equals(userName)) { // 重复则替换
-                            meetingMember.getUserPrincipal().setEnable(false);// 先设置为disable
-                            deleteQueue.add(meetingMember.getUserPrincipal());
-
-                            userPrincipal.setIndex(i);
-                            meetingMember.setUserPrincipal(userPrincipal);  // 替换新的
-                            return true;
-                        }
-                    }
-
-                    if(roomMembers.size() >= meetingRoom.getRtcMeetingItem().getMaxMember()){
-                        return false;
-                    }
-                    MeetingMember member = new MeetingMember();
-                    member.setUserPrincipal(userPrincipal);
-                    if(emptyIndex == null){
-                        userPrincipal.setIndex(roomMembers.size());
-                        roomMembers.add(member);
-                    }else{
-                        userPrincipal.setIndex(emptyIndex);
-                        roomMembers.set(emptyIndex, member);
-                    }
-                    roomMap.put(roomIdString, meetingRoom);
-                    return true;
+                    return connectMeetingRoomHandler(roomIdString, meetingItem, userPrincipal);
+//                    MeetingRoom meetingRoom = roomMap.get(roomIdString);
+//                    if (meetingRoom == null) {// room创建
+//                        meetingRoom = new MeetingRoom();// 新建meetingRoom信息
+//                        meetingRoom.setRtcMeetingItem(meetingItem);
+//                    }
+//                    List<MeetingMember> roomMembers = meetingRoom.getMembers();
+//                    Integer emptyIndex = null;
+//                    for (int i = 0; i < roomMembers.size(); i++) {
+//                        MeetingMember meetingMember = roomMembers.get(i);
+//                        if (meetingMember == null) {
+//                            if(emptyIndex == null){
+//                                emptyIndex = i;
+//                            }
+//                            continue;
+//                        }
+//                        if (meetingMember.getUserPrincipal().getUsername().equals(userName)) { // 重复则替换
+//                            meetingMember.getUserPrincipal().setEnable(false);// 先设置为disable
+//                            deleteQueue.add(meetingMember.getUserPrincipal());
+//
+//                            userPrincipal.setIndex(i);
+//                            meetingMember.setUserPrincipal(userPrincipal);  // 替换新的
+//                            return true;
+//                        }
+//                    }
+//
+//                    if(roomMembers.size() >= meetingRoom.getRtcMeetingItem().getMaxMember()){
+//                        return false;
+//                    }
+//                    MeetingMember member = new MeetingMember();
+//                    member.setUserPrincipal(userPrincipal);
+//                    if(emptyIndex == null){
+//                        userPrincipal.setIndex(roomMembers.size());
+//                        roomMembers.add(member);
+//                    }else{
+//                        userPrincipal.setIndex(emptyIndex);
+//                        roomMembers.set(emptyIndex, member);
+//                    }
+//                    roomMap.put(roomIdString, meetingRoom);
+//                    return true;
                 }else{
                     throw new RuntimeException();// 这样 stomp客户端才会收到连接失败消息
                 }
@@ -148,8 +181,7 @@ public class MeetingRoomService {
             MeetingMember member = meetingRoom.getMembers().get(i);
             if(member == null){
                 continue;
-            }
-            if (member.getUserPrincipal().getUserId().equals(userPrincipal.getUserId())) {
+            }else if (member.getUserPrincipal().getUserId().equals(userPrincipal.getUserId())) {
                 meetingRoom.getMembers().set(i, null);
                 break;
             }
@@ -198,11 +230,10 @@ public class MeetingRoomService {
         }
 
     }
-    public void candidateHandler(WebSocketUserPrincipal userPrincipal, WebSocketRequestGenerator<Candidate> request){
+    public void candidateHandler(WebSocketUserPrincipal userPrincipal, WebSocketRequestGenerator<CandidateMessage> request){
 //        因为转换的时候只转成map // TODO 这个有空时候研究下（MappingFastJsonMessageConverter）
-        Candidate candidate = JSONObject.parseObject(JSONObject.toJSONString(request.getContent()), Candidate.class);
-//        Candidate candidate = request.getContent();
-        String[] array = candidate.getCandidate().split("\\s+");
+        CandidateMessage candidateMessage = JSONObject.parseObject(JSONObject.toJSONString(request.getContent()), CandidateMessage.class);
+        String[] array = candidateMessage.getCandidate().split("\\s+");
         CandidateBody candidateBody = new CandidateBody(array);
         if (!array[WebSocketConstants.CANDIDATE_PROTOCOL].equalsIgnoreCase(WebSocketConstants.UDP_PROTOCOL)) {
             return;
@@ -237,39 +268,36 @@ public class MeetingRoomService {
                     stunData.setUser(meetingRoom.getRtcMeetingItem().getCreateBy());
                     StunData stunDataRes = stunHttpService.post(stunData);
                     // 应答给发送方
-                    WebSocketRequestGenerator<Candidate> resFrom = new WebSocketRequestGenerator<Candidate>();
+                    WebSocketRequestGenerator<CandidateMessage> resFrom = new WebSocketRequestGenerator<>();
                     resFrom.setFrom(request.getTo());
                     resFrom.setTo(request.getFrom());
                     resFrom.setType(WebSocketConstants.CMD_CANDIDATE);
-                    Candidate candidateResFrom = new Candidate();
-                    BeanUtils.copyProperties(candidate, candidateResFrom);
+                    CandidateMessage candidateMessageResFrom = new CandidateMessage();
+                    BeanUtils.copyProperties(candidateMessage, candidateMessageResFrom);
                     array[WebSocketConstants.CANDIDATE_IP] = stunDataRes.getIp1();
                     array[WebSocketConstants.CANDIDATE_PORT] = stunDataRes.getPort1().toString();
                     array[WebSocketConstants.CANDIDATE_UFRAG_VALUE] = candidateBody2.getUfragValue();
                     String res1 = StringUtils.join(array, " ");
-                    candidateResFrom.setCandidate(res1);
-                    resFrom.setContent(candidateResFrom);
+                    candidateMessageResFrom.setCandidate(res1);
+                    resFrom.setContent(candidateMessageResFrom);
                     simpMessagingTemplate.convertAndSendToUser(request.getFrom(), WebSocketConstants.USER_CHANNEL, resFrom);
                     // 应答给接收方
-                    WebSocketRequestGenerator<Candidate> resTo = new WebSocketRequestGenerator<Candidate>();
+                    WebSocketRequestGenerator<CandidateMessage> resTo = new WebSocketRequestGenerator<>();
                     resTo.setFrom(request.getFrom());
                     resTo.setTo(request.getTo());
                     resTo.setType(WebSocketConstants.CMD_CANDIDATE);
-                    Candidate candidateResTo = new Candidate();
-                    BeanUtils.copyProperties(candidate, candidateResTo);
+                    CandidateMessage candidateMessageResTo = new CandidateMessage();
+                    BeanUtils.copyProperties(candidateMessage, candidateMessageResTo);
                     array[WebSocketConstants.CANDIDATE_IP] = stunDataRes.getIp2();
                     array[WebSocketConstants.CANDIDATE_PORT] = stunDataRes.getPort2().toString();
                     array[WebSocketConstants.CANDIDATE_UFRAG_VALUE] = candidateBody1.getUfragValue();
                     String res2 = StringUtils.join(array, " ");
-                    candidateResTo.setCandidate(res2);
-                    resTo.setContent(candidateResTo);
+                    candidateMessageResTo.setCandidate(res2);
+                    resTo.setContent(candidateMessageResTo);
                     simpMessagingTemplate.convertAndSendToUser(request.getTo(), WebSocketConstants.USER_CHANNEL, resTo);
                 }
             }
         }
-
-
-
     }
 
     public void meetingRoomInfoHandler(WebSocketUserPrincipal userPrincipal){
@@ -304,4 +332,8 @@ public class MeetingRoomService {
         simpMessagingTemplate.convertAndSendToUser(userPrincipal.getName(), WebSocketConstants.USER_CHANNEL, payload);
     }
 
+    public MeetingRoom getRoomInfo(String id){
+        MeetingRoom meetingRoom = roomMap.get( id );
+        return meetingRoom;
+    }
 }

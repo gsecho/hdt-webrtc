@@ -19,10 +19,16 @@ public class RestApiException extends RuntimeException {
         yaml.setResources(new ClassPathResource("/ErrorCode.yml"));
         errorProperties = yaml.getObject();
     }
+    private final Integer statusCode;
+    private final String errorCode;
+    private final String description;
 
-    private Integer statusCode = 500;
-    private String errorCode;
-    private String description = "We encountered an internal error. Please try again.";
+    public RestApiException(String errorCode) {
+        super(errorCode);
+        this.errorCode = errorCode;
+        this.description = getErrorCodeDesc(this.errorCode);
+        this.statusCode = getErrorCodeStatus(this.errorCode);
+    }
 
     public RestApiException(String errorCode, String description) {
         super(errorCode);
@@ -36,13 +42,6 @@ public class RestApiException extends RuntimeException {
         this.errorCode = errorCode;
         this.description = description;
         this.statusCode = statusCode;
-    }
-
-    public RestApiException(String errorCode) {
-        super(errorCode);
-        this.errorCode = errorCode;
-        this.description = getErrorCodeDesc(this.errorCode);
-        this.statusCode = getErrorCodeStatus(this.errorCode);
     }
 
     public ResponseResult getErrMsgMap() {

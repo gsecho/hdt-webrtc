@@ -15,10 +15,13 @@ import com.quantil.webrtc.core.utils.ToolUtils;
 import org.apache.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
@@ -34,9 +37,11 @@ import java.util.List;
  * 登录成功之后走此类进行鉴权操作
  */
 public class CustomAuthorizationFilter extends BasicAuthenticationFilter {
+    AntPathRequestMatcher antPathRequestMatcher;
 
     public CustomAuthorizationFilter(AuthenticationManager authenticationManager) {
         super(authenticationManager);
+        antPathRequestMatcher = new AntPathRequestMatcher("/v*/user/refresh-token");
     }
 
     @Override
@@ -44,20 +49,19 @@ public class CustomAuthorizationFilter extends BasicAuthenticationFilter {
                                     HttpServletResponse resp,
                                     FilterChain chain) throws IOException, ServletException {
 
-
-
         String tokenHeader = req.getHeader(CoreConstants.HEADER_TOKEN);
         // 如果请求头中没有Authorization信息则直接放行了,如果没有权限等下会被拦截的
         if (tokenHeader == null) {
             chain.doFilter(req, resp);
             return;
         }
+        // TODO 这里可以改成从redis中获取
         // 每次请求都需要解析，然后转成对应的信息，存入
         UsernamePasswordAuthenticationToken userToken = JwtUtils.verify(tokenHeader);
         if (userToken != null) {
-            // 如果请求头中有token，则进行解析，并且设置认证信息
+            // 如果请求头中有token，则进行解析，存入上下文
             SecurityContextHolder.getContext().setAuthentication(userToken);
-            if (req.getServletPath().equalsIgnoreCase("/v1/user/refresh-token")) {
+            if (antPathRequestMatcher.matcher(req).isMatch()) {
                 // 重新签发token
                 CustomUserDetails customUserDetails = (CustomUserDetails)userToken.getPrincipal();
                 String token = JwtUtils.createToken(customUserDetails.getUsername(), customUserDetails.getUserId().toString(), ToolUtils.getUserRoles(customUserDetails.getAuthorities()));

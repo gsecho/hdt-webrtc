@@ -20,7 +20,7 @@ import java.util.UUID;
 public class MdcInterceptor implements HandlerInterceptor {
 
     private static final Logger logger = LoggerFactory.getLogger(MdcInterceptor.class);
-    private final static String REQUEST_ID = "REQUEST_ID";
+    private static final String REQUEST_ID = "REQUEST_ID";
 
     @Override
     public boolean preHandle(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, Object o) throws Exception {
@@ -29,7 +29,7 @@ public class MdcInterceptor implements HandlerInterceptor {
         String requestInfo = "API Request Content:  ClientIP {%s}, Header {%s}, Url {%s}, Method {%s}";
         String clientIP = httpServletRequest.getRemoteAddr();
         Enumeration<String> headerNames = httpServletRequest.getHeaderNames();
-        StringBuffer headerInfo = new StringBuffer();
+        StringBuilder headerInfo = new StringBuilder();
         while (headerNames.hasMoreElements()) {
             String element = headerNames.nextElement();
             String header = httpServletRequest.getHeader(element);

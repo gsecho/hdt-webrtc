@@ -21,47 +21,46 @@ import javax.servlet.http.HttpServletRequest;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    private final static Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     private static final RestApiException NOT_FOUND_EXCEPTION =
-            new RestApiException(ErrorConstants.InvalidURI);
+            new RestApiException(ErrorConstants.INVALID_URI);
     private static final RestApiException INTERNAL_ERROR_EXCEPTION =
-            new RestApiException(ErrorConstants.InternalError);
+            new RestApiException(ErrorConstants.INTERNAL_ERROR);
 
     @ExceptionHandler(value = RestApiException.class)
     public ResponseEntity<ResponseResult> exceptionHandler(RestApiException e) {
         log.error("==============Global Exception ApiException handler:", e);
-        return new ResponseEntity<ResponseResult>(e.getErrMsgMap(), HttpStatus.valueOf(e
+        return new ResponseEntity<>(e.getErrMsgMap(), HttpStatus.valueOf(e
                 .getStatusCode()));
     }
 
     @ExceptionHandler(value = Exception.class)
-    public ResponseEntity<ResponseResult> defaultErrorHandler(HttpServletRequest req, Exception e)
-            throws Exception {
+    public ResponseEntity<ResponseResult> defaultErrorHandler(HttpServletRequest req, Exception e) {
         log.error("==============Global Exception default handler:", e);
         if (e instanceof org.springframework.web.servlet.NoHandlerFoundException) {
-            return new ResponseEntity<ResponseResult>(NOT_FOUND_EXCEPTION.getErrMsgMap(),
+            return new ResponseEntity<>(NOT_FOUND_EXCEPTION.getErrMsgMap(),
                     HttpStatus.NOT_FOUND);
         } else if (e instanceof org.springframework.web.bind.MethodArgumentNotValidException) {
             org.springframework.web.bind.MethodArgumentNotValidException ee = (org.springframework.web.bind.MethodArgumentNotValidException) e;
-            return new ResponseEntity<ResponseResult>(new RestApiException(
-                    ErrorConstants.InvalidArgument,
+            return new ResponseEntity<>(new RestApiException(
+                    ErrorConstants.INVALID_ARGUMENT,
                     getErrorMsg(ee)).getErrMsgMap(), HttpStatus.BAD_REQUEST);
         } else if (e instanceof RestApiException) {
             RestApiException ae = (RestApiException) e;
-            return new ResponseEntity<ResponseResult>(ae.getErrMsgMap(), HttpStatus.valueOf(ae
+            return new ResponseEntity<>(ae.getErrMsgMap(), HttpStatus.valueOf(ae
                     .getStatusCode()));
         } else {
-            return new ResponseEntity<ResponseResult>(INTERNAL_ERROR_EXCEPTION.getErrMsgMap(),
+            return new ResponseEntity<>(INTERNAL_ERROR_EXCEPTION.getErrMsgMap(),
                     HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
     private String getErrorMsg(org.springframework.web.bind.MethodArgumentNotValidException e) {
-        StringBuffer errorMesssage = new StringBuffer();
+        StringBuilder errorMessage = new StringBuilder();
         for (FieldError fieldError : e.getBindingResult().getFieldErrors()) {
-            errorMesssage.append(fieldError.getDefaultMessage());
+            errorMessage.append(fieldError.getDefaultMessage());
         }
-        return errorMesssage.toString();
+        return errorMessage.toString();
     }
 }

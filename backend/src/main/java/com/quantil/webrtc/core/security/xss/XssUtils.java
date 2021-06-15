@@ -17,11 +17,9 @@ public class XssUtils {
         if (value == null) {
             return null;
         }
-//        log.error(value);
         value = ESAPI.encoder()
                     .canonicalize(value)
                     .replaceAll("\0", "");
-//        log.error(value);
         return Jsoup.clean(value, Whitelist.none());
     }
 

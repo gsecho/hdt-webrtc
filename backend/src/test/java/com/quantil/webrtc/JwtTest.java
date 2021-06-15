@@ -1,6 +1,7 @@
 package com.quantil.webrtc;
 
 import com.quantil.webrtc.core.utils.JwtUtils;
+import org.junit.Assert;
 import org.junit.Test;
 
 /**
@@ -13,10 +14,8 @@ public class JwtTest {
     @Test
     public void tokenVerify(){
         Integer id = 99;
-        System.out.println(id.toString());
         String token = JwtUtils.createToken("haha", id.toString(), "user");
-        System.out.println("token: "+token);
         String userId = JwtUtils.verifyAndGetUsername(token);
-        System.out.println("result:"+userId);
+        Assert.assertNotNull(userId);
     }
 }

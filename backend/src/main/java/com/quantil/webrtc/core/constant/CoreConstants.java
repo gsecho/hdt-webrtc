@@ -6,7 +6,9 @@ package com.quantil.webrtc.core.constant;
  * @date 2021/4/14 11:12
  */
 public class CoreConstants {
-
+    private CoreConstants() {
+        throw new IllegalStateException("Utility class");
+    }
     public static final String HEADER_TOKEN = "token";
     public static final String TOKEN_USER_ID = "id";
     public static final String TOKEN_AUTHORITIES = "authorities";
@@ -24,4 +26,7 @@ public class CoreConstants {
     public static final Integer DB_RECORD_ENABLE = 0;
     public static final Integer DB_RECORD_DISABLE = 1;
     public static final Integer DB_RECORD_DELETE = 2;
+
+    public static final String[] STRING_ARRAY_EMPTY= new String[0];
+
 }

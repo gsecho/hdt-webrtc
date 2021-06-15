@@ -1,7 +1,6 @@
 package com.quantil.webrtc;
 
 import com.quantil.webrtc.core.utils.SpringUtils;
-import com.quantil.webrtc.core.utils.ToolUtils;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ApplicationContext;

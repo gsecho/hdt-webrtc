@@ -1,9 +1,5 @@
 
-# dev是加上local + ssl
-server:
-  ssl:
-    key-store: classpath:keystore.jks
-    key-store-password: Quantil#2020
+# local是没有ssl
 
 logging:
   level:

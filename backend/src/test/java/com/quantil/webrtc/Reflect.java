@@ -19,13 +19,10 @@ public class Reflect {
     public void test(){
         RtcMeetingItem rtcMeetingItem = new RtcMeetingItem();
         Date date = new Date();
-//        rtcMeetingItem.setCreateDt(date);
-
         try {
             Object para = rtcMeetingItem;
             Class<?> clz= para.getClass();
             Method a = clz.getMethod("setCreateDt", Date.class);
-            Method b = RtcMeetingItem.class.getDeclaredMethod("setUpdateDt", Date.class);
             a.invoke(rtcMeetingItem, date);
             log.info("hello");
         } catch (Exception e) {

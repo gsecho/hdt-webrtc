@@ -10,7 +10,9 @@ import javax.servlet.http.HttpSession;
 
 
 public class SessionUtil {
-
+    private SessionUtil(){
+        throw new IllegalStateException("Utility class");
+    }
     /**
      * 获取session
      * filter 调用这个的时候RequestContextHolder还没有session数据
@@ -42,15 +44,15 @@ public class SessionUtil {
 
 
     public static <T> T getCurrentUser(HttpServletRequest request){
-        return (T) SessionUtil.getAttribute(request, SessionConstants.UserInSession);
+        return (T) SessionUtil.getAttribute(request, SessionConstants.USER_IN_SESSION);
     }
 
     public static void removeCurrentUser(HttpServletRequest request){
-        SessionUtil.removeAttribute(request, SessionConstants.UserInSession);
+        SessionUtil.removeAttribute(request, SessionConstants.USER_IN_SESSION);
     }
 
     public static void setCurrentUser(HttpServletRequest request, Object user){
-        SessionUtil.setAttribute(request, SessionConstants.UserInSession,user);
+        SessionUtil.setAttribute(request, SessionConstants.USER_IN_SESSION,user);
     }
 
 }

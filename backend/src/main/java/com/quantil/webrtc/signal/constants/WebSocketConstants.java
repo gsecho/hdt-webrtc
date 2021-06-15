@@ -6,6 +6,9 @@ package com.quantil.webrtc.signal.constants;
  * @date 2021/4/29 11:28
  */
 public class WebSocketConstants {
+    private WebSocketConstants(){
+        throw new IllegalStateException("Utility class");
+    }
     public static final String SERVER_ID = "0";
 
     public static final String TEST_CHANNEL = "/hello";

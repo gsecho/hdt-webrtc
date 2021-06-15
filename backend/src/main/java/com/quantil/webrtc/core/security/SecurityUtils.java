@@ -10,6 +10,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
  * @date 2021/5/21 15:46
  */
 public class SecurityUtils {
+    private SecurityUtils(){
+        throw new IllegalStateException("Utility class");
+    }
 
     public static CustomUserDetails getPrincipalCustomUserDetails(){
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

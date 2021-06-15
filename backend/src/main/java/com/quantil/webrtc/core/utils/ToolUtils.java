@@ -4,9 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.GrantedAuthority;
 
 import javax.servlet.http.HttpServletRequest;
-import java.io.File;
 import java.util.Collection;
-import java.util.Date;
 
 /**
  * @author chenrf
@@ -15,8 +13,11 @@ import java.util.Date;
  */
 @Slf4j
 public class ToolUtils {
-    private static String UNKNOWN = "unknown";
-    private static String LOCAL_HOST = "127.0.0.1";
+    private ToolUtils(){
+        throw new IllegalStateException("Utility class");
+    }
+    private static final String UNKNOWN = "unknown";
+    private static final String LOCAL_HOST = "127.0.0.1";
 
     public static String getClientIP(HttpServletRequest request) {
         String ip = null;
@@ -87,7 +88,7 @@ public class ToolUtils {
         } else {
             int i = path.indexOf(".jar");
             if(i > -1){
-                int j = path.lastIndexOf("/", i);
+                int j = path.lastIndexOf('/', i);
                 if(j > -1){
                     end = j;
                 }else{

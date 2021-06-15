@@ -14,9 +14,6 @@ public class ResponseUtils {
   public static final String CODE_SUCCESS_MESSAGE = "Success";
 
   public static ResponseResult formatResponse(Integer code, String message, Object content) {
-//    if (content != null) {
-//      return new ResponseResult(code, message, content);
-//    }
     return new ResponseResult(code, message, content);
   }
 

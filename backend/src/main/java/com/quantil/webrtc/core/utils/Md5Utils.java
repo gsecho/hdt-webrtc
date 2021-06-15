@@ -1,9 +1,8 @@
 package com.quantil.webrtc.core.utils;
 
-import sun.misc.BASE64Encoder;
-
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Base64;
 
 /**
  * @author chenrf
@@ -13,10 +12,10 @@ import java.security.NoSuchAlgorithmException;
 
 public class Md5Utils {
 
-    private static final String alg = "MD5";
+    private static final String ALG = "MD5";
 
     private static byte[] hash(byte[] bytes, byte[] salt, int hashIterations) throws NoSuchAlgorithmException {
-        MessageDigest digest = MessageDigest.getInstance(alg);
+        MessageDigest digest = MessageDigest.getInstance(ALG);
         if (salt != null) {
             digest.reset();
             digest.update(salt);
@@ -43,8 +42,8 @@ public class Md5Utils {
     public static String  algorithm(String raw, String salt, int hashIterations){
         try {
             byte[] bytes = hash(raw.getBytes(), salt.getBytes(), hashIterations);
-            String baseString = new BASE64Encoder().encode(bytes);
-            return baseString;
+            final Base64.Encoder encoder = Base64.getEncoder();
+            return encoder.encodeToString(bytes);
         } catch (NoSuchAlgorithmException e) {
             return null;
         }

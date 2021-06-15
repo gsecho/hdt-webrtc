@@ -10,7 +10,7 @@ public interface RtcUserDao {
 
     RtcUser selectByPrimaryKey(Long id);
 
-    RtcUser selectByUsername(String name);
+    RtcUser selectByUsername(String username);
 
     List<RtcUser> selectAll();
 

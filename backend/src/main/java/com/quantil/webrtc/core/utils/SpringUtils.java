@@ -5,6 +5,9 @@ import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.context.ApplicationContext;
 
 public class SpringUtils {
+    private SpringUtils(){
+        throw new IllegalStateException("Utility class");
+    }
     private static ApplicationContext applicationContext = null;
 
     public static void setApplicationContext(ApplicationContext applicationContext) {
@@ -23,8 +26,7 @@ public class SpringUtils {
      * 获取类型为requiredType的对象
      */
     public static <T> T getBean(Class<T> clz) throws BeansException {
-        T result = (T) applicationContext.getBean(clz);
-        return result;
+        return applicationContext.getBean(clz);
     }
 
     /**
