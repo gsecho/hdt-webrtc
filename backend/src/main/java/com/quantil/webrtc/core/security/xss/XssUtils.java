@@ -12,7 +12,9 @@ import org.owasp.esapi.ESAPI;
  */
 @Slf4j
 public class XssUtils {
-
+    private XssUtils(){
+        throw new IllegalStateException("Utility class");
+    }
     public static String stripXss(String value) {
         if (value == null) {
             return null;

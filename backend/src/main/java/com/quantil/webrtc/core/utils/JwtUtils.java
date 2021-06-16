@@ -18,8 +18,11 @@ import java.util.*;
  * @date 2021/4/15 14:55
  */
 public class JwtUtils {
-    private static final int expireMin = 30;
-    private static final String secret = "pe9229d2-f04b-266e-8f87-b0c89e7ek941";// 服务器私钥
+    private JwtUtils(){
+        throw new IllegalStateException("Utility class");
+    }
+    private static final int EXPIRE_MIN = 30;
+    private static final String SECRET = "pe9229d2-f04b-266e-8f87-b0c89e7ek941";// 服务器私钥
 
     /**
      签发对象：这个用户的id
@@ -31,7 +34,7 @@ public class JwtUtils {
     public static String createToken(String username, String id, String authorities) {
 
         Calendar nowTime = Calendar.getInstance();
-        nowTime.add(Calendar.MINUTE, expireMin);
+        nowTime.add(Calendar.MINUTE, EXPIRE_MIN);
         Date expiresDate = nowTime.getTime();
 
         // withAudience 是需要存入token的数据，可以多个，比如用户id，用户名...
@@ -41,7 +44,7 @@ public class JwtUtils {
                    .withExpiresAt(expiresDate)  //截止时间
                    .withClaim(CoreConstants.TOKEN_USER_ID, id) // 用户ID
                    .withClaim(CoreConstants.TOKEN_AUTHORITIES, authorities)// 角色信息
-                   .sign(Algorithm.HMAC256(secret));   //对数据 签名，防止数据内容被篡改
+                   .sign(Algorithm.HMAC256(SECRET));   //对数据 签名，防止数据内容被篡改
     }
 
     /**
@@ -50,7 +53,7 @@ public class JwtUtils {
      * @return 成功返回userName
      */
     public static String verifyAndGetUsername(String token){
-        JWTVerifier jwtVerifier = JWT.require(Algorithm.HMAC256(secret)).build();
+        JWTVerifier jwtVerifier = JWT.require(Algorithm.HMAC256(SECRET)).build();
         try {
             DecodedJWT decodedJWT = jwtVerifier.verify(token);
             return decodedJWT.getAudience().get(0);
@@ -60,7 +63,7 @@ public class JwtUtils {
     }
 
     public static UsernamePasswordAuthenticationToken verify(String token){
-        JWTVerifier jwtVerifier = JWT.require(Algorithm.HMAC256(secret)).build();
+        JWTVerifier jwtVerifier = JWT.require(Algorithm.HMAC256(SECRET)).build();
         try {
             DecodedJWT decodedJWT = jwtVerifier.verify(token);
             String username = decodedJWT.getAudience().get(0);

@@ -90,9 +90,6 @@ public class CustomAuthenticationFilter extends UsernamePasswordAuthenticationFi
                     logger.error("{}", e);
                     authRequest = new UsernamePasswordAuthenticationToken("", "");
                 }
-//                finally {
-//
-//                }
                 setDetails(request, authRequest);
                 return this.getAuthenticationManager().authenticate(authRequest);
             }else {

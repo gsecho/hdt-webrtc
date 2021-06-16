@@ -5,6 +5,9 @@ import com.quantil.webrtc.core.bean.base.ResponseResult;
 
 
 public class ResponseUtils {
+  private ResponseUtils(){
+    throw new IllegalStateException("Utility class");
+  }
 
   public static final int CODE_FAIL = -1;
   public static final int CODE_SUCCESS = 0;

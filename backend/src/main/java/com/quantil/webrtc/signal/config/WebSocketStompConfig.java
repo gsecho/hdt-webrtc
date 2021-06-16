@@ -101,7 +101,6 @@ public class WebSocketStompConfig implements WebSocketMessageBrokerConfigurer {
 
                     @Override
                     public void handleMessage(WebSocketSession session, WebSocketMessage<?> message) throws Exception {
-                        Principal principal = session.getPrincipal();
                         super.handleMessage(session, message);
                     }
                 };

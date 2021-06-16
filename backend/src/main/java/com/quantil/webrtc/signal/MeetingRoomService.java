@@ -116,45 +116,6 @@ public class MeetingRoomService {
                     stompHeaderAccessor.setUser(userPrincipal);
                     simpMessageHeaderAccessor.setUser(userPrincipal);
                     return connectMeetingRoomHandler(roomIdString, meetingItem, userPrincipal);
-//                    MeetingRoom meetingRoom = roomMap.get(roomIdString);
-//                    if (meetingRoom == null) {// room创建
-//                        meetingRoom = new MeetingRoom();// 新建meetingRoom信息
-//                        meetingRoom.setRtcMeetingItem(meetingItem);
-//                    }
-//                    List<MeetingMember> roomMembers = meetingRoom.getMembers();
-//                    Integer emptyIndex = null;
-//                    for (int i = 0; i < roomMembers.size(); i++) {
-//                        MeetingMember meetingMember = roomMembers.get(i);
-//                        if (meetingMember == null) {
-//                            if(emptyIndex == null){
-//                                emptyIndex = i;
-//                            }
-//                            continue;
-//                        }
-//                        if (meetingMember.getUserPrincipal().getUsername().equals(userName)) { // 重复则替换
-//                            meetingMember.getUserPrincipal().setEnable(false);// 先设置为disable
-//                            deleteQueue.add(meetingMember.getUserPrincipal());
-//
-//                            userPrincipal.setIndex(i);
-//                            meetingMember.setUserPrincipal(userPrincipal);  // 替换新的
-//                            return true;
-//                        }
-//                    }
-//
-//                    if(roomMembers.size() >= meetingRoom.getRtcMeetingItem().getMaxMember()){
-//                        return false;
-//                    }
-//                    MeetingMember member = new MeetingMember();
-//                    member.setUserPrincipal(userPrincipal);
-//                    if(emptyIndex == null){
-//                        userPrincipal.setIndex(roomMembers.size());
-//                        roomMembers.add(member);
-//                    }else{
-//                        userPrincipal.setIndex(emptyIndex);
-//                        roomMembers.set(emptyIndex, member);
-//                    }
-//                    roomMap.put(roomIdString, meetingRoom);
-//                    return true;
                 }else{
                     throw new RuntimeException();// 这样 stomp客户端才会收到连接失败消息
                 }
@@ -179,9 +140,7 @@ public class MeetingRoomService {
         }
         for (int i = 0; i < meetingRoom.getMembers().size(); i++) {
             MeetingMember member = meetingRoom.getMembers().get(i);
-            if(member == null){
-                continue;
-            }else if (member.getUserPrincipal().getUserId().equals(userPrincipal.getUserId())) {
+            if ((member != null) && (member.getUserPrincipal().getUserId().equals(userPrincipal.getUserId()) )) {
                 meetingRoom.getMembers().set(i, null);
                 break;
             }
@@ -333,7 +292,6 @@ public class MeetingRoomService {
     }
 
     public MeetingRoom getRoomInfo(String id){
-        MeetingRoom meetingRoom = roomMap.get( id );
-        return meetingRoom;
+        return roomMap.get(id);
     }
 }

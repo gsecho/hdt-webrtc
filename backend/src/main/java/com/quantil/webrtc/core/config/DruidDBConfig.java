@@ -33,7 +33,7 @@ public class DruidDBConfig {
 
     @Bean(name = "sysSqlSessionFactory")
     public SqlSessionFactory getSqlSessionFactory(@Qualifier("sysDataSource") DataSource dataSource)
-            throws IOException, Exception {
+            throws Exception {
         //这里自定义了sysSqlSessionFactory是为了支持多数据源
         final SqlSessionFactoryBean sessionFactory = new SqlSessionFactoryBean();
         sessionFactory.setDataSource(dataSource);

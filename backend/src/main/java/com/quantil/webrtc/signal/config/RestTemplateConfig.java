@@ -2,6 +2,7 @@ package com.quantil.webrtc.signal.config;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableList;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
@@ -59,10 +60,6 @@ public class RestTemplateConfig {
                 mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
                 mapper.configure(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT, true);
                 jsonConverter.setObjectMapper(mapper);
-//                jsonConverter.setSupportedMediaTypes(ImmutableList.of(
-//                        new MediaType("application", "json", MappingJackson2HttpMessageConverter.DEFAULT_CHARSET),
-//                        new MediaType("application", "octet-stream", MappingJackson2HttpMessageConverter.DEFAULT_CHARSET),
-//                        new MediaType("text", "javascript", MappingJackson2HttpMessageConverter.DEFAULT_CHARSET)));
             }
         }
         return restTemplate;

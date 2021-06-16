@@ -11,6 +11,9 @@ import java.util.Base64;
  */
 
 public class Md5Utils {
+    private Md5Utils(){
+        throw new IllegalStateException("Utility class");
+    }
 
     private static final String ALG = "MD5";
 

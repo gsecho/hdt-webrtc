@@ -17,20 +17,6 @@ import java.util.ArrayList;
 public class UserPasswordTest {
 
     @Test
-    public void listTest(){
-        ArrayList<MeetingMember> meetingMembers = new ArrayList<>();
-
-        meetingMembers.add(new MeetingMember());
-        meetingMembers.add(null);
-        meetingMembers.add(new MeetingMember());
-        for (MeetingMember meetingMember : meetingMembers) {
-            System.out.println(meetingMember);
-        }
-        for (int i = 0; i < meetingMembers.size(); i++) {
-            System.out.println(meetingMembers.get(i));
-        }
-    }
-    @Test
     public void shiroMd5RandomSalt(){
         // spring security 的加密PasswordEncoder传入参数有限，所有如果要合并password-salt，然后到里面再解开数据password和salt
         String username = "lisi";
