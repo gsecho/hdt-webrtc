@@ -6,6 +6,13 @@ server:
       timeout: PT10M # 十分钟，默认是30m
 #    context-path: /webrtc # 前缀
   port: 8010
+# 默认的log配置
+logging:
+  level:
+    root: INFO
+  root:
+    appender: Console
+    path: .
 
 rest:
   stun:

@@ -18,7 +18,6 @@ import org.springframework.web.socket.config.annotation.WebSocketTransportRegist
 import org.springframework.web.socket.handler.WebSocketHandlerDecorator;
 import org.springframework.web.socket.handler.WebSocketHandlerDecoratorFactory;
 
-import java.security.Principal;
 import java.util.List;
 
 /**
@@ -97,11 +96,6 @@ public class WebSocketStompConfig implements WebSocketMessageBrokerConfigurer {
                     public void afterConnectionEstablished(final WebSocketSession session) throws Exception {
                         log.info("----------- afterConnectionEstablished --------------");
                         super.afterConnectionEstablished(session);
-                    }
-
-                    @Override
-                    public void handleMessage(WebSocketSession session, WebSocketMessage<?> message) throws Exception {
-                        super.handleMessage(session, message);
                     }
                 };
             }

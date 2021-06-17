@@ -2,12 +2,10 @@ package com.quantil.webrtc;
 
 import com.quantil.webrtc.core.constant.CoreConstants;
 import com.quantil.webrtc.core.utils.Md5Utils;
-import com.quantil.webrtc.signal.bean.MeetingMember;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
-import java.util.ArrayList;
 
 /**
  * @author chenrf
