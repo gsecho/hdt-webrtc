@@ -43,7 +43,7 @@ public class CustomAuthenticationFilter extends UsernamePasswordAuthenticationFi
             public void onAuthenticationSuccess(HttpServletRequest req, HttpServletResponse resp, Authentication authentication) throws IOException, ServletException {
                 // Authentication 实际类型是 UsernamePasswordAuthenticationToken
                 CustomUserDetails customUserDetails = (CustomUserDetails)authentication.getPrincipal();
-                String token = JwtUtils.createToken(customUserDetails.getUsername(), customUserDetails.getUserId().toString(), ToolUtils.getUserRoles(customUserDetails.getAuthorities()));
+                String token = JwtUtils.createToken(customUserDetails.getUsername(), ToolUtils.getUserRoles(customUserDetails.getAuthorities()));
                 LoginAuthRes loginAuthRes = new LoginAuthRes();
                 loginAuthRes.setToken(token);
                 List<String> authority = new ArrayList<>();

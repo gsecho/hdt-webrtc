@@ -47,7 +47,6 @@ public class UserDetailsServiceImpl implements UserDetailsService {
             }
 
             CustomUserDetails customUserDetails = new CustomUserDetails(rtcUser.getUsername(), rtcUser.getPassword(), grantedAuthorities);
-            customUserDetails.setUserId(rtcUser.getId());
             return customUserDetails;
         }
     }

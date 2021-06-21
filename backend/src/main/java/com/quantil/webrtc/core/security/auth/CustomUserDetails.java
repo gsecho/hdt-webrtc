@@ -11,7 +11,7 @@ import java.util.Collection;
  * @date 2021/5/17 14:03
  */
 public class CustomUserDetails extends User {
-    private Long userId;
+//    private Long userId;
 
     public CustomUserDetails(String username, String password,
                 Collection<? extends GrantedAuthority> authorities) {
@@ -23,11 +23,11 @@ public class CustomUserDetails extends User {
         super(username, password, enabled, accountNonExpired, credentialsNonExpired, accountNonLocked, authorities);
     }
 
-    public Long getUserId() {
-        return userId;
-    }
-
-    public void setUserId(Long userId) {
-        this.userId = userId;
-    }
+//    public Long getUserId() {
+//        return userId;
+//    }
+//
+//    public void setUserId(Long userId) {
+//        this.userId = userId;
+//    }
 }

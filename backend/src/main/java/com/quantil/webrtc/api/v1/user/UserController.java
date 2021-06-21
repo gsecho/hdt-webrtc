@@ -36,7 +36,6 @@ public class UserController {
     public ResponseResult login(){
         CustomUserDetails customUserDetails = SecurityUtils.getPrincipalCustomUserDetails();
         UserInfo userInfo = new UserInfo();
-        userInfo.setId(customUserDetails.getUserId());
         userInfo.setName(customUserDetails.getUsername());
         userInfo.setNickName(customUserDetails.getUsername());
 //        ArrayList<String> roles = new ArrayList<>();

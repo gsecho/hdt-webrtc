@@ -19,8 +19,8 @@ import javax.sql.DataSource;
  */
 @Configuration
 // 扫描dao
-@MapperScan(basePackages = {"com.quantil.webrtc.core.dao", "com.quantil.webrtc.api.v1.meeting.dao"},
-            sqlSessionFactoryRef = "sysSqlSessionFactory")
+//@MapperScan(basePackages = {"com.quantil.webrtc.core.dao", "com.quantil.webrtc.api.v1.meeting.dao"},
+//            sqlSessionFactoryRef = "sysSqlSessionFactory")
 public class DruidDBConfig {
 
     @Bean(name = {"sysDataSource"})
@@ -38,7 +38,7 @@ public class DruidDBConfig {
         sessionFactory.setDataSource(dataSource);
         ResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
         sessionFactory.setMapperLocations(resolver.getResources("classpath*:mapper/*.xml"));
-        sessionFactory.setTypeAliasesPackage("com.quantil.webrtc.core.bean.db");
+//        sessionFactory.setTypeAliasesPackage("com.quantil.webrtc.core.bean.db");
         return sessionFactory.getObject();
     }
 

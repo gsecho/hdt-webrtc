@@ -31,7 +31,7 @@ public class JwtUtils {
      载荷内容：暂时null
      加密密钥：这个人的id加上一串字符串
      */
-    public static String createToken(String username, String id, String authorities) {
+    public static String createToken(String username,String authorities) {
 
         Calendar nowTime = Calendar.getInstance();
         nowTime.add(Calendar.MINUTE, EXPIRE_MIN);
@@ -42,7 +42,6 @@ public class JwtUtils {
         return JWT.create().withAudience(username)//签发对象
                    .withIssuedAt(new Date())    //发行时间
                    .withExpiresAt(expiresDate)  //截止时间
-                   .withClaim(CoreConstants.TOKEN_USER_ID, id) // 用户ID
                    .withClaim(CoreConstants.TOKEN_AUTHORITIES, authorities)// 角色信息
                    .sign(Algorithm.HMAC256(SECRET));   //对数据 签名，防止数据内容被篡改
     }
@@ -67,7 +66,7 @@ public class JwtUtils {
         try {
             DecodedJWT decodedJWT = jwtVerifier.verify(token);
             String username = decodedJWT.getAudience().get(0);
-            String userId = decodedJWT.getClaim(CoreConstants.TOKEN_USER_ID).asString();
+//            String userId = decodedJWT.getClaim(CoreConstants.TOKEN_USER_ID).asString();
             String authorityString = decodedJWT.getClaim(CoreConstants.TOKEN_AUTHORITIES).asString();
             String[] authList = authorityString.split(",");
             List<GrantedAuthority> authorityList = new ArrayList<>();
@@ -75,8 +74,6 @@ public class JwtUtils {
                 authorityList.add(new SimpleGrantedAuthority(role));
             }
             CustomUserDetails customUserDetails = new CustomUserDetails(username, "", authorityList);
-            customUserDetails.setUserId(Long.valueOf(userId));
-
             return new UsernamePasswordAuthenticationToken(customUserDetails, null, authorityList);
         } catch (Exception e) {
             return null;

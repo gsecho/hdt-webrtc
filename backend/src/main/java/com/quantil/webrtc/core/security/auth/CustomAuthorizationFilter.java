@@ -62,7 +62,7 @@ public class CustomAuthorizationFilter extends BasicAuthenticationFilter {
             if (antPathRequestMatcher.matcher(req).isMatch()) {
                 // 重新签发token
                 CustomUserDetails customUserDetails = (CustomUserDetails)userToken.getPrincipal();
-                String token = JwtUtils.createToken(customUserDetails.getUsername(), customUserDetails.getUserId().toString(), ToolUtils.getUserRoles(customUserDetails.getAuthorities()));
+                String token = JwtUtils.createToken(customUserDetails.getUsername(), ToolUtils.getUserRoles(customUserDetails.getAuthorities()));
                 List<String> authority = new ArrayList<>();
                 Collection<GrantedAuthority> authorities = userToken.getAuthorities();
                 for (GrantedAuthority grantedAuthority : authorities) {

@@ -14,7 +14,7 @@ public class JwtTest {
     @Test
     public void tokenVerify(){
         Integer id = 99;
-        String token = JwtUtils.createToken("haha", id.toString(), "user");
+        String token = JwtUtils.createToken("haha", "user");
         String userId = JwtUtils.verifyAndGetUsername(token);
         Assert.assertNotNull(userId);
     }

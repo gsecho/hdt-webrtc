@@ -69,4 +69,6 @@ filter:
     login: /p/user/login
 
 
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
 
