@@ -21,6 +21,11 @@ class GlobalHeader extends PureComponent {
         if(!tokenUtils.tokenValidate()){ // 如果url在router.js中有跳转，这里的跳转会失败
             redirect.loginPageService()
         }
+        const { dispatch, isMobile } = this.props;
+        dispatch({
+            type: 'global/setIsMobile',
+            payload: isMobile
+        })
     }
 
     componentWillUnmount() {

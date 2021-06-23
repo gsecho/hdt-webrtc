@@ -10,6 +10,7 @@ export default {
     loadedAllNotices: false,
     timerFlag: false,
     globalInterval: null,
+    isMobile: false,
   },
 
   effects: {
@@ -177,6 +178,12 @@ export default {
         loadedAllNotices: payload,
       };
     },
+    setIsMobile(state, { payload }) {
+      return {
+        ...state,
+        isMobile: payload,
+      };
+    }
   },
 
   subscriptions: {

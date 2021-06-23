@@ -207,6 +207,8 @@ class MeetingTable extends Component {
             <Divider type="vertical" />
             <Button type="link" onClick={()=>this.gotoButtonHandler(record)}>Goto</Button>
             <Divider type="vertical" />
+            <Button type="link" onClick={()=>this.editButtonHandler(record)}>Edit</Button>
+            <Divider type="vertical" />
             <Popconfirm title="Sure to delete?" onConfirm={() => this.deleteLine(record)}>
               <a>Delete</a>
             </Popconfirm>

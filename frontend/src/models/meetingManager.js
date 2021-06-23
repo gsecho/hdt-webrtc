@@ -50,12 +50,13 @@ export default {
                 yield put({type: 'readMeetingList', payload: {'pageNum': data.pageNum, 'pageSize': data.pageSize } });
             }
         },
-        *createMeeting({ payload }, { call, put, select }) {
+        *createMeeting({ payload, callback }, { call, put, select }) {
             const response = yield call(addMeeting, payload);
             if (response.httpCode === 200) {
                 const data = yield select(state =>state.meetingManager.data)
                 yield put({type: 'setAddModalVisible', payload: false});
                 yield put({type: 'readMeetingList', payload: {'pageNum': data.pageNum, 'pageSize': data.pageSize } });
+                callback()
             }
         },
         *updateMeeting({ payload }, { call, put, select }) {

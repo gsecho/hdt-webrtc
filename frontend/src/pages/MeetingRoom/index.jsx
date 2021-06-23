@@ -13,9 +13,17 @@ import MicOffSvg from '@/assets/micOff.svg';
 import MicOnSvg from '@/assets/micOn.svg';
 import DesktopSvg from '@/assets/desktop.svg';
 import DesktopShareSvg from '@/assets/desktopShare.svg';
+import CameraChange from '@/assets/cameraChange.svg';
+import stomp from 'stompjs'
+import * as tokenUtils  from '@/utils/tokenUtils'
+import * as meetingUtils  from '@/services/meetingUtils'
+import backend from '../../../config/backend';
 import './styles.less'
 
 const { Option } = Select;
+const wsUri = backend.ws.uri
+const wsUserChannel = `${backend.ws.userPrefix}${backend.ws.userChannel}` // 订阅通道
+const curModlePrefix = 'meetingRoom'
 
 class VideoOutput extends React.Component {
   constructor(props) {
@@ -25,30 +33,30 @@ class VideoOutput extends React.Component {
   }
 
   componentDidMount() {
-      const { video } = this.props
-      if(video){
-        const videoObj = this.videoRef.current;
-        this.streamIdRef.current = video.id;
-        videoObj.srcObject = video;
-        videoObj.play();
-        
-      }
+    const { video } = this.props
+    if(video){
+      const videoObj = this.videoRef.current;
+      this.streamIdRef.current = video.id;
+      videoObj.srcObject = video;
+      videoObj.play();
+      
+    }
   }
 
   componentDidUpdate(){
     const { video } = this.props
-      if(video){
-        if(this.streamIdRef.current !== video.id){
-          this.streamIdRef.current = video.id
+    if(video){
+      if(this.streamIdRef.current !== video.id){
+        this.streamIdRef.current = video.id
 
-          const videoObj = this.videoRef.current;
-          videoObj.srcObject = video;
-          videoObj.load();
-          videoObj.play();
-        }
+        const videoObj = this.videoRef.current;
+        videoObj.srcObject = video;
+        videoObj.load();
+        videoObj.play();
       }
+    }
   }
-
+  
   render() {
     const { key, muted } = this.props;
     
@@ -71,43 +79,147 @@ class VideoOutput extends React.Component {
 class MeetingRoom extends React.Component {
 
   state={
-    videosWidth: '0px',
+    // videosWidth: '0px',
+    videoInputs: [],
   }
   
   componentDidMount(){
-    const { location, dispatch} = this.props
+    this.startStomp()
+  }
+
+  componentWillUnmount(){
+    console.log('componentWillUnmount-------');
+    this.closeStomp()
+  }
+  
+  peerOnaddStream = () =>{
+    const { dispatch } = this.props;
+    console.log('peerOnaddStream-------');
+    dispatch({
+      type: `${curModlePrefix}/refeashStream`
+    })
+  }
+
+  // getVideoInputs = ()=>{
+  //   // console.log("videoInputs------------------");
+  //   navigator.mediaDevices.enumerateDevices()
+  //   .then(devices => {
+  //     console.log("devices ------------------", devices);
+  //     const videoInputs=[];
+  //     devices.forEach((device) => {
+  //       if (device.kind === 'videoinput'){
+  //         videoInputs.push(device);
+  //         // console.log(`kind:${device.kind}, label:${device.label}, id=${device.deviceId}`);
+  //       }
+  //     });
+  //     // console.log(videoInputs);
+  //     this.setState({
+  //       'videoInputs': videoInputs
+  //     })
+  //   }).catch(error => {
+  //     console.log(`${error.name  }: ${  error.message}`);
+  //   });;
+  // }
+
+  startStomp = () =>{
+    const { location, dispatch } = this.props;
+    dispatch({
+        type: `${curModlePrefix}/clearMeetingRoomState`
+    })
     const roomId = location.query.id // 如果没有该参数值是undefined, 需要显示输入用户名和密码的界面
     const roomPwd = location.query.pwd
-    dispatch({
-      'type': 'meetingRoom/auth',
-      payload: { 
-        'id': roomId,
-        'password': roomPwd,
-      },
-    })
-    this.setState({
-      videosWidth: this.getVideosWidth(),
-    })
-    window.addEventListener('resize', this.handleResize.bind(this));
+    const userName = tokenUtils.getTokenAudience()
+    if(userName === null){
+        return;
+    }
+    if(lodash.isUndefined(roomId) || lodash.isUndefined(roomPwd)){
+        // 错误情况
+    }else{
+        const clientId =  meetingUtils.getRandomClientName(roomId, userName)
+        const headers = {
+            'roomId': roomId,
+            'password': roomPwd,
+            'clientId': clientId,
+            'token': tokenUtils.getToken()
+        };
+        const ws = new WebSocket(`wss://${window.location.host}${wsUri}`);
+        const stompClient = stomp.over(ws);
+        const successFunction = ()=>{
+          // console.log("-------------------------successFunction-------------------------------");
+            stompClient.subscribe(wsUserChannel, respnose => {
+                // 展示返回的信息，只要订阅了 /user/getResponse 目标，都可以接收到服务端返回的信息
+                // console.log(respnose.body)
+                const data = JSON.parse(respnose.body);
+                switch(data.type){
+                    case 'current-meeting':
+                        dispatch({ type : `${curModlePrefix}/wbMessageCurrentMeeting`, payload: data, callback: this.peerOnaddStream });
+                        break;
+                    case 'offer':
+                        dispatch({ type : `${curModlePrefix}/wbMessageOffer`, payload: data, callback: this.peerOnaddStream });
+                        break;
+                    case 'answer':
+                        dispatch({ type : `${curModlePrefix}/wbMessageAnswer`, payload: data});
+                        break;
+                    case 'candidate':
+                        dispatch({ type : `${curModlePrefix}/wbMessageCandidate`, payload: data});
+                        break;
+                    case 'enter':
+                        dispatch({ type : `${curModlePrefix}/createMeetingMember`, payload: data});
+                        break;
+                    case 'leave':
+                        dispatch({ type : `${curModlePrefix}/removeMeetingMember`, payload: data});
+                        break;
+                    case 'close':
+                        dispatch({ type : `${curModlePrefix}/closeMeeting`, payload: data});
+                        break;
+                    default:
+                        console.log('default');
+                        break;
+                }
+            });
+            dispatch({
+                type: `${curModlePrefix}/checkSocketWork`, // 开启连接校验定时器
+            });
+            dispatch({
+                type: `${curModlePrefix}/wbOpenedHander`,
+                payload: { 
+                    'ws' : ws, // websocket连接
+                    'stompClient': stompClient,// stomp连接
+                    'roomId': roomId,
+                    'password': roomPwd,
+                    'myId': clientId,
+                }
+            });
+        }
+        stompClient.connect(headers, successFunction, this.closeStomp);
+    }
+  }
 
-    navigator.mediaDevices.enumerateDevices()
-        .then(devices => {
-            console.log(devices);
-        });
+  closeStomp = () =>{
+    const { dispatch } = this.props;
+    dispatch({
+        type: `${curModlePrefix}/STOP_TIME_TASK`
+    })
+    dispatch({
+        type: `${curModlePrefix}/closeMeeting`
+    })
+    dispatch({
+        type: `${curModlePrefix}/setMeetingRoomState`,
+        payload: {
+          'roomAuthed': false,
+        }
+    })
   }
 
   getVideosWidth = () => {
-    const { global: { collapsed} } = this.props;
-    if(collapsed){// 收缩
+    const { global: { collapsed, isMobile} } = this.props;
+    if(isMobile){
       return (document.body.clientWidth-24*4);
     }
-    return (document.body.clientWidth-265-24*4);
-  }
-  
-  handleResize = () => {
-    this.setState({
-      videosWidth: this.getVideosWidth(),
-    })
+      if(collapsed){
+        return (document.body.clientWidth-64-24*4);
+      }
+        return (document.body.clientWidth-265-24*4);
   }
 
   getFlexDisplayInfo = (total) =>{
@@ -125,7 +237,7 @@ class MeetingRoom extends React.Component {
     }
   }
 
-  exitMeetingHandle= () => {
+  exitMeetingButtonHandle= () => {
     redirect.push("dashboard")
   }
 
@@ -141,12 +253,12 @@ class MeetingRoom extends React.Component {
     }
   }
 
-  videoSrcOnChange = () =>{
+  videoScreenSourceChange = () =>{
     const { dispatch, meetingRoom: { curSource }} = this.props
     if(curSource !== 'screen'){
       dispatch({
         'type': 'meetingRoom/replaceTrack',
-        payload: { 
+        payload: {
           'target': 'screen'
         },
         callback: (mediaStreamTrack) => {
@@ -162,8 +274,34 @@ class MeetingRoom extends React.Component {
         }
       })
     }else{
-      message.warning('Is already shared!');
+      // message.warning('Is already shared!');
+      dispatch({
+          type: 'meetingRoom/replaceTrack',
+          payload: {
+              'target': 'camera'
+          }
+      });
     }
+  }
+
+  /** 移动设备：
+   * 前置摄像头： { 'video': { facingMode: "user" } }
+   * 后置摄像头： {  video: { facingMode: { exact: "environment" } } }
+   */
+  cameraSourceChange = (deviceId) => {
+    // { audio: true, video: { facingMode: { exact: "environment" } } }
+    console.log('cameraSourceChange: ', deviceId);
+  }
+
+  videoInputSourceChange = (sources) =>{
+    const { global: isMobile } = this.props;
+    // if(sources.length){
+    //   return <Select defaultValue={sources[0].deviceId} style={{ width: 110, flexGrow: 1 }} size="large" dropdownMatchSelectWidth={false} onSelect={this.cameraSourceChange}>
+    //     { sources.map(item => <Option value={item.deviceId} key={item.deviceId}>{item.label}</Option>) }
+    //   </Select>
+    // }
+    
+    return <></>
   }
 
   /**
@@ -177,8 +315,21 @@ class MeetingRoom extends React.Component {
   }
 
   render() {
+    // console.log(this.props);
     const { meetingRoom: {roomAuthed, maxMembers: total, members, curSource, micEnabled } } = this.props
-    const {videosWidth} = this.state;
+    const {global: {isMobile} } = this.props;
+    // const {videoInputs} = this.state;
+    const videosWidth = this.getVideosWidth();
+    // if(videoInputs.length === 0){ // 用户未按下确定键的时候这里就
+    //   this.getVideoInputs()
+    // }else{
+    //   videoInputs.forEach( item =>{
+    //     if(typeof item.deviceId === 'undefined' || item.deviceId=== null || item.deviceId === ""){
+    //       this.getVideoInputs()
+    //     }
+    //   })
+    // }
+    
     // 我们这里的视频长宽比, 程序默认使用480*360
     const lengthWidthRatio = 16/9;
 
@@ -212,6 +363,7 @@ class MeetingRoom extends React.Component {
     }else{
       micIcon = MicOffSvg;
     }
+    
     let desktopIcon;
     if(curSource === 'screen'){
       desktopIcon = DesktopShareSvg;
@@ -229,41 +381,40 @@ class MeetingRoom extends React.Component {
           <Card style={{ padding: '0px' }}>
             <div className='custom-video-grid' id="video-views">
               {
-              videos.map((video) => 
-                <div className="custom-videoflex" style={{  flexBasis: flexInfo.basis}} key={video.id} onDoubleClick={this.ondblclickHandler}>
-                  <VideoOutput 
-                    muted={video.muted}
-                    video={video.src} 
-                    height={videoHeight}
-                  />
-                </div>
-              )
-            }
+                videos.map((video) => 
+                  <div className="custom-videoflex" style={{  flexBasis: flexInfo.basis}} key={video.id} onDoubleClick={this.ondblclickHandler}>
+                    <VideoOutput 
+                      muted={video.muted}
+                      video={video.src} 
+                      height={videoHeight}
+                    />
+                  </div>
+                )
+              }
             </div>
           </Card>
           <div style={{display: 'flex', flexDirection: 'row-reverse'}}> 
             <Tooltip placement="bottom" title="exit">
-              <Button type="primary" icon="export" size="large" style={{marginLeft: '10px '}} onClick={this.exitMeetingHandle} />
+              <Button type="primary" icon="export" size="large" style={{marginLeft: '10px '}} onClick={this.exitMeetingButtonHandle} />
             </Tooltip>
-            {/* <Radio.Group value={curSource} size="large" buttonStyle="solid" style={{ marginLeft: '10px'}} onChange={this.videoSrcOnChange}>
-              <Radio.Button value="camera">Camera</Radio.Button> 
-              <Radio.Button value="screen">screen sharing</Radio.Button>
-            </Radio.Group> */}
-            <Tooltip placement="bottom" title="share">
-              <Button type="primary" size="large" style={{ marginLeft: '10px'}} onClick={this.videoSrcOnChange}> 
-                <img className="custom-left-menu-icon" src={desktopIcon} style={{ width: '20px', height: '20px' }} />
-              </Button>
-            </Tooltip>
+            {
+              !isMobile &&
+              <Tooltip placement="bottom" title="share">
+                <Button type="primary" size="large" style={{ marginLeft: '10px'}} onClick={this.videoScreenSourceChange}> 
+                  <img className="custom-left-menu-icon" src={desktopIcon} style={{ width: '20px', height: '20px' }} />
+                </Button>
+              </Tooltip>
+            }
             <Tooltip placement="bottom" title="mic">
               <Button type="primary" size="large" style={{ marginLeft: '10px'}} onClick={this.micStatusOnChange}> 
                 <img className="custom-left-menu-icon" src={micIcon} style={{ width: '20px', height: '20px' }} />
               </Button>
             </Tooltip>
-            <Select defaultValue="lucy" style={{ width: 120 }} size="large">
-              <Option value="jack">Jack</Option>
-              <Option value="lucy">Lucy</Option>
-              <Option value="Yiminghe">yiminghe</Option>
-            </Select>
+            {/* <Tooltip placement="bottom" title="mic">
+              <Button type="primary" size="large" style={{ marginLeft: '10px'}} onClick={this.videoInputSourceChange}> 
+                <img className="custom-left-menu-icon" src={CameraSourceChange} style={{ width: '20px', height: '20px' }} />
+              </Button>
+            </Tooltip> */}
           </div>
         </div> 
       }

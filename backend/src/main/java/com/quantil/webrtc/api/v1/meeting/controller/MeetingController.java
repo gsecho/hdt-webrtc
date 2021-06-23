@@ -48,7 +48,7 @@ public class MeetingController {
         item.setStatus(CoreConstants.DB_RECORD_ENABLE);
         item.setCreateBy(SecurityUtils.getPrincipalName());
         int resCode = rtcMeetingItemDao.insert(item);
-        log.info("createItem resCode:%d", resCode);
+        log.info("createItem resCode:{}", resCode);
         return ResponseUtils.formatOkResponse();
     }
 

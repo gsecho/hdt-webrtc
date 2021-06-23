@@ -65,7 +65,6 @@ export function removeMemberFromList(targetMember, members){
                 }
             }
         }
-
         members.fill({}, index, index+1)
     }
 }
