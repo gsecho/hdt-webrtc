@@ -78,4 +78,11 @@ public class UserController {
         log.info("resCode: {}", resCode);
         return ResponseUtils.formatOkResponse();
     }
+
+    // 调试阶段传输数据到服务器，方便调查问题
+    @PostMapping("test")
+    public ResponseResult postTestData(@RequestBody String data){
+        log.info(data);
+        return ResponseUtils.formatOkResponse();
+    }
 }

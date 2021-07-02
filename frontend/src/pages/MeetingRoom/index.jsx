@@ -1,3 +1,4 @@
+/* eslint-disable jsx-a11y/alt-text */
 /* eslint-disable react/jsx-closing-tag-location */
 /* eslint-disable jsx-a11y/media-has-caption */
 /*
@@ -6,71 +7,24 @@
  */
 import React from 'react';
 import { connect } from 'dva';
-import {Card, Result, Spin, Form, Button, Tooltip, Select, message } from 'antd'
+import {Card, Result, Spin, Form, Button, Tooltip } from 'antd'
 import lodash from 'lodash'
 import * as redirect from '@/utils/redirect'
 import MicOffSvg from '@/assets/micOff.svg';
 import MicOnSvg from '@/assets/micOn.svg';
 import DesktopSvg from '@/assets/desktop.svg';
 import DesktopShareSvg from '@/assets/desktopShare.svg';
-import CameraChange from '@/assets/cameraChange.svg';
 import stomp from 'stompjs'
 import * as tokenUtils  from '@/utils/tokenUtils'
 import * as meetingUtils  from '@/services/meetingUtils'
+import VideoOutput from './VideoOutput'
 import backend from '../../../config/backend';
+
 import './styles.less'
 
-const { Option } = Select;
 const wsUri = backend.ws.uri
 const wsUserChannel = `${backend.ws.userPrefix}${backend.ws.userChannel}` // 订阅通道
 const curModlePrefix = 'meetingRoom'
-
-class VideoOutput extends React.Component {
-  constructor(props) {
-      super(props);
-      this.videoRef = React.createRef();
-      this.streamIdRef = React.createRef();
-  }
-
-  componentDidMount() {
-    const { video } = this.props
-    if(video){
-      const videoObj = this.videoRef.current;
-      this.streamIdRef.current = video.id;
-      videoObj.srcObject = video;
-      videoObj.play();
-      
-    }
-  }
-
-  componentDidUpdate(){
-    const { video } = this.props
-    if(video){
-      if(this.streamIdRef.current !== video.id){
-        this.streamIdRef.current = video.id
-
-        const videoObj = this.videoRef.current;
-        videoObj.srcObject = video;
-        videoObj.load();
-        videoObj.play();
-      }
-    }
-  }
-  
-  render() {
-    const { key, muted } = this.props;
-    
-    let {height} = this.props;
-    if(!height){
-      height = 10
-    }
-    
-    if(muted){
-      return <video ref={this.videoRef} width='100%' height={height} id={key} muted />;
-    }
-    return <video ref={this.videoRef} width='100%' height={height} id={key} />;
-  }
-}
 
 @connect(({ loading, meetingRoom, global }) => ({
   loading, meetingRoom, global
@@ -80,52 +34,38 @@ class MeetingRoom extends React.Component {
 
   state={
     // videosWidth: '0px',
-    videoInputs: [],
+    timerId: undefined,
   }
   
   componentDidMount(){
+    const id = setInterval(this.timer1s , 1000)
+    this.setState({
+      timerId: id
+    })
     this.startStomp()
   }
 
   componentWillUnmount(){
-    console.log('componentWillUnmount-------');
+    const {timerId} = this.state
+    clearInterval(timerId)
     this.closeStomp()
   }
   
-  peerOnaddStream = () =>{
+  timer1s = ()=>{
     const { dispatch } = this.props;
-    console.log('peerOnaddStream-------');
-    dispatch({
-      type: `${curModlePrefix}/refeashStream`
-    })
+    dispatch({type: `${curModlePrefix}/caculateStat`})
   }
 
-  // getVideoInputs = ()=>{
-  //   // console.log("videoInputs------------------");
-  //   navigator.mediaDevices.enumerateDevices()
-  //   .then(devices => {
-  //     console.log("devices ------------------", devices);
-  //     const videoInputs=[];
-  //     devices.forEach((device) => {
-  //       if (device.kind === 'videoinput'){
-  //         videoInputs.push(device);
-  //         // console.log(`kind:${device.kind}, label:${device.label}, id=${device.deviceId}`);
-  //       }
-  //     });
-  //     // console.log(videoInputs);
-  //     this.setState({
-  //       'videoInputs': videoInputs
-  //     })
-  //   }).catch(error => {
-  //     console.log(`${error.name  }: ${  error.message}`);
-  //   });;
-  // }
+  peerOnaddStream = (ev) =>{
+    // ev: RtcTrackEvent
+    console.log('peerOnaddStream-------ev:', ev);
+    const { dispatch } = this.props;
+    dispatch({type: `${curModlePrefix}/refreshStream`, event: ev})
+  }
 
   startStomp = () =>{
     const { location, dispatch } = this.props;
-    dispatch({
-        type: `${curModlePrefix}/clearMeetingRoomState`
-    })
+    dispatch({type: `${curModlePrefix}/clearMeetingRoomState`})
     const roomId = location.query.id // 如果没有该参数值是undefined, 需要显示输入用户名和密码的界面
     const roomPwd = location.query.pwd
     const userName = tokenUtils.getTokenAudience()
@@ -316,42 +256,49 @@ class MeetingRoom extends React.Component {
 
   render() {
     // console.log(this.props);
-    const { meetingRoom: {roomAuthed, maxMembers: total, members, curSource, micEnabled } } = this.props
-    const {global: {isMobile} } = this.props;
-    // const {videoInputs} = this.state;
-    const videosWidth = this.getVideosWidth();
-    // if(videoInputs.length === 0){ // 用户未按下确定键的时候这里就
-    //   this.getVideoInputs()
-    // }else{
-    //   videoInputs.forEach( item =>{
-    //     if(typeof item.deviceId === 'undefined' || item.deviceId=== null || item.deviceId === ""){
-    //       this.getVideoInputs()
-    //     }
-    //   })
-    // }
     
-    // 我们这里的视频长宽比, 程序默认使用480*360
+    const { meetingRoom: {roomAuthed, maxMembers: total, members, curSource, micEnabled } } = this.props
+    const {global: {isMobile}, location } = this.props;
+    const statsFlag = location.query.stats === 'display'// 是否显示统计数据 传输速度
+    const videosWidth = this.getVideosWidth();
+    
+    // 我们这里的视频长宽比
     const lengthWidthRatio = 16/9;
 
     const videos = []
     members.forEach( (member, i) => {
+      const video = {};
       if((!lodash.isEmpty(member)) && (!lodash.isUndefined(member.stream))){
-        const video = {};
         if(member.screenStream){
           video.src = member.screenStream;
         }else{
           video.src = member.stream;
         }
         video.id = member.id;
-        video.muted = member.muted
-        videos.push(video);
+        video.muted = member.outputMuted
+        if(statsFlag){
+          if(member.bitRate){
+            video.bitRate = member.bitRate
+          }else{
+            video.bitRate = "0"
+          }
+        }
+      }else if(statsFlag){
+        video.id = `empty_${i}`
+        video.bitRate = '0'
       }else{
-        videos.push({'id': `empty_${i}` });
+        video.id = `empty_${i}`
       }
+      videos.push(video);
     })
 
     for(let i=videos.length; i< total; i+=1){
-      videos.push({'id': `substitution_${i}`});
+      const video = {};
+      video.id = `substitution_${i}`
+      if(statsFlag){
+        video.bitRate = '0'
+      }
+      videos.push(video);
     }
     // console.log(videos);
     const flexInfo = this.getFlexDisplayInfo(videos.length);  
@@ -370,6 +317,7 @@ class MeetingRoom extends React.Component {
     }else{
       desktopIcon = DesktopSvg;
     }
+
     let pageBg;
     if (lodash.isUndefined(roomAuthed)){
       pageBg = <Spin spinning> </Spin>
@@ -383,6 +331,7 @@ class MeetingRoom extends React.Component {
               {
                 videos.map((video) => 
                   <div className="custom-videoflex" style={{  flexBasis: flexInfo.basis}} key={video.id} onDoubleClick={this.ondblclickHandler}>
+                    { video.bitRate ? <p style={{ "position":"relative" }}>{video.bitRate} kbits/sec</p> : <></> }
                     <VideoOutput 
                       muted={video.muted}
                       video={video.src} 

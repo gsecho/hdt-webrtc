@@ -25,20 +25,7 @@ export function formatStompData(from, to, content){
       'content': content,
     }
 }
-/**
- * 
- * @param {*} id 
- * @param {*} members 
- */
-export function getMemberFromList(id, members){
-    // eslint-disable-next-line no-restricted-syntax
-    for (const member of members) {
-        if(member.id === id){
-            return member
-        }
-    }
-    return null;
-}
+
 
 export function addMemberToList(member, members){
     // eslint-disable-next-line no-restricted-syntax

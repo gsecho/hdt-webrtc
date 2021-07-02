@@ -37,39 +37,43 @@ import java.util.Map;
  */
 public class CustomAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
 
-    public CustomAuthenticationFilter(){
-        setAuthenticationSuccessHandler(new AuthenticationSuccessHandler() {
-            @Override
-            public void onAuthenticationSuccess(HttpServletRequest req, HttpServletResponse resp, Authentication authentication) throws IOException, ServletException {
-                // Authentication 实际类型是 UsernamePasswordAuthenticationToken
-                CustomUserDetails customUserDetails = (CustomUserDetails)authentication.getPrincipal();
-                String token = JwtUtils.createToken(customUserDetails.getUsername(), ToolUtils.getUserRoles(customUserDetails.getAuthorities()));
-                LoginAuthRes loginAuthRes = new LoginAuthRes();
-                loginAuthRes.setToken(token);
-                List<String> authority = new ArrayList<>();
-                Collection<GrantedAuthority> authorities = customUserDetails.getAuthorities();
-                for (GrantedAuthority grantedAuthority : authorities) {
-                    authority.add(grantedAuthority.getAuthority());
-                }
-                loginAuthRes.setAuthority(authority);
+    public static class SuccessHandler implements AuthenticationSuccessHandler {
 
-                resp.setStatus(HttpStatus.SC_OK);
-                resp.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        @Override
+        public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
+            // Authentication 实际类型是 UsernamePasswordAuthenticationToken
+            CustomUserDetails customUserDetails = (CustomUserDetails)authentication.getPrincipal();
+            String token = JwtUtils.createToken(customUserDetails.getUsername(), ToolUtils.getUserRoles(customUserDetails.getAuthorities()));
+            LoginAuthRes loginAuthRes = new LoginAuthRes();
+            loginAuthRes.setToken(token);
+            List<String> authority = new ArrayList<>();
+            Collection<GrantedAuthority> authorities = customUserDetails.getAuthorities();
+            for (GrantedAuthority grantedAuthority : authorities) {
+                authority.add(grantedAuthority.getAuthority());
+            }
+            loginAuthRes.setAuthority(authority);
+
+            response.setStatus(HttpStatus.SC_OK);
+            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 //                resp.setHeader(); // 也可以放入cookies中
-                PrintWriter out = resp.getWriter();
-                out.write(JSON.toJSONString(ResponseUtils.formatOkResponse(loginAuthRes)));
-                out.flush();
-                out.close();
-            }
-        });
+            PrintWriter out = response.getWriter();
+            out.write(JSON.toJSONString(ResponseUtils.formatOkResponse(loginAuthRes)));
+            out.flush();
+            out.close();
+        }
+    }
 
-        setAuthenticationFailureHandler(new AuthenticationFailureHandler() {
-            @Override
-            public void onAuthenticationFailure(HttpServletRequest req, HttpServletResponse resp, AuthenticationException e) throws IOException, ServletException {
-                resp.setStatus(HttpStatus.SC_UNAUTHORIZED);
-                resp.setContentType(MediaType.APPLICATION_JSON_VALUE);
-            }
-        });
+    public static class FailureHandler implements AuthenticationFailureHandler {
+        @Override
+        public void onAuthenticationFailure(HttpServletRequest req, HttpServletResponse resp, AuthenticationException e) throws IOException, ServletException {
+            resp.setStatus(HttpStatus.SC_UNAUTHORIZED);
+            resp.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        }
+    }
+
+    public CustomAuthenticationFilter(){
+        setAuthenticationSuccessHandler(new SuccessHandler());
+        setAuthenticationFailureHandler(new FailureHandler());
     }
 
     @Override

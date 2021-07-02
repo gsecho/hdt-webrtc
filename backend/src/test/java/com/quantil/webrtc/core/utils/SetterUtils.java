@@ -1,4 +1,4 @@
-package com.quantil.webrtc.utils;
+package com.quantil.webrtc.core.utils;
 
 import org.junit.Assert;
 

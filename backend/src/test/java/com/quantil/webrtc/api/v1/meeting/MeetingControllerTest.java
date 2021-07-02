@@ -8,7 +8,7 @@ import com.quantil.webrtc.core.bean.base.ResponseResult;
 import com.quantil.webrtc.core.security.SecurityUtils;
 import com.quantil.webrtc.core.utils.ResponseUtils;
 import com.quantil.webrtc.signal.MeetingRoomService;
-import com.quantil.webrtc.utils.SetterUtils;
+import com.quantil.webrtc.core.utils.SetterUtils;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;

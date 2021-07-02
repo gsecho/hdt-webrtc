@@ -6,6 +6,8 @@ import * as tokenUtils  from '@/utils/tokenUtils'
 import lodash from 'lodash'
 import { getClientIp } from '@/services/meetingRoom';
 import * as meetingUtils  from '@/services/meetingUtils'
+import * as user from '@/services/user'
+import * as utils from '@/utils/utils'
 import backend from '../../config/backend';
 
 const wsSendPrefix = backend.ws.sendPrefix
@@ -18,6 +20,7 @@ export default {
      * const data = yield select(state =>state.meetingManager.data)
      */
     state: {
+        videoConfig: undefined,
         // 进入页面以后 clearMeetingRoomState 会清空数据
         stompClient: undefined,
         roomAuthed: true, // roomid和passwd校验结果(http)
@@ -34,7 +37,7 @@ export default {
         // mystream: {}, // audiostreamTrack, videostreamTrack 单独拧出来方便操作
         members: [],
         // 与会人员：Id，名称，头像，在线状态，video状态，audio状态
-        // {'id': 2, 'name': 'xiaoming', 'avatar': '/..../path/2.png', 'online': true, 'video': true, "audio": false, peerConnect: {}, stream: undefined, candidates:[], muted: false, screenStream: undefined }
+        // {'id': 2, 'name': 'xiaoming', 'avatar': '/..../path/2.png', 'online': true, 'video': true, "audio": false, peerConnect: {}, stream: undefined, ices:[], outputMuted: false, screenStream: undefined }
     },
     effects: {
         /**
@@ -46,18 +49,18 @@ export default {
             const timeTask = yield fork(function* () {
               try {
                 while (true) {
-                  yield delay(60000);// 60s
-                  const stompClient = yield select(state =>state.meetingRoom.stompClient)
-                  if(lodash.isUndefined(stompClient) || lodash.isNull(stompClient)){
-                    // nothing
-                  }else{
-                    tokenUtils.refreshClickTime()
-                  }
+                    yield delay(600);// 60s
+                    const stompClient = yield select(state =>state.meetingRoom.stompClient)
+                    if(lodash.isUndefined(stompClient) || lodash.isNull(stompClient)){
+                        // nothing
+                    }else{
+                        tokenUtils.refreshClickTime()
+                    }
                 }
               } finally {
                 if (yield cancelled()) {// 取消之后的操作
-                  // 这里什么都不做
-                  console.log("-----   cancelled   -----");
+                    // 这里什么都不做
+                    console.log("-----   cancelled   -----");
                 }
               }
             });
@@ -87,6 +90,7 @@ export default {
             // 获取到当前room已经连接的用户信息
             // 发起连接
             const {to:myId, content, content:{members}} = payload
+            const {videoConfig} = yield select(state => state.meetingRoom)
             // 先存储currentMeeting信息
             yield put({
                 type: 'setMeetingRoomState',
@@ -104,6 +108,9 @@ export default {
                 console.log(`${error.name  }: ${  error.message}`);
                 return []
             });
+            const enumDevicesJson = JSON.stringify(enumDevices);
+            console.log("---json:", enumDevicesJson);
+            user.postTestData(enumDevicesJson)
             // 所有设备的devideId都是空的，返回 true: 所有都没有授权， false表示有授权过
             const authFlag = enumDevices.every( (value) => value.deviceId === "")
             
@@ -113,10 +120,6 @@ export default {
                 if(!authFlag && enumDevices[videoIndex].deviceId === ""){// 认证过了,但是不同意使用摄像头
                     // nothing
                 }else{
-                    const videoConfig = {
-                        'width': 480,
-                        'height': 360
-                    };
                     if(isMobile){
                         videoConfig.facingMode = "user"
                     }
@@ -139,7 +142,7 @@ export default {
                 console.log(error);
                 return new MediaStream()
             });
-            console.log(localStream);
+            console.log("----wbMessageCurrentMeeting tracks:", localStream.getTracks());
             // 先存一份myId和stream数据
             // 存储自己的流数据
             yield put({
@@ -147,10 +150,13 @@ export default {
                 payload: {
                     'id': myId,
                     'stream' :localStream ,
-                    'muted': true, // 自己的播放器，要静音，不然会听到自己的声音
+                    'outputMuted': true, // 自己的播放器，要静音，不然会听到自己的声音
                 }
             });
-
+            // mic静音
+            yield put({
+                type: 'micControl'
+            });
             // eslint-disable-next-line no-restricted-syntax
             for(const member of members) {
                 const peerId = member.id
@@ -159,6 +165,7 @@ export default {
                     continue;
                 }
                 member.peerConnect = new RTCPeerConnection()
+                member.ices = []
                 yield put({
                     type: 'wbRtcPeerConnectHandler',
                     payload: {
@@ -174,41 +181,43 @@ export default {
          * 替换流数据操作（ camera <--> screen， camera1 <--> camera2）
          */
         *replaceTrack( {payload, callback} , { select, put } ){
-            // const meetingRoom = yield select(state => state.meetingRoom)
             let videoStream;
+            console.log("---replaceTrack:", 1);
             if(payload.target === 'camera'){
                 const {isMobile} = yield select(state => state.global)
-                const videoConfig = {
-                    'width': 480,
-                    'height': 360
-                };
+                const {videoConfig} = yield select(state => state.meetingRoom)
                 if(isMobile){
                     videoConfig.facingMode = "user" 
                 }
+                console.log("---replaceTrack:", '2-1');
                 videoStream = yield navigator.mediaDevices.getUserMedia({
                     video: videoConfig
                 }).catch(error => {
-                    console.log(error);
+                    console.log("---", error);
+                    return new MediaStream()
                 });
-                if(!videoStream){
-                    return;
-                }
+                console.log("---replaceTrack:", '2-2');
             }else if(payload.target === 'screen'){
+                console.log("---replaceTrack:", '3-1');
                 videoStream = yield navigator.mediaDevices.getDisplayMedia({
                     video:{
-                        'width': 1280,
-                        'height': 720
+                        'width': { ideal: 1280 },
+                        'height': { ideal: 720 }
                     }
                 }).catch( error =>{
-                    console.log(error);
+                    console.log("---", error);
+                    // 没有流返回undefined
                 })
+                console.log("---replaceTrack:", '3-2');
                 if(videoStream){
-                    callback(videoStream.getVideoTracks()[0]) // 把流数据返回给前端，停止的时候才能在回调中发送 disaptch 
+                    const videoTracks = videoStream.getVideoTracks() // 如果没有数据则是empty
+                    if(!lodash.isEmpty(videoTracks)){
+                        callback(videoTracks[0]) // 把流数据返回给前端，停止的时候才能在回调中发送 disaptch 
+                    }
                 }else{
                     return;
                 }
             }
-            // const member = meetingUtils.getMemberFromList(myId, members)
             yield put({
                 type: 'replaceMeetingMemberStream',
                 payload: {
@@ -234,33 +243,47 @@ export default {
             const meetingRoom = yield select(state => state.meetingRoom)
             const {members} = meetingRoom;
             const {from: peerId, content} = payload
-            const member = meetingUtils.getMemberFromList(peerId, members)
-            if(!member){
-                return;
+            const index = lodash.findIndex(members, member => member.id === peerId )
+            if(index > -1){
+                const { peerConnect } = members[index]
+                peerConnect.setRemoteDescription(new RTCSessionDescription(content));
             }
-            const { peerConnect } = member
-            peerConnect.setRemoteDescription(new RTCSessionDescription(content));
         },
         *wbMessageCandidate( {payload} , { select}){
             const meetingRoom = yield select(state => state.meetingRoom)
             const {members} = meetingRoom;
             const {from: peerId, content} = payload
-            const member = meetingUtils.getMemberFromList(peerId, members)
-            if(!member){
+            const index = lodash.findIndex(members, member => member.id === peerId )
+            if(index === -1){
                 return;
             }
+            const member = members[index]
             const { peerConnect } = member
-            peerConnect.addIceCandidate(new RTCIceCandidate(content));
+            const ice = new RTCIceCandidate(content);
+            if(peerConnect && peerConnect.remoteDescription && peerConnect.remoteDescription.type){
+                peerConnect.addIceCandidate(ice)
+                .then(console.log("---success:"))
+                .catch(e=>console.log("---error:", e));
+            }else if(member.ices){
+                // 加入数组中，收到offer以后填入
+                member.ices.push(ice)
+            }
         },
         *wbRtcPeerConnectHandler( {payload, callback} , { select }){
             const meetingRoom = yield select(state => state.meetingRoom)
             const {stompClient, members} = meetingRoom;
             const {myId, peerId, offer} = payload
-            const peerMember = meetingUtils.getMemberFromList(peerId, members)
-            if(!peerMember){
+            const index = lodash.findIndex(members, member => member.id === peerId )
+            if(index === -1){
                 return;
             }
-            const { peerConnect } = peerMember;
+            const peerMember = members[index]
+            const { peerConnect } = peerMember
+            if(!peerConnect){
+                console.log("---error:", peerMember);
+                console.log("---error:", peerConnect);
+                return;
+            }
             peerConnect.onicecandidate = e=> { // 事件触发执行 
                 if (e.candidate != null) {
                     // console.log(`onicecandidate: send candidate${e.candidate}`);
@@ -278,26 +301,30 @@ export default {
                 };
             };
 
-            const myInfo = meetingUtils.getMemberFromList(myId, members)
-            if(myInfo){
-                peerConnect.addStream(myInfo.stream);// 加入camera流数据
+            const myIndex = lodash.findIndex(members, member => member.id === myId )
+            if(myIndex > -1){
+                const myInfo = members[myIndex]
+                yield myInfo.stream.getTracks().forEach(track=> {
+                    peerConnect.addTrack(track, myInfo.stream);
+                });
             }
-            peerConnect.onaddstream = callback
-            // peerConnect.onaddstream = e => {
-            //     console.log("-------------------------------: ", e);
-            //     peerMember.stream = e.stream
-            //     console.log(peerMember.peerConnect.getReceivers());
-            // };
-            
+
+            peerConnect.ontrack = callback
             if(offer){
                 // 应答 offer 
-                peerConnect.setRemoteDescription(new RTCSessionDescription(offer));
-                peerConnect.createAnswer().then(
-                    (desc) =>{
-                        peerConnect.setLocalDescription(desc);// 这个需要从state中取得
-                        stompClient.send(`${wsSendPrefix}/answer`, {}, JSON.stringify({"from": myId, "to": peerId, "content": desc}));
-                    }
-                )
+                peerConnect.setRemoteDescription(offer);
+                peerMember.ices.forEach(
+                    ice => peerConnect.addIceCandidate(ice)
+                    .then(console.log("---success01:"))
+                    .catch(e=>console.log("---error01:", e))
+                )// 加入缓存的candidate
+                peerConnect.createAnswer({
+                    offerToReceiveVideo: 1,
+                    offerToReceiveAudio: 1,
+                }).then(desc =>{
+                    peerConnect.setLocalDescription(desc);
+                    stompClient.send(`${wsSendPrefix}/answer`, {}, JSON.stringify({"from": myId, "to": peerId, "content": desc}));
+                })
             }else{
                 // https://developer.mozilla.org/en-US/docs/Web/Guide/API/WebRTC/Peer-to-peer_communications_with_WebRTC
                 // 发送offer之前必须准备好流
@@ -310,10 +337,73 @@ export default {
                 })
             }
         },
-        
+        *refreshStream( {event} , { select, put }){
+            // event : RtcTrackEvent
+            const meetingRoom = yield select(state => state.meetingRoom)
+            const {members} = meetingRoom;
+            yield members.forEach(member =>{
+                if(member.peerConnect ){
+                    const receivers = member.peerConnect.getReceivers()
+                    console.log("receivers", receivers);
+                    const index = lodash.findIndex(receivers, receiver => receiver.track.id === event.track.id )
+                    if(index > -1){
+                        if(!member.stream) {
+                            // eslint-disable-next-line no-param-reassign
+                            member.stream = new MediaStream();
+                        }
+                        member.stream.addTrack(event.track)
+                    }
+                }
+            })
+            yield put({ type: 'refreshState' });
+        },
+        *caculateStat(_, {select, put}){
+            const meetingRoom = yield select(state => state.meetingRoom)
+            const {members} = meetingRoom;
+            yield members.forEach(member =>{ // 遍历所有
+                if(member.peerConnect ){
+                    const receivers = member.peerConnect.getReceivers()
+                    if(!lodash.isEmpty(receivers)){
+                        // console.log("-----receivers:", receivers);
+                        receivers.forEach( receiver=>{
+                            if(receiver.track.kind === 'video') {
+                                receiver.getStats().then( res => {
+                                    res.forEach(report =>{
+                                        if (report.mediaType === 'video' && report.type === 'inbound-rtp') {
+                                            if(member.beforeBytesReceived){
+                                                const dtReceived = report.bytesReceived - member.beforeBytesReceived
+                                                let dtTimeStamp = report.timestamp - member.beforeTimestamp
+                                                const localBrower = utils.detectBrowser()
+                                                if (localBrower.brower === 'safari'){
+                                                    dtTimeStamp /= 1000
+                                                }
+                                                let bitRate = Math.round(dtReceived * 8 / dtTimeStamp);
+                                                if (localBrower.brower === 'safari'){
+                                                    bitRate /= 1000
+                                                }
+                                                member.bitRate = bitRate
+                                                // console.log("---", bitRate, ' kbits/sec');
+                                            }
+                                            member.beforeBytesReceived = report.bytesReceived
+                                            member.beforeTimestamp = report.timestamp
+                                        }
+                                    });
+                                });
+                            }
+                        })
+                    }
+                }
+            })
+            yield put({ type: 'refreshState' });
+        },
     },
 
     reducers: {
+        refreshState(state) {
+            return {
+              ...state
+            };
+        },
         setMeetingRoomState(state, {payload}) {
             return {
               ...state,
@@ -322,32 +412,20 @@ export default {
         },
         clearMeetingRoomState(){
             return {
+                videoConfig : {
+                    'width': { ideal: 640 },
+                    'height': { ideal: 480 }
+                },
                 'micEnabled': true,
                 'roomAuthed': true,
                 'members': []
-            }
-        },
-        refeashStream(state) {
-            const { members } = state;
-            // eslint-disable-next-line no-restricted-syntax
-            for(const member of members){
-                if( !member.stream && member.peerConnect ){
-                    member.stream = new MediaStream();
-                    const receivers = member.peerConnect.getReceivers()
-                    // eslint-disable-next-line no-restricted-syntax
-                    for(const receiver of receivers){
-                        member.stream.addTrack(receiver.track)
-                    }
-                }
-            }
-            return {
-                ...state
             }
         },
         createMeetingMember(state, {payload}) {
             // payload  {  content:{id, username} }
             const {content} = payload
             content.peerConnect = new RTCPeerConnection()
+            content.ices = []
             const { members } = state
             meetingUtils.addMemberToList(content, members)
             return {// 触发更新
@@ -393,6 +471,7 @@ export default {
             // eslint-disable-next-line no-restricted-syntax
             for(const member of payload){
                 member.peerConnect = new RTCPeerConnection()
+                member.ices = []
             }
 
             return {
@@ -405,10 +484,10 @@ export default {
         setMeetingMemberStream(state, {payload}) {
             // console.log(state);
             const { members } = state
-            const member = meetingUtils.getMemberFromList(payload.id, members)
-            if(member){
-                member.stream = payload.stream;
-                member.muted = payload.muted
+            const index = lodash.findIndex(members, member => member.id === payload.id )
+            if(index > -1){
+                members[index].stream = payload.stream
+                members[index].outputMuted = payload.outputMuted
             }
             return {// 触发更新
                 ...state
@@ -421,18 +500,24 @@ export default {
             const { members, myId } = state
             // eslint-disable-next-line no-restricted-syntax
             for (const member of members) {
-                if(myId === member.id){                    
-                    member.stream.getVideoTracks()[0].stop()
-                    targetStream.addTrack(member.stream.getAudioTracks()[0])
+                if(myId === member.id){   
+                    const videoTracks = member.stream.getVideoTracks() // 如果没有数据则是empty
+                    if(!lodash.isEmpty(videoTracks)){
+                        videoTracks[0].stop()
+                    }
+                    const audioTracks = member.stream.getAudioTracks()
+                    if(!lodash.isEmpty(audioTracks)){
+                        targetStream.addTrack(audioTracks[0])
+                    }
                     member.stream = targetStream
                 }else{
                     const sends = member.peerConnect.getSenders(); // RTCRtpSender
                     if(sends){
-                        // eslint-disable-next-line no-restricted-syntax
-                        for (const rtpSender of sends) {
-                            if(rtpSender.track !== null && rtpSender.track.kind === 'video'){
-                                // const { track } = rtpSender
-                                rtpSender.replaceTrack(targetStream.getVideoTracks()[0])
+                        const videoTracks = targetStream.getVideoTracks()
+                        if(!lodash.isEmpty(videoTracks)){
+                            const index = lodash.findIndex(sends, rtpSender=> rtpSender.track !== null && rtpSender.track.kind === 'video' )
+                            if(index > -1){
+                                sends[index].replaceTrack(videoTracks[0])
                             }
                         }
                     }
@@ -445,11 +530,17 @@ export default {
         },
         micControl(state) {
             const {myId, members, micEnabled} = state;
-            const member = meetingUtils.getMemberFromList(myId, members)
-            if(micEnabled){ // true  开mic ---> 静mic
-                member.stream.getAudioTracks()[0].enabled = false
-            }else{// false  静mic ---> 开mic 
-                member.stream.getAudioTracks()[0].enabled = true
+            const myIndex = lodash.findIndex(members, member => member.id === myId )
+            if(myIndex > -1){
+                const myMember = members[myIndex]
+                const audioTracks = myMember.stream.getAudioTracks()
+                if(!lodash.isEmpty(audioTracks)){
+                    if(micEnabled){ // true  开mic ---> 静mic
+                        audioTracks[0].enabled = false
+                    }else{// false  静mic ---> 开mic
+                        audioTracks[0].enabled = true
+                    }
+                }
             }
             
             return {

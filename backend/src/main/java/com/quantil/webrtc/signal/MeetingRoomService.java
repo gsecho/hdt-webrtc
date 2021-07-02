@@ -274,6 +274,9 @@ public class MeetingRoomService {
 //        meetingRoomClientRes.setSpeaker();
         List<MeetingMember> meetingMemberList = meetingRoom.getMembers();
         for(MeetingMember meetingMember: meetingMemberList){
+            if(meetingMember == null){
+                continue;
+            }
             MeetingMemberClientRes meetingMemberClientRes = new MeetingMemberClientRes();
             meetingMemberClientRes.setId(meetingMember.getUserPrincipal().getUserId());
             meetingMemberClientRes.setUsername(meetingMember.getUserPrincipal().getUsername());

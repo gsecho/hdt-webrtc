@@ -99,8 +99,4 @@ public class ToolUtils {
         }
         return path.substring(start, end);
     }
-    // 把第一个字母转成小写 比如: First -> first ; SecondChar-> secondChar
-    public static String convertFirstToLowerCase(String origin){
-        return origin.substring(0,1).concat(origin.substring(1).toLowerCase());
-    }
 }
