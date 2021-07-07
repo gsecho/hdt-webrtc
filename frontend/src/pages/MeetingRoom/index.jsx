@@ -16,7 +16,9 @@ import DesktopSvg from '@/assets/desktop.svg';
 import DesktopShareSvg from '@/assets/desktopShare.svg';
 import stomp from 'stompjs'
 import * as tokenUtils  from '@/utils/tokenUtils'
+import * as utils  from '@/utils/utils'
 import * as meetingUtils  from '@/services/meetingUtils'
+import * as user from '@/services/user'
 import VideoOutput from './VideoOutput'
 import backend from '../../../config/backend';
 
@@ -34,24 +36,33 @@ class MeetingRoom extends React.Component {
 
   state={
     // videosWidth: '0px',
-    timerId: undefined,
+    timerId: undefined, // 定时器ID
   }
   
   componentDidMount(){
-    const id = setInterval(this.timer1s , 1000)
-    this.setState({
-      timerId: id
-    })
-    this.startStomp()
+    const { location } = this.props;
+    const statsFlag = location.query.stats === 'display'// 是否显示统计数据 传输速度
+    if(statsFlag){
+      const id = setInterval(this.timer1s , 1000)
+      this.setState({
+        timerId: id
+      })
+    }
+    this.openMedia()
+    // this.startStomp()
   }
 
   componentWillUnmount(){
     const {timerId} = this.state
-    clearInterval(timerId)
+    const { dispatch } = this.props;
+    if(timerId){
+      clearInterval(timerId)
+    }
     this.closeStomp()
+    dispatch({type: `${curModlePrefix}/clearMeetingRoomState`})
   }
   
-  timer1s = ()=>{
+  timer1s = ()=>{ // 每s发送一条消息
     const { dispatch } = this.props;
     dispatch({type: `${curModlePrefix}/caculateStat`})
   }
@@ -63,19 +74,96 @@ class MeetingRoom extends React.Component {
     dispatch({type: `${curModlePrefix}/refreshStream`, event: ev})
   }
 
-  startStomp = () =>{
+  openMedia = ()=>{
+    const { dispatch, location, global: { isMobile} } = this.props;
+    const videoConfig = {
+      'width': { ideal: 640 },
+      'height': { ideal: 480 }
+    }
+    dispatch({
+      type: `${curModlePrefix}/setMeetingRoomState`,
+      payload: {
+        'videoConfig': videoConfig
+      }
+    })
+    navigator.mediaDevices.enumerateDevices()
+      .then(enumDevices => {
+        const enumDevicesJson = JSON.stringify(enumDevices);
+        console.log("---json:", enumDevicesJson);
+        user.postTestData(enumDevicesJson)
+        // 所有设备的devideId都是空的，返回 true: 所有都没有授权， false表示有授权过
+        const authFlag = enumDevices.every( (value) => value.deviceId === "")
+        
+        const videoIndex = lodash.findIndex(enumDevices, { 'kind': 'videoinput' });
+        const mediaConfig = {}
+        if(videoIndex >= 0){// 有视频频设备
+          if(!authFlag && enumDevices[videoIndex].deviceId === ""){// 认证过了,但是不同意使用摄像头
+            // nothing
+          }else{
+            if(isMobile){
+                videoConfig.facingMode = "user"
+            }
+            mediaConfig.video = videoConfig
+          }
+        }
+        const audioIndex = lodash.findIndex(enumDevices, { 'kind': 'audioinput' });
+        if(audioIndex >=0 ){
+          if(!authFlag && enumDevices[audioIndex].deviceId === ""){// 认证过了,但是不同意使用麦克风
+              // nothing
+          }else{
+              mediaConfig.audio= true
+          }
+        }
+        const roomId = location.query.id // 如果没有该参数值是undefined, 需要显示输入用户名和密码的界面
+        const userName = tokenUtils.getTokenAudience()
+        if(userName === null){
+          console.log("---userName: null");
+          return new MediaStream();
+        }
+        const clientId =  meetingUtils.getRandomClientName(roomId, userName)
+
+        // 开启本地流数据
+        navigator.mediaDevices.getUserMedia({
+          ...mediaConfig
+        }).then( stream =>{
+          console.log("----wbMessageCurrentMeeting tracks:", stream.getTracks());
+          dispatch({
+            type: `${curModlePrefix}/setMeetingRoomState`,
+            payload: {
+                'myId': clientId, 
+                'myTempStream' :stream
+            }
+          });
+          this.startStomp(clientId)
+          return stream
+        }).catch( error => {
+          console.log("---", error)
+          const stream = new MediaStream()
+          dispatch({
+            type: `${curModlePrefix}/setMeetingRoomState`,
+            payload: {
+                'myId': clientId, 
+                'myTempStream' :stream
+            }
+          });
+          this.startStomp(clientId)
+          return stream
+        });
+        return []
+      }).catch(error => {
+          console.log(`${error.name}: ${  error.message}`);
+          return []
+      });
+  }
+
+  startStomp = (clientId) =>{
     const { location, dispatch } = this.props;
-    dispatch({type: `${curModlePrefix}/clearMeetingRoomState`})
     const roomId = location.query.id // 如果没有该参数值是undefined, 需要显示输入用户名和密码的界面
     const roomPwd = location.query.pwd
-    const userName = tokenUtils.getTokenAudience()
-    if(userName === null){
-        return;
-    }
     if(lodash.isUndefined(roomId) || lodash.isUndefined(roomPwd)){
         // 错误情况
     }else{
-        const clientId =  meetingUtils.getRandomClientName(roomId, userName)
+        // const clientId =  meetingUtils.getRandomClientName(roomId, userName)
         const headers = {
             'roomId': roomId,
             'password': roomPwd,
@@ -181,16 +269,50 @@ class MeetingRoom extends React.Component {
     redirect.push("dashboard")
   }
 
-  ondblclickHandler = (event)=>{
-    // console.log("double click", event.target);
-    const de = event.target
+  currentRequestFullscreen = (de) => {
+    let flag = true;
     if (de.requestFullscreen) {
       de.requestFullscreen();
     } else if (de.mozRequestFullScreen) {
       de.mozRequestFullScreen();
     } else if (de.webkitRequestFullScreen) {
       de.webkitRequestFullScreen();
+    }else if(de.msRequestFullscreen){
+      de.msRequestFullscreen();
+    }else{
+      flag = false;
     }
+    return flag;
+  }
+
+  currentExitFullscreen = (de) => {
+    let flag = true;
+    if (de.exitFullscreen) {
+      de.exitFullscreen();
+    } else if (de.mozCancelFullScreen) {
+      de.mozCancelFullScreen();
+    } else if (de.webkitCancelFullScreen) {
+      de.webkitCancelFullScreen();
+    }else if (de.msExitFullscreen) {
+      de.msExitFullscreen();
+    } else{
+      flag = false;
+    }
+    return flag;
+  }
+
+  ondblclickHandler = (event)=>{
+    const { global: { isMobile } } = this.props;
+    const localBrowser = utils.detectBrowser(window)
+    if(localBrowser.browser === "safari" && isMobile){// iphone手机会开启controls，这里就不处理双击事件
+      // nothing
+    }else if (document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement || document.msFullscreenElement) { // 全屏中
+          // this.currentExitFullscreen() -- 不需要执行这个
+          console.log("-- exit full screen");
+    }else if (!this.currentRequestFullscreen(event.target)) {
+        this.currentRequestFullscreen(event.target.parentNode)//  发现没用
+    }
+    
   }
 
   videoScreenSourceChange = () =>{
@@ -234,7 +356,7 @@ class MeetingRoom extends React.Component {
   }
 
   videoInputSourceChange = (sources) =>{
-    const { global: isMobile } = this.props;
+    const { global: {isMobile} } = this.props;
     // if(sources.length){
     //   return <Select defaultValue={sources[0].deviceId} style={{ width: 110, flexGrow: 1 }} size="large" dropdownMatchSelectWidth={false} onSelect={this.cameraSourceChange}>
     //     { sources.map(item => <Option value={item.deviceId} key={item.deviceId}>{item.label}</Option>) }
@@ -255,10 +377,17 @@ class MeetingRoom extends React.Component {
   }
 
   render() {
-    // console.log(this.props);
+    
     
     const { meetingRoom: {roomAuthed, maxMembers: total, members, curSource, micEnabled } } = this.props
     const {global: {isMobile}, location } = this.props;
+
+    const localBrowser = utils.detectBrowser(window)
+    let controlsDisplay = false;
+    if(localBrowser.browser === "safari" && isMobile){// iphone手机会开启controls，这里就不处理双击事件
+      controlsDisplay= true;
+    }
+
     const statsFlag = location.query.stats === 'display'// 是否显示统计数据 传输速度
     const videosWidth = this.getVideosWidth();
     
@@ -336,6 +465,7 @@ class MeetingRoom extends React.Component {
                       muted={video.muted}
                       video={video.src} 
                       height={videoHeight}
+                      controls={controlsDisplay}
                     />
                   </div>
                 )

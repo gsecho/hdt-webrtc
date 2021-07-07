@@ -6,7 +6,6 @@ import * as tokenUtils  from '@/utils/tokenUtils'
 import lodash from 'lodash'
 import { getClientIp } from '@/services/meetingRoom';
 import * as meetingUtils  from '@/services/meetingUtils'
-import * as user from '@/services/user'
 import * as utils from '@/utils/utils'
 import backend from '../../config/backend';
 
@@ -20,11 +19,10 @@ export default {
      * const data = yield select(state =>state.meetingManager.data)
      */
     state: {
-        videoConfig: undefined,
-        // 进入页面以后 clearMeetingRoomState 会清空数据
+        myTempStream: undefined, // 临时存储，stomp交互以后，这个就无效了
+        videoConfig: undefined,// 进入页面以后 设置
         stompClient: undefined,
         roomAuthed: true, // roomid和passwd校验结果(http)
-        
         curSource: undefined, // 当前发送的流，camera、screen 
         micEnabled: true, // 麦克风状态
         myId: 0, // 我的id--发消息时候放from位置
@@ -37,7 +35,8 @@ export default {
         // mystream: {}, // audiostreamTrack, videostreamTrack 单独拧出来方便操作
         members: [],
         // 与会人员：Id，名称，头像，在线状态，video状态，audio状态
-        // {'id': 2, 'name': 'xiaoming', 'avatar': '/..../path/2.png', 'online': true, 'video': true, "audio": false, peerConnect: {}, stream: undefined, ices:[], outputMuted: false, screenStream: undefined }
+        // {'id': 2, 'name': 'xiaoming', 'avatar': '/..../path/2.png', 'online': true, 'video': true, "audio": false, peerConnect: {}, 
+        //        stream: undefined, ices:[], outputMuted: false, screenStream: undefined, offered: 1(sended),2(received) }
     },
     effects: {
         /**
@@ -89,67 +88,24 @@ export default {
         *wbMessageCurrentMeeting( {payload, callback} , { put,select }){
             // 获取到当前room已经连接的用户信息
             // 发起连接
+            
             const {to:myId, content, content:{members}} = payload
-            const {videoConfig} = yield select(state => state.meetingRoom)
+            const {myTempStream} = yield select(state => state.meetingRoom)
             // 先存储currentMeeting信息
             yield put({
                 type: 'setMeetingRoomState',
                 payload: {
                     ...content,
-                    'myId': myId,
                 }
             });
-            const {isMobile} = yield select(state => state.global)
-
-            // 先查询当前有的设备，然后再打开设备
-            const enumDevices = yield navigator.mediaDevices.enumerateDevices()
-            .then(devices => devices)
-            .catch(error => {
-                console.log(`${error.name  }: ${  error.message}`);
-                return []
-            });
-            const enumDevicesJson = JSON.stringify(enumDevices);
-            console.log("---json:", enumDevicesJson);
-            user.postTestData(enumDevicesJson)
-            // 所有设备的devideId都是空的，返回 true: 所有都没有授权， false表示有授权过
-            const authFlag = enumDevices.every( (value) => value.deviceId === "")
             
-            const videoIndex = lodash.findIndex(enumDevices, { 'kind': 'videoinput' });
-            const mediaConfig = {}
-            if(videoIndex >= 0){// 有视频频设备
-                if(!authFlag && enumDevices[videoIndex].deviceId === ""){// 认证过了,但是不同意使用摄像头
-                    // nothing
-                }else{
-                    if(isMobile){
-                        videoConfig.facingMode = "user"
-                    }
-                    mediaConfig.video = videoConfig
-                }
-            }
-            const audioIndex = lodash.findIndex(enumDevices, { 'kind': 'audioinput' });
-            if(audioIndex >=0 ){
-                if(!authFlag && enumDevices[audioIndex].deviceId === ""){// 认证过了,但是不同意使用麦克风
-                    // nothing
-                }else{
-                    mediaConfig.audio= true
-                }
-            }
-
-            // 开启本地流数据
-            const localStream = yield navigator.mediaDevices.getUserMedia({
-                ...mediaConfig
-            }).catch( error => {
-                console.log(error);
-                return new MediaStream()
-            });
-            console.log("----wbMessageCurrentMeeting tracks:", localStream.getTracks());
             // 先存一份myId和stream数据
             // 存储自己的流数据
             yield put({
                 type: 'setMeetingMemberStream',
                 payload: {
                     'id': myId,
-                    'stream' :localStream ,
+                    'stream' :myTempStream ,
                     'outputMuted': true, // 自己的播放器，要静音，不然会听到自己的声音
                 }
             });
@@ -277,7 +233,7 @@ export default {
             if(index === -1){
                 return;
             }
-            const peerMember = members[index]
+            const peerMember = members[index]            
             const { peerConnect } = peerMember
             if(!peerConnect){
                 console.log("---error:", peerMember);
@@ -304,14 +260,21 @@ export default {
             const myIndex = lodash.findIndex(members, member => member.id === myId )
             if(myIndex > -1){
                 const myInfo = members[myIndex]
-                yield myInfo.stream.getTracks().forEach(track=> {
-                    peerConnect.addTrack(track, myInfo.stream);
-                });
+                const senders = peerConnect.getSenders()
+                if(lodash.isEmpty(senders)){
+                    yield myInfo.stream.getTracks().forEach(track=> {
+                        peerConnect.addTrack(track, myInfo.stream);
+                    });
+                }
             }
 
             peerConnect.ontrack = callback
             if(offer){
                 // 应答 offer 
+                if(!peerMember.offered && peerMember.offered === 1){
+                    return;
+                }
+                peerMember.offered = 2 // received
                 peerConnect.setRemoteDescription(offer);
                 peerMember.ices.forEach(
                     ice => peerConnect.addIceCandidate(ice)
@@ -322,18 +285,24 @@ export default {
                     offerToReceiveVideo: 1,
                     offerToReceiveAudio: 1,
                 }).then(desc =>{
-                    peerConnect.setLocalDescription(desc);
-                    stompClient.send(`${wsSendPrefix}/answer`, {}, JSON.stringify({"from": myId, "to": peerId, "content": desc}));
+                    peerConnect.setLocalDescription(desc).then(() => {
+                        stompClient.send(`${wsSendPrefix}/answer`, {}, JSON.stringify({"from": myId, "to": peerId, "content": desc}));
+                    });
                 })
             }else{
+                if(!peerMember.offered && peerMember.offered === 2){
+                    return;
+                }
+                peerMember.offered = 1 // sended
                 // https://developer.mozilla.org/en-US/docs/Web/Guide/API/WebRTC/Peer-to-peer_communications_with_WebRTC
                 // 发送offer之前必须准备好流
                 peerConnect.createOffer({
                     offerToReceiveAudio: 1,
                     offerToReceiveVideo: 1
                 }).then( (desc) => {
-                    peerConnect.setLocalDescription(desc);
-                    stompClient.send(`${wsSendPrefix}/offer`, {}, JSON.stringify({"from": myId, "to": peerId, "content": desc}));
+                    peerConnect.setLocalDescription(desc).then(()=>{
+                        stompClient.send(`${wsSendPrefix}/offer`, {}, JSON.stringify({"from": myId, "to": peerId, "content": desc}));
+                    })
                 })
             }
         },
@@ -412,10 +381,10 @@ export default {
         },
         clearMeetingRoomState(){
             return {
-                videoConfig : {
-                    'width': { ideal: 640 },
-                    'height': { ideal: 480 }
-                },
+                // videoConfig : {
+                //     'width': { ideal: 640 },
+                //     'height': { ideal: 480 }
+                // },
                 'micEnabled': true,
                 'roomAuthed': true,
                 'members': []

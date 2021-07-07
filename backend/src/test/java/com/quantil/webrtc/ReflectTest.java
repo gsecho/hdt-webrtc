@@ -13,7 +13,7 @@ import java.util.Date;
  * @date 2021/4/23 17:56
  */
 @Slf4j
-public class Reflect {
+public class ReflectTest {
 
     @Test
     public void test(){

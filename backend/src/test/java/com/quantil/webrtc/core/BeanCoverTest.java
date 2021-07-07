@@ -15,7 +15,7 @@ import java.util.Date;
  * @version 1.0
  * @date 2021/6/21 17:19
  */
-public class BeanCover {
+public class BeanCoverTest {
 
     @Test
     public void responseResult(){

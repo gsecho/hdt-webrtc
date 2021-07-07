@@ -26,8 +26,6 @@ import java.util.HashMap;
 public class WebSocketController {
 
     @Autowired
-    private RtcMeetingItemDao meetingItemDao;
-    @Autowired
     private MeetingRoomService meetingRoomService;
     @Autowired
     private SimpMessagingTemplate simpMessagingTemplate;

@@ -18,7 +18,7 @@ import java.lang.reflect.Method;
  * @version 1.0
  * @date 2021/6/21 17:33
  */
-public class ExceptionCover {
+public class ExceptionCoverTest {
 
     @Test
     public void exceptionHandler(){

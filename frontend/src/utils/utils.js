@@ -99,6 +99,3 @@ export function detectBrowser(window) {
   return result;
 }
 
-
-
-
