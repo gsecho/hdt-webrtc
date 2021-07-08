@@ -191,6 +191,7 @@ public class MeetingRoomService {
     }
     public void candidateHandler(WebSocketUserPrincipal userPrincipal, WebSocketRequestGenerator<CandidateMessage> request){
 //        因为转换的时候只转成map // TODO 这个有空时候研究下（MappingFastJsonMessageConverter）
+        log.info("{}", request.getContent());
         CandidateMessage candidateMessage = JSONObject.parseObject(JSONObject.toJSONString(request.getContent()), CandidateMessage.class);
         String[] array = candidateMessage.getCandidate().split("\\s+");
         CandidateBody candidateBody = new CandidateBody(array);

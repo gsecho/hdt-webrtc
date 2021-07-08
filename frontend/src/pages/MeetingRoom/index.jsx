@@ -377,8 +377,6 @@ class MeetingRoom extends React.Component {
   }
 
   render() {
-    
-    
     const { meetingRoom: {roomAuthed, maxMembers: total, members, curSource, micEnabled } } = this.props
     const {global: {isMobile}, location } = this.props;
 
@@ -395,7 +393,9 @@ class MeetingRoom extends React.Component {
     const lengthWidthRatio = 16/9;
 
     const videos = []
-    members.forEach( (member, i) => {
+    for (let i=0; i<members.length; i+=1){
+      const member = members[i]
+    // members.forEach( (member, i) => {
       const video = {};
       if((!lodash.isEmpty(member)) && (!lodash.isUndefined(member.stream))){
         if(member.screenStream){
@@ -419,8 +419,8 @@ class MeetingRoom extends React.Component {
         video.id = `empty_${i}`
       }
       videos.push(video);
-    })
-
+    }
+    
     for(let i=videos.length; i< total; i+=1){
       const video = {};
       video.id = `substitution_${i}`

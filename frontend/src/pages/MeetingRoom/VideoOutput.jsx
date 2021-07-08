@@ -14,7 +14,7 @@ class VideoOutput extends React.Component {
         this.streamIdRef.current = video.id;
         videoObj.srcObject = video;
         videoObj.controls = controls;
-        videoObj.muted = {muted};
+        videoObj.muted = muted;
 
         videoObj.play()
           .catch(error => {

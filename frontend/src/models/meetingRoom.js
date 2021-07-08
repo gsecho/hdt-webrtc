@@ -202,7 +202,12 @@ export default {
             const index = lodash.findIndex(members, member => member.id === peerId )
             if(index > -1){
                 const { peerConnect } = members[index]
-                peerConnect.setRemoteDescription(new RTCSessionDescription(content));
+                yield peerConnect.setRemoteDescription(content);
+                members[index].ices.forEach(
+                    ice => peerConnect.addIceCandidate(ice)
+                    .then(console.log("---success01:"))
+                    .catch(e=>console.log("---error01:", e))
+                )// 加入缓存的candidate
             }
         },
         *wbMessageCandidate( {payload} , { select}){
@@ -215,14 +220,14 @@ export default {
             }
             const member = members[index]
             const { peerConnect } = member
-            const ice = new RTCIceCandidate(content);
+            
             if(peerConnect && peerConnect.remoteDescription && peerConnect.remoteDescription.type){
-                peerConnect.addIceCandidate(ice)
+                peerConnect.addIceCandidate(content)
                 .then(console.log("---success:"))
                 .catch(e=>console.log("---error:", e));
             }else if(member.ices){
-                // 加入数组中，收到offer以后填入
-                member.ices.push(ice)
+                // 加入数组中，设置setRemoteDescription以后需要再add
+                member.ices.push(content)
             }
         },
         *wbRtcPeerConnectHandler( {payload, callback} , { select }){
@@ -242,7 +247,7 @@ export default {
             }
             peerConnect.onicecandidate = e=> { // 事件触发执行 
                 if (e.candidate != null) {
-                    // console.log(`onicecandidate: send candidate${e.candidate}`);
+                    console.log(`onicecandidate: send candidate${e.candidate}`);
                     stompClient.send(`${wsSendPrefix}/candidate`, {}, JSON.stringify({"from": myId, "to": peerId, "content": e.candidate}));
                 }
             };
@@ -256,26 +261,41 @@ export default {
                     console.log('Data channel is close.');// TODO
                 };
             };
-
-            const myIndex = lodash.findIndex(members, member => member.id === myId )
-            if(myIndex > -1){
-                const myInfo = members[myIndex]
-                const senders = peerConnect.getSenders()
-                if(lodash.isEmpty(senders)){
-                    yield myInfo.stream.getTracks().forEach(track=> {
-                        peerConnect.addTrack(track, myInfo.stream);
-                    });
-                }
-            }
-
-            peerConnect.ontrack = callback
+            // peerConnect.onconnectionstatechange = e =>{
+            //     console.log('---onconnectionstatechange: ', e);
+            // }
+            // peerConnect.onicecandidateerror = e=>{
+            //     console.log('---onicecandidateerror: ', e);
+            // }
+            // peerConnect.oniceconnectionstatechange =e=>{
+            //     console.log('---oniceconnectionstatechange: ', e);
+            // }
+            // peerConnect.onicegatheringstatechange = e=>{
+            //     console.log('---onicegatheringstatechange: ', e);
+            // }
+            // peerConnect.onsignalingstatechange = e=>{
+            //     console.log('---onsignalingstatechange: ', e);
+            // }
+            // peerConnect.onstatsended = e=>{
+            //     console.log('---onstatsended: ', e);
+            // }
+            
             if(offer){
                 // 应答 offer 
                 if(!peerMember.offered && peerMember.offered === 1){
                     return;
                 }
                 peerMember.offered = 2 // received
-                peerConnect.setRemoteDescription(offer);
+                peerConnect.ontrack = callback
+                const myIndex = lodash.findIndex(members, member => member.id === myId )
+                if(myIndex > -1){
+                    const myInfo = members[myIndex]
+                    yield myInfo.stream.getTracks().forEach(track=> {
+                        peerConnect.addTrack(track, myInfo.stream);
+                    });
+                }
+                
+                yield peerConnect.setRemoteDescription(offer);// 必须等到remote处理完成才能加入ice
                 peerMember.ices.forEach(
                     ice => peerConnect.addIceCandidate(ice)
                     .then(console.log("---success01:"))
@@ -286,7 +306,7 @@ export default {
                     offerToReceiveAudio: 1,
                 }).then(desc =>{
                     peerConnect.setLocalDescription(desc).then(() => {
-                        stompClient.send(`${wsSendPrefix}/answer`, {}, JSON.stringify({"from": myId, "to": peerId, "content": desc}));
+                        stompClient.send(`${wsSendPrefix}/answer`, {}, JSON.stringify({"from": myId, "to": peerId, "content": peerConnect.localDescription}));
                     });
                 })
             }else{
@@ -294,16 +314,27 @@ export default {
                     return;
                 }
                 peerMember.offered = 1 // sended
+                peerConnect.ontrack = callback
+                const myIndex = lodash.findIndex(members, member => member.id === myId )
+                if(myIndex > -1){
+                    const myInfo = members[myIndex]
+                    yield myInfo.stream.getTracks().forEach(track=> {
+                        peerConnect.addTrack(track, myInfo.stream);
+                    });
+                }
                 // https://developer.mozilla.org/en-US/docs/Web/Guide/API/WebRTC/Peer-to-peer_communications_with_WebRTC
                 // 发送offer之前必须准备好流
-                peerConnect.createOffer({
-                    offerToReceiveAudio: 1,
-                    offerToReceiveVideo: 1
-                }).then( (desc) => {
-                    peerConnect.setLocalDescription(desc).then(()=>{
-                        stompClient.send(`${wsSendPrefix}/offer`, {}, JSON.stringify({"from": myId, "to": peerId, "content": desc}));
+                peerConnect.onnegotiationneeded = (e)=>{
+                    console.log('---onnegotiationneeded: ', e);
+                    peerConnect.createOffer({
+                        offerToReceiveAudio: 1,
+                        offerToReceiveVideo: 1
+                    }).then( (desc) => {
+                        peerConnect.setLocalDescription(desc).then(()=>{
+                            stompClient.send(`${wsSendPrefix}/offer`, {}, JSON.stringify({"from": myId, "to": peerId, "content": peerConnect.localDescription}));
+                        })
                     })
-                })
+                }
             }
         },
         *refreshStream( {event} , { select, put }){
@@ -321,6 +352,7 @@ export default {
                             member.stream = new MediaStream();
                         }
                         member.stream.addTrack(event.track)
+                        console.log("-----refreshStream-stream:", member.stream);
                     }
                 }
             })
