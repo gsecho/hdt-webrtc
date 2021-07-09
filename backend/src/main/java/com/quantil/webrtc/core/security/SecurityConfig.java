@@ -1,40 +1,20 @@
 package com.quantil.webrtc.core.security;
 
-import com.alibaba.fastjson.JSON;
-import com.quantil.webrtc.core.bean.LoginAuthRes;
 import com.quantil.webrtc.core.security.auth.CustomAuthenticationFilter;
 import com.quantil.webrtc.core.security.auth.CustomAuthorizationFilter;
-import com.quantil.webrtc.core.security.auth.CustomUserDetails;
 import com.quantil.webrtc.core.security.auth.MD5PasswordEncoder;
-import com.quantil.webrtc.core.utils.JwtUtils;
-import com.quantil.webrtc.core.utils.ResponseUtils;
-import com.quantil.webrtc.core.utils.ToolUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.http.HttpStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
-import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.web.authentication.AuthenticationFailureHandler;
-import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 /**
  * @author chenrf
@@ -53,39 +33,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Bean
     CustomAuthenticationFilter customAuthenticationFilter() throws Exception {
         CustomAuthenticationFilter filter = new CustomAuthenticationFilter();
-        filter.setFilterProcessesUrl("/v1/user/login");
-        filter.setAuthenticationSuccessHandler(new AuthenticationSuccessHandler() {
-            @Override
-            public void onAuthenticationSuccess(HttpServletRequest req, HttpServletResponse resp, Authentication authentication) throws IOException, ServletException {
-                // Authentication 实际类型是 UsernamePasswordAuthenticationToken
-                CustomUserDetails customUserDetails = (CustomUserDetails)authentication.getPrincipal();
-                String token = JwtUtils.createToken(customUserDetails.getUsername(), customUserDetails.getUserId().toString(), ToolUtils.getUserRoles(customUserDetails.getAuthorities()));
-                LoginAuthRes loginAuthRes = new LoginAuthRes();
-                loginAuthRes.setToken(token);
-                List<String> authority = new ArrayList<>();
-                Collection<GrantedAuthority> authorities = customUserDetails.getAuthorities();
-                for (GrantedAuthority grantedAuthority : authorities) {
-                    authority.add(grantedAuthority.getAuthority());
-                }
-                loginAuthRes.setAuthority(authority);
-
-                resp.setStatus(HttpStatus.SC_OK);
-                resp.setContentType(MediaType.APPLICATION_JSON_VALUE);
-//                resp.setHeader(); // 也可以放入cookies中
-                PrintWriter out = resp.getWriter();
-                out.write(JSON.toJSONString(ResponseUtils.formatOkResponse(loginAuthRes)));
-                out.flush();
-                out.close();
-            }
-        });
-
-        filter.setAuthenticationFailureHandler(new AuthenticationFailureHandler() {
-            @Override
-            public void onAuthenticationFailure(HttpServletRequest req, HttpServletResponse resp, AuthenticationException e) throws IOException, ServletException {
-                resp.setStatus(HttpStatus.SC_UNAUTHORIZED);
-                resp.setContentType(MediaType.APPLICATION_JSON_VALUE);
-            }
-        });
+        filter.setFilterProcessesUrl("/v*/user/login");
         filter.setAuthenticationManager(authenticationManagerBean());
         return filter;
     }
@@ -98,11 +46,16 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
             .antMatchers("/","/p/**", "/**.js", "/**.css", "/**.png", "/**.woff2", "/ws").permitAll()
             .anyRequest().authenticated()
             .and()
-
             // 登陆部分参数
             .formLogin()
             .loginPage("/p/user/login") // 重定向到这个页面
 //                .loginProcessingUrl("/v1/user/login")// 这是是登陆post请求的url
+            .and()
+                .logout()
+                .logoutRequestMatcher(new AntPathRequestMatcher("/*/user/logout"))
+//                .deleteCookies("deleteCookies")
+                .logoutSuccessHandler(new CustomLogoutSuccessHandler())
+
             .and()
             // 配置remember， 校验的token保存在headerName，持续时间
 //            .rememberMe()
@@ -112,6 +65,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 //                .and()
             .addFilter(new CustomAuthorizationFilter(authenticationManager()))
             .addFilterAt(customAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
+            // 定义错误拦截点，比如权限不足的时候可以抛出AuthenticationEntryPoint类型的错误，认证点会返回403给前端
+//            .exceptionHandling().authenticationEntryPoint(new Http403ForbiddenEntryPoint()) // 默认 Http403ForbiddenEntryPoint
+//        .accessDeniedHandler()
         ;
 
         http.csrf().disable();
@@ -131,6 +87,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
         auth.userDetailsService(this.userDetailsService)
-            .passwordEncoder(this.md5PasswordEncoder);
+            .passwordEncoder(new BCryptPasswordEncoder())
+//            .passwordEncoder(this.md5PasswordEncoder)
+        ;
     }
 }

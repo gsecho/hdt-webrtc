@@ -38,8 +38,8 @@
             <!--<generatedKey column="id" sqlStatement="Mysql" identity="true"/>-->
         <!--</table>-->
         <!-- 制定每个表的生成策略 -->
-        <table tableName="rtc_user_role-" domainObjectName="RtcUserRole-"
-               mapperName="RtcUserRoleDao-">
+        <table tableName="rtc_user-" domainObjectName="RtcUser-"
+               mapperName="RtcUserDao-">
             <generatedKey column="id" sqlStatement="Mysql" identity="true"/>
         </table>
 

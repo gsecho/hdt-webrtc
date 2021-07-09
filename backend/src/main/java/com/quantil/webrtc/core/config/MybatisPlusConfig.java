@@ -21,9 +21,6 @@ public class MybatisPlusConfig {
     @PostConstruct
     public void addPageInterceptor() {
         PreSaveInterceptor preSaveInterceptor = new PreSaveInterceptor();
-        sqlSessionFactoryList.forEach(
-            sqlSessionFactory -> {
-                sqlSessionFactory.getConfiguration().addInterceptor(preSaveInterceptor);
-            });
+        sqlSessionFactoryList.forEach(sqlSessionFactory -> sqlSessionFactory.getConfiguration().addInterceptor(preSaveInterceptor));
     }
 }

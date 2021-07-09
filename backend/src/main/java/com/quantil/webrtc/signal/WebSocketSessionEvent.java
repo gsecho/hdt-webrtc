@@ -1,19 +1,12 @@
 package com.quantil.webrtc.signal;
 
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.event.EventListener;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.stereotype.Component;
-import org.springframework.web.socket.messaging.*;
 
 /**
  * @author chenrf
  * @version 1.0
  * @date 2021/5/7 14:15
  */
-@Slf4j
+//@Slf4j
 //@Configuration
 public class WebSocketSessionEvent {
 

@@ -61,3 +61,9 @@ export async function createUser(params) {
     });
 }
 
+export async function postTestData(body) {
+  return request(`${backendUrl}/user/test`, {
+      'method': 'POST',
+      'body': body,
+    });
+}

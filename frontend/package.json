@@ -1,12 +1,14 @@
 {
-    "name": "hdt-ng-portal",
+    "name": "hdt-webrtc",
     "version": "1.0.0",
     "description": "A portal for managing HDT related data",
     "private": true,
     "scripts": {
         "presite": "cd functions && npm install",
-        "start": "cross-env UMI_ENV=dev APP_TYPE=site PORT=8090 umi dev",
+        "start": "cross-env PORT=18090 umi dev",
+        "start-window": "cross-env UMI_ENV=dev APP_TYPE=site PORT=8090 umi dev",
         "start:no-mock": "cross-env MOCK=none PORT=8090 umi dev",
+        "build": "umi build",
         "build-dev": "cross-env UMI_ENV=dev umi build",
         "build-prod": "cross-env UMI_ENV=prod umi build",
         "site": "npm run presite && cross-env APP_TYPE=site npm run build && firebase deploy && npm run docker:push",

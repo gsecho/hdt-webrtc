@@ -93,11 +93,11 @@ class EditMeeting extends React.Component {
             form: { getFieldDecorator },
             data: editData,
         } = this.props;
-        const switchStatus = editData.status === 0 ? true : false;
+        const switchStatus = editData.status === 0;
         editData.switchStatus = switchStatus
         return(
           <>
-            <Form {...formLayout} >
+            <Form {...formLayout}>
               <Form.Item label="Id">
                 {getFieldDecorator('id', {
                     initialValue: editData.id,
@@ -195,7 +195,7 @@ class EditMeeting extends React.Component {
                     rules: [{ required: true, message: 'Please input meeting content!' }],
                     initialValue: editData.content,
                 })(
-                  <TextArea rows={4} placeholder="请输入至少五个字符" />
+                  <TextArea rows={4} placeholder="Please input meeting content" />
                 )}
               </Form.Item>
             </Form>

@@ -59,10 +59,10 @@ class AddMeeting extends React.Component {
 
     handleSelectAttendance = value => {
       console.log(value);
-  };
+    };
 
     handleSubmit = () => {
-      const { form: { validateFields} } = this.props;
+      const { form, form: { validateFields} } = this.props;
         validateFields((err, values) => {
           if (err) {
             console.log('Received values of form: ', values);
@@ -79,6 +79,9 @@ class AddMeeting extends React.Component {
                     'content': values.content,
                     'maxMember': values.maxMember,
                 },
+                callback: () => {
+                  form.resetFields()
+                }
             })
           }
         });

@@ -13,19 +13,16 @@ import java.util.Date;
  * @date 2021/4/23 17:56
  */
 @Slf4j
-public class Reflect {
+public class ReflectTest {
 
     @Test
     public void test(){
         RtcMeetingItem rtcMeetingItem = new RtcMeetingItem();
         Date date = new Date();
-//        rtcMeetingItem.setCreateDt(date);
-
         try {
             Object para = rtcMeetingItem;
             Class<?> clz= para.getClass();
             Method a = clz.getMethod("setCreateDt", Date.class);
-            Method b = RtcMeetingItem.class.getDeclaredMethod("setUpdateDt", Date.class);
             a.invoke(rtcMeetingItem, date);
             log.info("hello");
         } catch (Exception e) {

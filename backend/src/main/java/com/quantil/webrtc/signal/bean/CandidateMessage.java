@@ -8,7 +8,7 @@ import lombok.Data;
  * @date 2021/5/10 14:42
  */
 @Data
-public class Candidate {
+public class CandidateMessage {
     private Integer sdpMLineIndex;
     private String sdpMid;
     private String candidate;

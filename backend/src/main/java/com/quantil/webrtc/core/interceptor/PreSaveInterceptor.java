@@ -54,8 +54,7 @@ public class PreSaveInterceptor implements Interceptor {
                 preSave(((MappedStatement) para0).getSqlCommandType(), (DbBase)para1);
             }
         }
-        Object result = invocation.proceed();
-        return result;
+        return invocation.proceed();
     }
 
     @Override

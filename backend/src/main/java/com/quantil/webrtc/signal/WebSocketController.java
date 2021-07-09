@@ -1,6 +1,5 @@
 package com.quantil.webrtc.signal;
 
-import com.alibaba.fastjson.JSON;
 import com.quantil.webrtc.api.v1.meeting.dao.RtcMeetingItemDao;
 import com.quantil.webrtc.signal.bean.*;
 import com.quantil.webrtc.signal.constants.WebSocketConstants;
@@ -12,14 +11,9 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.socket.messaging.SessionConnectEvent;
 import org.springframework.web.socket.messaging.SessionConnectedEvent;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
-
-import java.security.Principal;
 import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 
 /**
@@ -31,8 +25,6 @@ import java.util.Map;
 @RestController
 public class WebSocketController {
 
-    @Autowired
-    private RtcMeetingItemDao meetingItemDao;
     @Autowired
     private MeetingRoomService meetingRoomService;
     @Autowired
@@ -61,7 +53,6 @@ public class WebSocketController {
 
     @MessageMapping(WebSocketConstants.CMD_OFFER)
     public void transmitOffer(WebSocketUserPrincipal principal, WebSocketRequestGenerator<HashMap> request){
-        WebSocketRequestGenerator<Candidate> abc = new WebSocketRequestGenerator<Candidate>();
         // 转发offer请求
         request.setType(WebSocketConstants.CMD_OFFER);
         simpMessagingTemplate.convertAndSendToUser(request.getTo(), WebSocketConstants.USER_CHANNEL, request);
@@ -73,7 +64,7 @@ public class WebSocketController {
         simpMessagingTemplate.convertAndSendToUser(request.getTo(), WebSocketConstants.USER_CHANNEL, request);
     }
     @MessageMapping({WebSocketConstants.CMD_CANDIDATE})
-    public void transmitCandidate(WebSocketUserPrincipal principal, WebSocketRequestGenerator<Candidate> request){
+    public void transmitCandidate(WebSocketUserPrincipal principal, WebSocketRequestGenerator<CandidateMessage> request){
         // 转发candidate请求
         request.setType(WebSocketConstants.CMD_CANDIDATE);
         simpMessagingTemplate.convertAndSendToUser(request.getTo(), WebSocketConstants.USER_CHANNEL, request);
@@ -99,10 +90,10 @@ public class WebSocketController {
 
     /**
      * @MessageMapping 这个注解里面的throw会进入这里
-     * @param exception
+     * @param e
      */
     @MessageExceptionHandler
-    public void handleException(Exception exception) {
-        log.error(exception.toString());
+    public void handleException(Exception e) {
+        log.error("{}", e.getMessage());
     }
 }

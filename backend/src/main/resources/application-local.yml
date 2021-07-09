@@ -1,0 +1,18 @@
+# local是没有ssl
+
+logging:
+  level:
+    root: INFO
+    com.quantil.webrtc: DEBUG
+    com.alibaba.druid: DEBUG
+  root:
+    appender: Console
+    path: .
+
+spring:
+  datasource:
+    sql:
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      url: jdbc:mysql://localhost:3306/web_rtc?useUnicode=true&characterEncoding=UTF-8&useSSL=false
+      username: chenrf
+      password: 123456

@@ -1,22 +1,14 @@
 package com.quantil.webrtc.signal.config;
 
-import com.alibaba.fastjson.serializer.SerializerFeature;
-import com.alibaba.fastjson.support.config.FastJsonConfig;
 import com.alibaba.fastjson.support.spring.messaging.MappingFastJsonMessageConverter;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.quantil.webrtc.core.constant.CoreConstants;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.MediaType;
-import org.springframework.messaging.converter.MappingJackson2MessageConverter;
 import org.springframework.messaging.converter.MessageConverter;
 import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
-import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.WebSocketHandler;
-import org.springframework.web.socket.WebSocketMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
@@ -25,8 +17,6 @@ import org.springframework.web.socket.config.annotation.WebSocketTransportRegist
 import org.springframework.web.socket.handler.WebSocketHandlerDecorator;
 import org.springframework.web.socket.handler.WebSocketHandlerDecoratorFactory;
 
-import java.security.Principal;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -103,15 +93,8 @@ public class WebSocketStompConfig implements WebSocketMessageBrokerConfigurer {
                 return new WebSocketHandlerDecorator(handler) {
                     @Override
                     public void afterConnectionEstablished(final WebSocketSession session) throws Exception {
-//                        session.close(CloseStatus.NOT_ACCEPTABLE);
                         log.info("----------- afterConnectionEstablished --------------");
                         super.afterConnectionEstablished(session);
-                    }
-
-                    @Override
-                    public void handleMessage(WebSocketSession session, WebSocketMessage<?> message) throws Exception {
-                        Principal principal = session.getPrincipal();
-                        super.handleMessage(session, message);
                     }
                 };
             }
@@ -149,7 +132,6 @@ public class WebSocketStompConfig implements WebSocketMessageBrokerConfigurer {
         registration.taskExecutor().corePoolSize(10)
             .maxPoolSize(20)
             .keepAliveSeconds(60);
-        //registration.interceptors(new WebSocketChannelInterceptor()); // TODO 配置输出侧拦截器
     }
 
 

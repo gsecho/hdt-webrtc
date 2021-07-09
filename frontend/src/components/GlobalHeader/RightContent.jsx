@@ -3,7 +3,6 @@ import { Avatar, Spin, Tag, Popover, Icon, Menu } from 'antd';
 import moment from 'moment';
 import groupBy from 'lodash/groupBy';
 import lodash from 'lodash';
-// import Support from '@/components/Support';
 import styles from './index.less';
 
 export default class GlobalHeaderRight extends PureComponent {

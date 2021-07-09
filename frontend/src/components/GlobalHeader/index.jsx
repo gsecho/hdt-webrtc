@@ -5,7 +5,7 @@ import Debounce from 'lodash-decorators/debounce';
 import menuIcon from '@/assets/menuIcon.svg';
 import hdtLogo from '@/assets/hdt.svg';
 import * as helper from '@/utils/helper';
-// import adapter from 'webrtc-adapter'
+import adapter from 'webrtc-adapter' // 不可用屏蔽（webrtc）
 import * as redirect from '@/utils/redirect'
 import * as tokenUtils from '@/utils/tokenUtils'
 import RightContent from './RightContent';
@@ -18,9 +18,15 @@ import styles from './index.less';
 class GlobalHeader extends PureComponent {
     
     componentDidMount() {
+        console.log('---adapter:', adapter.browserDetails);
         if(!tokenUtils.tokenValidate()){ // 如果url在router.js中有跳转，这里的跳转会失败
             redirect.loginPageService()
         }
+        const { dispatch, isMobile } = this.props;
+        dispatch({
+            type: 'global/setIsMobile',
+            payload: isMobile
+        })
     }
 
     componentWillUnmount() {

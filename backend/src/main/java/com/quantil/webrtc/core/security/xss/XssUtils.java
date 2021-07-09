@@ -12,16 +12,16 @@ import org.owasp.esapi.ESAPI;
  */
 @Slf4j
 public class XssUtils {
-
+    private XssUtils(){
+        throw new IllegalStateException("Utility class");
+    }
     public static String stripXss(String value) {
         if (value == null) {
             return null;
         }
-//        log.error(value);
         value = ESAPI.encoder()
                     .canonicalize(value)
                     .replaceAll("\0", "");
-//        log.error(value);
         return Jsoup.clean(value, Whitelist.none());
     }
 

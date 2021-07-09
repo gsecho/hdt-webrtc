@@ -288,9 +288,10 @@ class BasicLayout extends React.Component {
   }
 }
 // 将Menu model的属性挂载到组件的props上
-export default connect(({ user, global, setting, menu: menuModel, loading }) => ({
+export default connect(({ user, global, setting, menu: menuModel, loading  }) => ({
   user,
   collapsed: global.collapsed,
+  mytest: global,
   layout: setting.layout,
   menuData: menuModel.menuData,
   breadcrumbNameMap: menuModel.breadcrumbNameMap,

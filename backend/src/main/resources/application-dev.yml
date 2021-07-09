@@ -1,9 +1,9 @@
 
-
-#server:
-#  ssl:
-#    key-store: classpath:keystore.jks
-#    key-store-password: Quantil#2020
+# dev是加上local + ssl
+server:
+  ssl:
+    key-store: classpath:keystore.jks
+    key-store-password: Quantil#2020
 
 logging:
   level:

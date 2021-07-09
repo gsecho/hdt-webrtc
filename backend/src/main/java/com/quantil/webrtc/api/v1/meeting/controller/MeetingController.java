@@ -8,13 +8,11 @@ import com.quantil.webrtc.api.v1.meeting.dao.RtcMeetingItemDao;
 import com.quantil.webrtc.core.bean.base.ResponseResult;
 import com.quantil.webrtc.core.constant.CoreConstants;
 import com.quantil.webrtc.core.security.SecurityUtils;
-import com.quantil.webrtc.core.security.auth.CustomUserDetails;
 import com.quantil.webrtc.core.utils.ResponseUtils;
 import com.quantil.webrtc.core.utils.ToolUtils;
+import com.quantil.webrtc.signal.MeetingRoomService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -34,23 +32,23 @@ import java.util.UUID;
 public class MeetingController {
     // 因为这个controller基本上没什么数据处理，所以没有再创建service层
     @Autowired
-    RtcMeetingItemDao meetingItemDao;
-
+    RtcMeetingItemDao rtcMeetingItemDao;
+    @Autowired
+    MeetingRoomService meetingRoomService;
 
     /**
      * 创建会议室
      * @param item
-     * @param request
      * @return
      */
     @PostMapping("/create")
-    public ResponseResult createItem(@RequestBody RtcMeetingItem item, HttpServletRequest request){
+    public ResponseResult createItem(@RequestBody RtcMeetingItem item){
         item.setPassword(UUID.randomUUID().toString());
         item.setAdminPassword(UUID.randomUUID().toString().substring(0, 8));
         item.setStatus(CoreConstants.DB_RECORD_ENABLE);
         item.setCreateBy(SecurityUtils.getPrincipalName());
-        int resCode = meetingItemDao.insert(item);
-        log.info("createItem resCode:%d", resCode);
+        int resCode = rtcMeetingItemDao.insert(item);
+        log.info("createItem resCode:{}", resCode);
         return ResponseUtils.formatOkResponse();
     }
 
@@ -64,7 +62,7 @@ public class MeetingController {
         searchReq.setCreateBy(SecurityUtils.getPrincipalName());
         PageHelper.startPage(searchReq.getPageNum(), searchReq.getPageSize());
         searchReq.setCreateBy(SecurityUtils.getPrincipalName());
-        PageInfo<RtcMeetingItem>pages =  new PageInfo(meetingItemDao.selectByStartTime(searchReq));
+        PageInfo<RtcMeetingItem>pages =  new PageInfo(rtcMeetingItemDao.selectByStartTime(searchReq));
 
         HashMap<String, Object> map = new HashMap<>();
         map.put("total", pages.getTotal());
@@ -80,7 +78,7 @@ public class MeetingController {
     @PostMapping("/update")
     public ResponseResult updateItem(@RequestBody RtcMeetingItem item){
         item.setUpdateBy(SecurityUtils.getPrincipalName());
-        meetingItemDao.updateByPrimaryKey(item);
+        rtcMeetingItemDao.updateByPrimaryKey(item);
         return ResponseUtils.formatOkResponse();
     }
 
@@ -90,12 +88,12 @@ public class MeetingController {
      * @return
      */
     @DeleteMapping("/delete/{id}")
-    public ResponseResult updateItem(@PathVariable("id") Long id){
+    public ResponseResult deleteItem(@PathVariable("id") Long id){
         RtcMeetingItem rtcMeetingItem = new RtcMeetingItem();
         rtcMeetingItem.setUpdateBy(SecurityUtils.getPrincipalName());
         rtcMeetingItem.setId(id);
         rtcMeetingItem.setStatus(CoreConstants.DB_RECORD_DELETE);
-        meetingItemDao.updateByPrimaryKey(rtcMeetingItem);
+        rtcMeetingItemDao.updateByPrimaryKey(rtcMeetingItem);
         return ResponseUtils.formatOkResponse();
     }
 
@@ -117,11 +115,17 @@ public class MeetingController {
      */
     @PostMapping("/authenticate")
     public ResponseResult authenticate(@RequestBody RtcMeetingItem reqItem){
-        RtcMeetingItem item = meetingItemDao.selectByPrimaryKey(reqItem.getId());
+        RtcMeetingItem item = rtcMeetingItemDao.selectByPrimaryKey(reqItem.getId());
         if ((item != null) && (item.getPassword().equals(reqItem.getPassword()))) {
             return ResponseUtils.formatOkResponse();
         }else{
             return ResponseUtils.formatBadResponse();
         }
     }
+
+    @GetMapping("/room-info/{id}")
+    public ResponseResult getRoomInfo(@PathVariable("id") String id){
+        return ResponseUtils.formatOkResponse(meetingRoomService.getRoomInfo(id));
+    }
+
 }

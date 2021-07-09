@@ -41,14 +41,12 @@ public class UserDetailsServiceImpl implements UserDetailsService {
             if((authorities == null) || authorities.isEmpty()){
                 grantedAuthorities.add(new SimpleGrantedAuthority("user"));// TODO 后续需要删除--同时
             }else{
-//                List<GrantedAuthority> grantedAuthorities = new ArrayList<>(authorities.size());
                 for (String authority : authorities) {
                     grantedAuthorities.add(new SimpleGrantedAuthority(authority));
                 }
             }
 
             CustomUserDetails customUserDetails = new CustomUserDetails(rtcUser.getUsername(), rtcUser.getPassword(), grantedAuthorities);
-            customUserDetails.setUserId(rtcUser.getId());
             return customUserDetails;
         }
     }
