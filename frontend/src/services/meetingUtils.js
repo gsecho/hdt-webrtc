@@ -18,6 +18,11 @@ export function getRandomClientName(roomId, name){
     return `${roomId}-${name}-${curMs}-${random.toString()}`; // { roomId-name-返回时间-随机数 }
 }
 
+export function getRandomId(id){
+    const arrays =  lodash.split(id, '-', 4)
+    return arrays[3]
+}
+
 export function formatStompData(from, to, content){
     return {
       'from': from,

@@ -14,8 +14,9 @@ public class WebSocketConstants {
     public static final String TEST_CHANNEL = "/hello";
 
     public static final String USER_CHANNEL = "user/channel";
-    public static final String CURRENT_MEETING = "current-meeting";
+    public static final String CURRENT_MEETING = "currentMeeting";
     public static final String CMD_OFFER = "offer";
+    public static final String CMD_SEND_OFFER = "reqSendOffer";
     public static final String CMD_ANSWER = "answer";
     public static final String CMD_CANDIDATE = "candidate";
     public static final String CMD_ENTER = "enter";
@@ -26,6 +27,8 @@ public class WebSocketConstants {
     public static final String ROOM_ID = "roomId";
     public static final String PASSWORD = "password";
     public static final String CLIENT_ID = "clientId";
+    public static final String MEDIA_VIDEO = "video";
+    public static final String MEDIA_AUDIO = "audio";
 
     public static final String UDP_PROTOCOL = "udp";
     public static final String TCP_PROTOCOL = "tcp";
