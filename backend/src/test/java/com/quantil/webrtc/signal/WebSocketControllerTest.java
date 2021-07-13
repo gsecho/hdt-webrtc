@@ -32,7 +32,7 @@ public class WebSocketControllerTest {
         SimpMessagingTemplate simpMessagingTemplate = PowerMockito.mock(SimpMessagingTemplate.class);
         SetterUtils.setter(webSocketController, simpMessagingTemplate, "simpMessagingTemplate");
 
-        webSocketController.hello(new MeetingMember());
+        webSocketController.hello(new MeetingMember(true, true));
         WebSocketUserPrincipal userPrincipal = new WebSocketUserPrincipal();
         WebSocketRequestGenerator<String> stringWebSocketRequestGenerator = new WebSocketRequestGenerator<>();
         stringWebSocketRequestGenerator.setContent("192.168.1.1");

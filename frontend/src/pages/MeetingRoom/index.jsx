@@ -49,7 +49,6 @@ class MeetingRoom extends React.Component {
       })
     }
     this.openMedia()
-    // this.startStomp()
   }
 
   componentWillUnmount(){
@@ -86,16 +85,16 @@ class MeetingRoom extends React.Component {
         'videoConfig': videoConfig
       }
     })
+    const mediaConfig = {}
     navigator.mediaDevices.enumerateDevices()
       .then(enumDevices => {
         const enumDevicesJson = JSON.stringify(enumDevices);
         console.log("---json:", enumDevicesJson);
-        user.postTestData(enumDevicesJson)
+        // user.postTestData(enumDevicesJson)
         // 所有设备的devideId都是空的，返回 true: 所有都没有授权， false表示有授权过
         const authFlag = enumDevices.every( (value) => value.deviceId === "")
-        
         const videoIndex = lodash.findIndex(enumDevices, { 'kind': 'videoinput' });
-        const mediaConfig = {}
+        
         if(videoIndex >= 0){// 有视频频设备
           if(!authFlag && enumDevices[videoIndex].deviceId === ""){// 认证过了,但是不同意使用摄像头
             // nothing
@@ -134,7 +133,7 @@ class MeetingRoom extends React.Component {
                 'myTempStream' :stream
             }
           });
-          this.startStomp(clientId)
+          this.startStomp(clientId, mediaConfig)
           return stream
         }).catch( error => {
           console.log("---", error)
@@ -146,7 +145,7 @@ class MeetingRoom extends React.Component {
                 'myTempStream' :stream
             }
           });
-          this.startStomp(clientId)
+          this.startStomp(clientId, mediaConfig)
           return stream
         });
         return []
@@ -156,7 +155,7 @@ class MeetingRoom extends React.Component {
       });
   }
 
-  startStomp = (clientId) =>{
+  startStomp = (clientId, mediaConfig) =>{
     const { location, dispatch } = this.props;
     const roomId = location.query.id // 如果没有该参数值是undefined, 需要显示输入用户名和密码的界面
     const roomPwd = location.query.pwd
@@ -168,7 +167,9 @@ class MeetingRoom extends React.Component {
             'roomId': roomId,
             'password': roomPwd,
             'clientId': clientId,
-            'token': tokenUtils.getToken()
+            'token': tokenUtils.getToken(),
+            'video': !lodash.isUndefined(mediaConfig.video), 
+            'audio': !lodash.isUndefined(mediaConfig.audio),
         };
         const ws = new WebSocket(`wss://${window.location.host}${wsUri}`);
         const stompClient = stomp.over(ws);
@@ -179,9 +180,12 @@ class MeetingRoom extends React.Component {
                 // console.log(respnose.body)
                 const data = JSON.parse(respnose.body);
                 switch(data.type){
-                    case 'current-meeting':
+                    case 'currentMeeting':
                         dispatch({ type : `${curModlePrefix}/wbMessageCurrentMeeting`, payload: data, callback: this.peerOnaddStream });
                         break;
+                    case 'reqSendOffer':
+                      dispatch({ type : `${curModlePrefix}/wbRtcSendOffer`, payload: {myId:data.to, peerId:data.from}, callback: this.peerOnaddStream });
+                      break;
                     case 'offer':
                         dispatch({ type : `${curModlePrefix}/wbMessageOffer`, payload: data, callback: this.peerOnaddStream });
                         break;

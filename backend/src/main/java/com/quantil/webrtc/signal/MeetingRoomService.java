@@ -9,6 +9,7 @@ import com.quantil.webrtc.signal.constants.WebSocketConstants;
 import com.quantil.webrtc.signal.utils.StunHttpService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.xpath.operations.Bool;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
@@ -46,7 +47,8 @@ public class MeetingRoomService {
         webSocketResponse.setContent(content);
         return webSocketResponse;
     }
-    public boolean connectMeetingRoomHandler(String roomIdString, RtcMeetingItem meetingItem, WebSocketUserPrincipal userPrincipal) {
+    public boolean connectMeetingRoomHandler(String roomIdString, RtcMeetingItem meetingItem, WebSocketUserPrincipal userPrincipal,
+                                             Boolean videoBool, Boolean audioBool) {
         MeetingRoom meetingRoom = roomMap.get(roomIdString);
         if (meetingRoom == null) {// room创建
             meetingRoom = new MeetingRoom();// 新建meetingRoom信息
@@ -75,7 +77,7 @@ public class MeetingRoomService {
         if(roomMembers.size() >= meetingRoom.getRtcMeetingItem().getMaxMember()){
             return false;
         }
-        MeetingMember member = new MeetingMember();
+        MeetingMember member = new MeetingMember(videoBool, audioBool);
         member.setUserPrincipal(userPrincipal);
         if(emptyIndex == null){
             userPrincipal.setIndex(roomMembers.size());
@@ -106,6 +108,8 @@ public class MeetingRoomService {
                 String roomIdString = stompHeaderAccessor.getNativeHeader(WebSocketConstants.ROOM_ID).get(0);
                 String password = stompHeaderAccessor.getNativeHeader(WebSocketConstants.PASSWORD).get(0);
                 String clientId = stompHeaderAccessor.getNativeHeader(WebSocketConstants.CLIENT_ID).get(0);
+                Boolean videoBoolean = Boolean.valueOf(stompHeaderAccessor.getNativeHeader(WebSocketConstants.MEDIA_VIDEO).get(0));
+                Boolean audioBoolean = Boolean.valueOf(stompHeaderAccessor.getNativeHeader(WebSocketConstants.MEDIA_AUDIO).get(0));
                 RtcMeetingItem meetingItem = rtcMeetingItemDao.selectByPrimaryKey(Long.valueOf(roomIdString));
                 if (meetingItem.getPassword().equals(password)) {
                     WebSocketUserPrincipal userPrincipal = new WebSocketUserPrincipal();
@@ -115,7 +119,7 @@ public class MeetingRoomService {
 
                     stompHeaderAccessor.setUser(userPrincipal);
                     simpMessageHeaderAccessor.setUser(userPrincipal);
-                    return connectMeetingRoomHandler(roomIdString, meetingItem, userPrincipal);
+                    return connectMeetingRoomHandler(roomIdString, meetingItem, userPrincipal, videoBoolean, audioBoolean);
                 }else{
                     throw new RuntimeException();// 这样 stomp客户端才会收到连接失败消息
                 }

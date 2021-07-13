@@ -79,18 +79,18 @@ export default {
             const response = yield call(getClientIp);
             if (response.httpCode === 200) {
                 const {body: { content } } = response
-                stompClient.send(`${wsSendPrefix}/current-meeting`, {} , JSON.stringify({'content': content}));// 上次自己的ip，同时请求当前room的连接信息
+                stompClient.send(`${wsSendPrefix}/currentMeeting`, {} , JSON.stringify({'content': content}));// 上次自己的ip，同时请求当前room的连接信息
             }
         },
         /**
-         * 请求current-meeting后的应答，如果有连接，需要逐个发起webrtc请求
+         * 请求currentMeeting后的应答，如果有连接，需要逐个发起webrtc请求
          */
         *wbMessageCurrentMeeting( {payload, callback} , { put,select }){
             // 获取到当前room已经连接的用户信息
             // 发起连接
             
             const {to:myId, content, content:{members}} = payload
-            const {myTempStream} = yield select(state => state.meetingRoom)
+            const {myTempStream, stompClient} = yield select(state => state.meetingRoom)
             // 先存储currentMeeting信息
             yield put({
                 type: 'setMeetingRoomState',
@@ -113,24 +113,32 @@ export default {
             yield put({
                 type: 'micControl'
             });
+            const myMember = lodash.find(members, { 'id': myId} )
+            // video+audio+randomId
+            const myRandomId = meetingUtils.getRandomId(myId)
+            const myFactor = `${myMember.video ? 1:0}${myMember.audio ? 1:0}${myRandomId}`
             // eslint-disable-next-line no-restricted-syntax
-            for(const member of members) {
-                const peerId = member.id
-                if(myId === peerId){ // 自己不需要创建peerConnection
-                    // eslint-disable-next-line no-continue
-                    continue;
+            for (const member of members) {
+                if(myId !== member.id){ // 自己不需要创建peerConnection
+                    member.peerConnect = new RTCPeerConnection()
+                    member.ices = []
+
+                    const peerRandomId = meetingUtils.getRandomId(member.id)
+                    const peerFactor = `${member.audio ? 1:0}${member.audio ? 1:0}${peerRandomId}`
+                    if(myFactor >= peerFactor){
+                        // 我方发起offer
+                        yield put({
+                            type: 'wbRtcSendOffer',
+                            payload: {
+                                'myId' : myId,// from、to尽量只用在 ws传递中，内部用有意义的字段描述
+                                'peerId' : member.id,
+                            },
+                            'callback': callback,
+                        });
+                    }else{
+                        stompClient.send(`${wsSendPrefix}/reqSendOffer`, {}, JSON.stringify({"from": myId, "to": member.id, "content": 1}));
+                    }
                 }
-                member.peerConnect = new RTCPeerConnection()
-                member.ices = []
-                yield put({
-                    type: 'wbRtcPeerConnectHandler',
-                    payload: {
-                        'myId' : myId,// from、to尽量只用在 ws传递中，内部用有意义的字段描述
-                        'peerId' : peerId,
-                        'offer': undefined,
-                    },
-                    'callback': callback,
-                });
             }
         },
         /**
@@ -183,18 +191,64 @@ export default {
             yield put({ type: 'setMeetingRoomState', payload: { curSource: payload.target } });
         },
         /** 对端发起的offer */
-        *wbMessageOffer( {payload, callback} , { put}){
-            const {from: peerId, to: myId, content} = payload
-            yield put({
-                type: 'wbRtcPeerConnectHandler',
-                payload: {
-                    'myId' : myId,
-                    'peerId' : peerId,
-                    'offer': content,
-                },
-                'callback': callback
-            });
+        *wbMessageOffer( {payload, callback} , { select}){
+            const {from: peerId, to: myId, content:offer} = payload
+            const meetingRoom = yield select(state => state.meetingRoom)
+            const {stompClient, members} = meetingRoom;
+            const index = lodash.findIndex(members, member => member.id === peerId )
+            if(index === -1){
+                return;
+            }
+            const peerMember = members[index]  
+            const { peerConnect } = peerMember
+            peerConnect.onicecandidate = e=> { // 事件触发执行 
+                if (e.candidate != null) {
+                    console.log(`onicecandidate: send candidate${e.candidate}`);
+                    stompClient.send(`${wsSendPrefix}/candidate`, {}, JSON.stringify({"from": myId, "to": peerId, "content": e.candidate}));
+                }
+            };
+            peerConnect.ondatachannel = e => {
+                console.log('Data channel is created!');
+                e.channel.onopen = () => {
+                  console.log('Data channel is open and ready to be used.');
+                };
+
+                e.channel.close = () => {
+                    console.log('Data channel is close.');// TODO
+                };
+            };
+
+            // 应答 offer 
+            peerMember.offered = 2 // received
+            peerConnect.ontrack = callback
+            const myIndex = lodash.findIndex(members, member => member.id === myId )
+            if(myIndex > -1){
+                const myInfo = members[myIndex]
+                yield myInfo.stream.getTracks().forEach(track=> {
+                    peerConnect.addTrack(track, myInfo.stream);
+                });
+            }
+            
+            yield peerConnect.setRemoteDescription(offer);// 必须等到remote处理完成才能加入ice
+            peerMember.ices.forEach(
+                ice => peerConnect.addIceCandidate(ice)
+                .then(console.log("---success01:"))
+                .catch(e=>console.log("---error01:", e))
+            )// 加入缓存的candidate
+            peerConnect.createAnswer({
+                offerToReceiveVideo: 1,
+                offerToReceiveAudio: 1,
+            }).then(desc =>{
+                peerConnect.setLocalDescription(desc).then(() => {
+                    stompClient.send(`${wsSendPrefix}/answer`, {}, JSON.stringify({"from": myId, "to": peerId, "content": peerConnect.localDescription}));
+                });
+            })
         },
+        /**
+         * 处理对端的offer应答
+         * @param {*} param0 
+         * @param {*} param1 
+         */
         *wbMessageAnswer( {payload} , { select}){
             const meetingRoom = yield select(state => state.meetingRoom)
             const {members} = meetingRoom;
@@ -230,15 +284,18 @@ export default {
                 member.ices.push(content)
             }
         },
-        *wbRtcPeerConnectHandler( {payload, callback} , { select }){
+        *wbRtcSendOffer( {payload, callback} , { select }){
             const meetingRoom = yield select(state => state.meetingRoom)
             const {stompClient, members} = meetingRoom;
-            const {myId, peerId, offer} = payload
+            const {myId, peerId} = payload
             const index = lodash.findIndex(members, member => member.id === peerId )
-            if(index === -1){
+            const peerMember = members[index]
+            console.log("----------------------------------------offered----------------------------");
+            if((index === -1) || (peerMember.offered)){
+                console.log("----------------------------------------offered:", peerMember.offered);
                 return;
             }
-            const peerMember = members[index]            
+            peerMember.offered = true
             const { peerConnect } = peerMember
             if(!peerConnect){
                 console.log("---error:", peerMember);
@@ -261,81 +318,30 @@ export default {
                     console.log('Data channel is close.');// TODO
                 };
             };
-            // peerConnect.onconnectionstatechange = e =>{
-            //     console.log('---onconnectionstatechange: ', e);
-            // }
-            // peerConnect.onicecandidateerror = e=>{
-            //     console.log('---onicecandidateerror: ', e);
-            // }
-            // peerConnect.oniceconnectionstatechange =e=>{
-            //     console.log('---oniceconnectionstatechange: ', e);
-            // }
-            // peerConnect.onicegatheringstatechange = e=>{
-            //     console.log('---onicegatheringstatechange: ', e);
-            // }
-            // peerConnect.onsignalingstatechange = e=>{
-            //     console.log('---onsignalingstatechange: ', e);
-            // }
-            // peerConnect.onstatsended = e=>{
-            //     console.log('---onstatsended: ', e);
-            // }
             
-            if(offer){
-                // 应答 offer 
-                if(!peerMember.offered && peerMember.offered === 1){
-                    return;
-                }
-                peerMember.offered = 2 // received
-                peerConnect.ontrack = callback
-                const myIndex = lodash.findIndex(members, member => member.id === myId )
-                if(myIndex > -1){
-                    const myInfo = members[myIndex]
-                    yield myInfo.stream.getTracks().forEach(track=> {
-                        peerConnect.addTrack(track, myInfo.stream);
-                    });
-                }
-                
-                yield peerConnect.setRemoteDescription(offer);// 必须等到remote处理完成才能加入ice
-                peerMember.ices.forEach(
-                    ice => peerConnect.addIceCandidate(ice)
-                    .then(console.log("---success01:"))
-                    .catch(e=>console.log("---error01:", e))
-                )// 加入缓存的candidate
-                peerConnect.createAnswer({
-                    offerToReceiveVideo: 1,
-                    offerToReceiveAudio: 1,
-                }).then(desc =>{
-                    peerConnect.setLocalDescription(desc).then(() => {
-                        stompClient.send(`${wsSendPrefix}/answer`, {}, JSON.stringify({"from": myId, "to": peerId, "content": peerConnect.localDescription}));
-                    });
-                })
-            }else{
-                if(!peerMember.offered && peerMember.offered === 2){
-                    return;
-                }
-                peerMember.offered = 1 // sended
-                peerConnect.ontrack = callback
-                const myIndex = lodash.findIndex(members, member => member.id === myId )
-                if(myIndex > -1){
-                    const myInfo = members[myIndex]
-                    yield myInfo.stream.getTracks().forEach(track=> {
-                        peerConnect.addTrack(track, myInfo.stream);
-                    });
-                }
-                // https://developer.mozilla.org/en-US/docs/Web/Guide/API/WebRTC/Peer-to-peer_communications_with_WebRTC
-                // 发送offer之前必须准备好流
-                peerConnect.onnegotiationneeded = (e)=>{
-                    console.log('---onnegotiationneeded: ', e);
-                    peerConnect.createOffer({
-                        offerToReceiveAudio: 1,
-                        offerToReceiveVideo: 1
-                    }).then( (desc) => {
-                        peerConnect.setLocalDescription(desc).then(()=>{
-                            stompClient.send(`${wsSendPrefix}/offer`, {}, JSON.stringify({"from": myId, "to": peerId, "content": peerConnect.localDescription}));
-                        })
-                    })
-                }
+            peerMember.offered = 1 // sended
+            peerConnect.ontrack = callback
+            const myIndex = lodash.findIndex(members, member => member.id === myId )
+            if(myIndex > -1){
+                const myInfo = members[myIndex]
+                yield myInfo.stream.getTracks().forEach(track=> {
+                    peerConnect.addTrack(track, myInfo.stream);
+                });
             }
+            // https://developer.mozilla.org/en-US/docs/Web/Guide/API/WebRTC/Peer-to-peer_communications_with_WebRTC
+            // 发送offer之前必须准备好流
+            peerConnect.onnegotiationneeded = (e)=>{
+                console.log('---onnegotiationneeded: ', e);
+                peerConnect.createOffer({
+                    offerToReceiveAudio: 1,
+                    offerToReceiveVideo: 1
+                }).then( (desc) => {
+                    peerConnect.setLocalDescription(desc).then(()=>{
+                        stompClient.send(`${wsSendPrefix}/offer`, {}, JSON.stringify({"from": myId, "to": peerId, "content": peerConnect.localDescription}));
+                    })
+                })
+            }
+            
         },
         *refreshStream( {event} , { select, put }){
             // event : RtcTrackEvent

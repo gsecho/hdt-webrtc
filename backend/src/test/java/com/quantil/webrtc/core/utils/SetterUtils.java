@@ -13,7 +13,7 @@ import java.lang.reflect.Field;
 public class SetterUtils {
 
     // 使用我们的bean替换注入的 bean
-    public static final Object setter(Object mainObj, Object fieldObj, String fieldName) {
+    public static final void setter(Object mainObj, Object fieldObj, String fieldName) {
         try {
             Class<?> clazzRoot = mainObj.getClass();
             Field field = clazzRoot.getDeclaredField(fieldName);
@@ -22,6 +22,18 @@ public class SetterUtils {
         } catch (Exception e) {
             Assert.assertTrue(false);// 错误停止
         }
-        return fieldObj;
+    }
+
+
+    public static final Object getter(Object mainObj, String fieldName) {
+        try {
+            Class<?> clazzRoot = mainObj.getClass();
+            Field field = clazzRoot.getDeclaredField(fieldName);
+            field.setAccessible(true);
+            return field.get(mainObj);
+        } catch (Exception e) {
+            Assert.assertTrue(false);// 错误停止
+        }
+        return mainObj;
     }
 }

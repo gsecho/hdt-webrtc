@@ -51,6 +51,17 @@ public class WebSocketController {
         meetingRoomService.meetingRoomInfoHandler(principal);
     }
 
+    /**
+     * 让对方发起offer请求
+     * @param principal
+     * @param request
+     */
+    @MessageMapping(WebSocketConstants.CMD_SEND_OFFER)
+    public void transmitSendOffer(WebSocketUserPrincipal principal, WebSocketRequestGenerator<String> request){
+        // 转发answer请求
+        request.setType(WebSocketConstants.CMD_SEND_OFFER);
+        simpMessagingTemplate.convertAndSendToUser(request.getTo(), WebSocketConstants.USER_CHANNEL, request);
+    }
     @MessageMapping(WebSocketConstants.CMD_OFFER)
     public void transmitOffer(WebSocketUserPrincipal principal, WebSocketRequestGenerator<HashMap> request){
         // 转发offer请求
