@@ -43,7 +43,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         http
             .authorizeRequests()
             // 需要/号打头，不然会被拦截 -- 这里配置或者 web.ignoring().antMatchers方式都可以
-            .antMatchers("/","/p/**", "/**.js", "/**.css", "/**.png", "/**.woff2", "/ws").permitAll()
+            .antMatchers("/","/p/**", "/**.js", "/**.css", "/**.png", "/**.woff2", "/ws", "/v*/meeting/client-ip", "/v*/user/test").permitAll()
             .anyRequest().authenticated()
             .and()
             // 登陆部分参数

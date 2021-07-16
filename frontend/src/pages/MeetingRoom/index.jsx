@@ -7,19 +7,21 @@
  */
 import React from 'react';
 import { connect } from 'dva';
-import {Card, Result, Spin, Form, Button, Tooltip } from 'antd'
+import {Card, Result, Spin, Form, Button, Tooltip, Modal } from 'antd'
 import lodash from 'lodash'
 import * as redirect from '@/utils/redirect'
 import MicOffSvg from '@/assets/micOff.svg';
 import MicOnSvg from '@/assets/micOn.svg';
+import cameraOffSvg from '@/assets/cameraOff.svg';
+import cameraOnSvg from '@/assets/cameraOn.svg';
 import DesktopSvg from '@/assets/desktop.svg';
 import DesktopShareSvg from '@/assets/desktopShare.svg';
 import stomp from 'stompjs'
 import * as tokenUtils  from '@/utils/tokenUtils'
 import * as utils  from '@/utils/utils'
 import * as meetingUtils  from '@/services/meetingUtils'
-import * as user from '@/services/user'
 import VideoOutput from './VideoOutput'
+import InputName from './InputName'
 import backend from '../../../config/backend';
 
 import './styles.less'
@@ -37,6 +39,8 @@ class MeetingRoom extends React.Component {
   state={
     // videosWidth: '0px',
     timerId: undefined, // 定时器ID
+    // inputNameFormRef: undefined,
+    lackName: false,
   }
   
   componentDidMount(){
@@ -48,7 +52,7 @@ class MeetingRoom extends React.Component {
         timerId: id
       })
     }
-    this.openMedia()
+    window.addEventListener('resize', this.onResize)
   }
 
   componentWillUnmount(){
@@ -60,7 +64,31 @@ class MeetingRoom extends React.Component {
     this.closeStomp()
     dispatch({type: `${curModlePrefix}/clearMeetingRoomState`})
   }
-  
+
+  onResize = () => {
+    const { dispatch } = this.props;
+    dispatch({type: `${curModlePrefix}/refreshState`})
+  }
+
+  inputNameButtonOk = e => {
+    e.preventDefault();
+    const promiseFun = this.inputNameFormRef.handleSubmit()// 调用下级组件的方法
+    promiseFun.then(values=>{
+      console.log("-----values then:", values);
+      this.openMedia()
+    })
+  }
+
+  inputNameButtonCancel = e => {
+    e.preventDefault();
+    this.setState({ lackName: true })
+    const { dispatch } = this.props;
+    dispatch({
+      type: `${curModlePrefix}/setMeetingRoomState`,
+      payload: { roomAuthed:2 }
+    })
+  }
+
   timer1s = ()=>{ // 每s发送一条消息
     const { dispatch } = this.props;
     dispatch({type: `${curModlePrefix}/caculateStat`})
@@ -73,7 +101,7 @@ class MeetingRoom extends React.Component {
     dispatch({type: `${curModlePrefix}/refreshStream`, event: ev})
   }
 
-  openMedia = ()=>{
+  openMedia = (nickname)=>{
     const { dispatch, location, global: { isMobile} } = this.props;
     const videoConfig = {
       'width': { ideal: 640 },
@@ -114,12 +142,8 @@ class MeetingRoom extends React.Component {
           }
         }
         const roomId = location.query.id // 如果没有该参数值是undefined, 需要显示输入用户名和密码的界面
-        const userName = tokenUtils.getTokenAudience()
-        if(userName === null){
-          console.log("---userName: null");
-          return new MediaStream();
-        }
-        const clientId =  meetingUtils.getRandomClientName(roomId, userName)
+        
+        const clientId =  meetingUtils.getRandomClientName(roomId, nickname)
 
         // 开启本地流数据
         navigator.mediaDevices.getUserMedia({
@@ -238,7 +262,7 @@ class MeetingRoom extends React.Component {
     dispatch({
         type: `${curModlePrefix}/setMeetingRoomState`,
         payload: {
-          'roomAuthed': false,
+          'roomAuthed': 2,
         }
     })
   }
@@ -380,8 +404,15 @@ class MeetingRoom extends React.Component {
     });
   }
 
+  cameraStatusOnChange =  () =>{
+    const { dispatch } = this.props
+    dispatch({
+      type: 'meetingRoom/videoControl',
+    });
+  }
+
   render() {
-    const { meetingRoom: {roomAuthed, maxMembers: total, members, curSource, micEnabled } } = this.props
+    const { meetingRoom: {roomAuthed, maxMembers: total, members, curSource, videoEnabled, micEnabled } } = this.props
     const {global: {isMobile}, location } = this.props;
 
     const localBrowser = utils.detectBrowser(window)
@@ -437,12 +468,8 @@ class MeetingRoom extends React.Component {
     const flexInfo = this.getFlexDisplayInfo(videos.length);  
     const videoHeight = (videosWidth/lengthWidthRatio)/(flexInfo.columnNum)*0.8;
     // console.log(videos);
-    let micIcon;
-    if(micEnabled){
-      micIcon = MicOnSvg;
-    }else{
-      micIcon = MicOffSvg;
-    }
+    const micIcon = micEnabled ? MicOnSvg : MicOffSvg;
+    const cameraIcon = videoEnabled ? cameraOnSvg : cameraOffSvg;
     
     let desktopIcon;
     if(curSource === 'screen'){
@@ -452,9 +479,37 @@ class MeetingRoom extends React.Component {
     }
 
     let pageBg;
-    if (lodash.isUndefined(roomAuthed)){
-      pageBg = <Spin spinning> </Spin>
-    }else if (roomAuthed){
+    if(roomAuthed === 0){// 输入昵称阶段
+      console.log("0");
+      pageBg =<Modal
+        title="nickname"
+        visible={roomAuthed === 0}
+        onOk={this.inputNameButtonOk}
+        onCancel={this.inputNameButtonCancel}
+              // style={{ top: 30 }}
+        width={640}
+      >
+        <InputName wrappedComponentRef={(form) => {this.inputNameFormRef = form}} />
+      </Modal>
+    }else if(roomAuthed === 2){ // 校验失败
+      const {lackName} = this.state 
+      let localTitle;
+      if(lackName){
+        localTitle = "Please input nickname.";
+      }else{
+        localTitle = "room id and password error.";
+      }
+      console.log("2");
+      pageBg =<Result
+        status="500"
+        title="notice"
+        style={{
+                  background: 'none',
+                }}
+        subTitle={localTitle}
+      />
+    }else{
+      console.log("1");
       if(!total){
         pageBg = <Spin spinning> </Spin>
       } else {
@@ -464,7 +519,7 @@ class MeetingRoom extends React.Component {
               {
                 videos.map((video) => 
                   <div className="custom-videoflex" style={{  flexBasis: flexInfo.basis}} key={video.id} onDoubleClick={this.ondblclickHandler}>
-                    { video.bitRate ? <p style={{ "position":"relative" }}>{video.bitRate} kbits/sec</p> : <></> }
+                    { video.bitRate ? <p style={{ 'position': 'absolute' }}>{video.bitRate} kbits/sec</p> : <></> }
                     <VideoOutput 
                       muted={video.muted}
                       video={video.src} 
@@ -477,9 +532,6 @@ class MeetingRoom extends React.Component {
             </div>
           </Card>
           <div style={{display: 'flex', flexDirection: 'row-reverse'}}> 
-            <Tooltip placement="bottom" title="exit">
-              <Button type="primary" icon="export" size="large" style={{marginLeft: '10px '}} onClick={this.exitMeetingButtonHandle} />
-            </Tooltip>
             {
               !isMobile &&
               <Tooltip placement="bottom" title="share">
@@ -493,26 +545,14 @@ class MeetingRoom extends React.Component {
                 <img className="custom-left-menu-icon" src={micIcon} style={{ width: '20px', height: '20px' }} />
               </Button>
             </Tooltip>
-            {/* <Tooltip placement="bottom" title="mic">
-              <Button type="primary" size="large" style={{ marginLeft: '10px'}} onClick={this.videoInputSourceChange}> 
-                <img className="custom-left-menu-icon" src={CameraSourceChange} style={{ width: '20px', height: '20px' }} />
+            <Tooltip placement="bottom" title="exit">
+              <Button type="primary" size="large" style={{ marginLeft: '10px'}} onClick={this.cameraStatusOnChange}> 
+                <img className="custom-left-menu-icon" src={cameraIcon} style={{ width: '20px', height: '20px' }} />
               </Button>
-            </Tooltip> */}
+            </Tooltip>
           </div>
         </div> 
       }
-    }
-    else {
-      pageBg =  <>
-        <Result
-          status="500"
-          title="notice"
-          style={{
-                  background: 'none',
-                }}
-          subTitle="Please input room id and password."
-        />
-      </>
     }
     
     return(

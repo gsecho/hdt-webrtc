@@ -14,7 +14,8 @@ function getAllowRequestUrl() {
   // 增加 /^\/v1\/user\/info/的原因，如有是/的时候是会重定向的，这时候redirect会失效
   return [
     /^\/v1\/user\/login/,
-    /^\/v1\/user\/register/
+    /^\/v1\/user\/register/,
+    /^\/v1\/meeting\/client-ip/
   ];
 }
 
