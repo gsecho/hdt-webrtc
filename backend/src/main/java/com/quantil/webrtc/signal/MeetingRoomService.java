@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.quantil.webrtc.api.v1.meeting.bean.RtcMeetingItem;
 import com.quantil.webrtc.api.v1.meeting.dao.RtcMeetingItemDao;
 import com.quantil.webrtc.core.utils.JwtUtils;
+import com.quantil.webrtc.core.utils.ToolUtils;
 import com.quantil.webrtc.signal.bean.*;
 import com.quantil.webrtc.signal.constants.WebSocketConstants;
 import com.quantil.webrtc.signal.utils.StunHttpService;
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.stream.Collectors;
 
 /**
  * @author chenrf
@@ -47,6 +49,7 @@ public class MeetingRoomService {
         webSocketResponse.setContent(content);
         return webSocketResponse;
     }
+
     public boolean connectMeetingRoomHandler(String roomIdString, RtcMeetingItem meetingItem, WebSocketUserPrincipal userPrincipal,
                                              Boolean videoBool, Boolean audioBool) {
         MeetingRoom meetingRoom = roomMap.get(roomIdString);
@@ -55,31 +58,22 @@ public class MeetingRoomService {
             meetingRoom.setRtcMeetingItem(meetingItem);
         }
         List<MeetingMember> roomMembers = meetingRoom.getMembers();
-        Integer emptyIndex = null;
-        for (int i = 0; i < roomMembers.size(); i++) {
-            MeetingMember meetingMember = roomMembers.get(i);
-            if (meetingMember == null) {
-                if(emptyIndex == null){
-                    emptyIndex = i;
-                }
-                continue;
-            }
-            if (meetingMember.getUserPrincipal().getUsername().equals(userPrincipal.getUsername())) { // 重复则替换
-                meetingMember.getUserPrincipal().setEnable(false);// 先设置为disable
-                deleteQueue.add(meetingMember.getUserPrincipal());
-
-                userPrincipal.setIndex(i);
-                meetingMember.setUserPrincipal(userPrincipal);  // 替换新的
-                return true;
-            }
+        // id重复
+        boolean duplicate = roomMembers.stream().anyMatch( item -> item.getUserPrincipal().getUserId() == userPrincipal.getUserId());
+        if(duplicate){
+            log.warn("id duplicate:{}", userPrincipal.getUserId());
+            return false;
         }
-
+        // 人数超过限制
         if(roomMembers.size() >= meetingRoom.getRtcMeetingItem().getMaxMember()){
             return false;
         }
+        // 查找null的位置
+        int emptyIndex = roomMembers.indexOf(null);
+
         MeetingMember member = new MeetingMember(videoBool, audioBool);
         member.setUserPrincipal(userPrincipal);
-        if(emptyIndex == null){
+        if(-1 == emptyIndex){
             userPrincipal.setIndex(roomMembers.size());
             roomMembers.add(member);
         }else{
@@ -91,41 +85,32 @@ public class MeetingRoomService {
     }
     /**
      * websocket连接处理，携带参数token，roomId，password，还有randomId
-     *  1. token校验，room校验
-     *  2. 从map中获取对应的room信息，没有则新建
-     *  3. room中的用户信息, 没有新建，有则删除替换
+     *  1. 从map中获取对应的room信息，没有则新建
+     *  2. room中的用户信息, 没有新建，有则删除替换
      * @param simpMessageHeaderAccessor
      * @param stompHeaderAccessor
      * @return
      */
     public boolean connectHandler(SimpMessageHeaderAccessor simpMessageHeaderAccessor, StompHeaderAccessor stompHeaderAccessor){
-        String token = stompHeaderAccessor.getNativeHeader(WebSocketConstants.TOKEN).get(0);
-        if (StringUtils.isNotBlank(token)) {
-            String userName = JwtUtils.verifyAndGetUsername(token);
-            if(StringUtils.isBlank(userName)) {
-                throw new RuntimeException();// 这样stomp客户端才能快速收到连接失败消息
-            }else{
-                String roomIdString = stompHeaderAccessor.getNativeHeader(WebSocketConstants.ROOM_ID).get(0);
-                String password = stompHeaderAccessor.getNativeHeader(WebSocketConstants.PASSWORD).get(0);
-                String clientId = stompHeaderAccessor.getNativeHeader(WebSocketConstants.CLIENT_ID).get(0);
-                Boolean videoBoolean = Boolean.valueOf(stompHeaderAccessor.getNativeHeader(WebSocketConstants.MEDIA_VIDEO).get(0));
-                Boolean audioBoolean = Boolean.valueOf(stompHeaderAccessor.getNativeHeader(WebSocketConstants.MEDIA_AUDIO).get(0));
-                RtcMeetingItem meetingItem = rtcMeetingItemDao.selectByPrimaryKey(Long.valueOf(roomIdString));
-                if (meetingItem.getPassword().equals(password)) {
-                    WebSocketUserPrincipal userPrincipal = new WebSocketUserPrincipal();
-                    userPrincipal.setUsername(userName);
-                    userPrincipal.setName(clientId);// 这里使用客户端随机的id
-                    userPrincipal.setRoomId(roomIdString);
+        String roomIdString = stompHeaderAccessor.getNativeHeader(WebSocketConstants.ROOM_ID).get(0);
+        String password = stompHeaderAccessor.getNativeHeader(WebSocketConstants.PASSWORD).get(0);
+        String clientId = stompHeaderAccessor.getNativeHeader(WebSocketConstants.CLIENT_ID).get(0);
+        String userName = clientId.split("-")[1];
+        Boolean videoBoolean = Boolean.valueOf(stompHeaderAccessor.getNativeHeader(WebSocketConstants.MEDIA_VIDEO).get(0));
+        Boolean audioBoolean = Boolean.valueOf(stompHeaderAccessor.getNativeHeader(WebSocketConstants.MEDIA_AUDIO).get(0));
+        RtcMeetingItem meetingItem = rtcMeetingItemDao.selectByPrimaryKey(Long.valueOf(roomIdString));
+        if (meetingItem.getPassword().equals(password)) {
+            WebSocketUserPrincipal userPrincipal = new WebSocketUserPrincipal();
+            userPrincipal.setUsername(userName);
+            userPrincipal.setName(clientId);// 这里使用客户端随机的id
+            userPrincipal.setRoomId(roomIdString);
 
-                    stompHeaderAccessor.setUser(userPrincipal);
-                    simpMessageHeaderAccessor.setUser(userPrincipal);
-                    return connectMeetingRoomHandler(roomIdString, meetingItem, userPrincipal, videoBoolean, audioBoolean);
-                }else{
-                    throw new RuntimeException();// 这样 stomp客户端才会收到连接失败消息
-                }
-            }
+            stompHeaderAccessor.setUser(userPrincipal);
+            simpMessageHeaderAccessor.setUser(userPrincipal);
+            return connectMeetingRoomHandler(roomIdString, meetingItem, userPrincipal, videoBoolean, audioBoolean);
+        }else{
+            throw new RuntimeException();// 这样 stomp客户端才会收到连接失败消息
         }
-        return false;
     }
 
     /**
@@ -142,26 +127,17 @@ public class MeetingRoomService {
         if (meetingRoom == null) {
             return;
         }
-        for (int i = 0; i < meetingRoom.getMembers().size(); i++) {
-            MeetingMember member = meetingRoom.getMembers().get(i);
-            if ((member != null) && (member.getUserPrincipal().getUserId().equals(userPrincipal.getUserId()) )) {
-                meetingRoom.getMembers().set(i, null);
-                break;
-            }
+        int i = ToolUtils.indexOf(meetingRoom.getMembers(), member -> ((member != null) && (member.getUserPrincipal().getUserId().equals(userPrincipal.getUserId()))));
+        if(i != -1){
+            meetingRoom.getMembers().set(i, null);
         }
-        // 判断room是不是已经没人了
-        boolean emptyRoomFlag = true;
-        for (int i = 0; i < meetingRoom.getMembers().size(); i++) {
-            MeetingMember member = meetingRoom.getMembers().get(i);
-            if(member != null){
-                emptyRoomFlag = false;
-            }
-        }
-        if (emptyRoomFlag) {
+        // 判断room是不是已经没人了,没人则删除
+        boolean b = meetingRoom.getMembers().stream().anyMatch(meetingMember -> meetingMember != null);
+        if (b) {
             roomMap.remove(userPrincipal.getRoomId());
         }
-
     }
+
     public void sessionConnectEvent(){
         WebSocketUserPrincipal dstPrincipal = deleteQueue.poll();
         if(dstPrincipal != null){
@@ -206,6 +182,7 @@ public class MeetingRoomService {
         MeetingRoom meetingRoom = roomMap.get(userPrincipal.getRoomId());
         MeetingMember fromMember=null;
         MeetingMember toMember=null;
+
         for (MeetingMember member : meetingRoom.getMembers()) {
             if (member.getUserPrincipal().getUserId().equals(request.getFrom())) {
                 fromMember = member;

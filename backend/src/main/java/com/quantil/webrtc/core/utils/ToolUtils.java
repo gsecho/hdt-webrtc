@@ -5,6 +5,9 @@ import org.springframework.security.core.GrantedAuthority;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.Collection;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.function.Predicate;
 
 /**
  * @author chenrf
@@ -98,5 +101,17 @@ public class ToolUtils {
             }
         }
         return path.substring(start, end);
+    }
+
+    public static <T> int indexOf(List<T> list, Predicate<? super T> predicate) {
+        for(ListIterator<T> iterator = list.listIterator(); iterator.hasNext(); )
+            if(predicate.test(iterator.next())) return iterator.previousIndex();
+        return -1;
+    }
+
+    public static <T> T findElement(List<T> list, Predicate<? super T> predicate) {
+        for(ListIterator<T> iterator = list.listIterator(); iterator.hasNext(); )
+            if(predicate.test(iterator.next())) return iterator.previous();
+        return null;
     }
 }

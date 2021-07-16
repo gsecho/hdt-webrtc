@@ -6,14 +6,17 @@ import com.quantil.webrtc.signal.constants.WebSocketConstants;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
+import org.springframework.messaging.handler.annotation.Headers;
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
 import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.socket.messaging.SessionConnectedEvent;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 import java.util.HashMap;
+import java.util.Map;
 
 
 /**
@@ -45,7 +48,7 @@ public class WebSocketController {
      * @param principal
      */
     @MessageMapping(WebSocketConstants.CURRENT_MEETING)
-    public void reqCurrentMeeting(WebSocketUserPrincipal principal, WebSocketRequestGenerator<String> request){
+    public void reqCurrentMeeting(WebSocketUserPrincipal principal, @Payload WebSocketRequestGenerator<String> request){
         String ip = request.getContent();
         principal.setIp(ip);
         meetingRoomService.meetingRoomInfoHandler(principal);

@@ -22,9 +22,10 @@ export default {
         myTempStream: undefined, // 临时存储，stomp交互以后，这个就无效了
         videoConfig: undefined,// 进入页面以后 设置
         stompClient: undefined,
-        roomAuthed: true, // roomid和passwd校验结果(http)
+        roomAuthed: 0, // roomid和passwd校验结果(http) 0:未请求，1：校验成功，2：校验失败
         curSource: undefined, // 当前发送的流，camera、screen 
         micEnabled: true, // 麦克风状态
+        videoEnabled: true, // video状态
         myId: 0, // 我的id--发消息时候放from位置
         roomId : 0,
         password: undefined,
@@ -73,7 +74,7 @@ export default {
                 type: 'setMeetingRoomState',
                 payload: {
                     'stompClient': stompClient, 
-                    'roomAuthed': true,
+                    'roomAuthed': 1,
                 }
             });
             const response = yield call(getClientIp);
@@ -110,9 +111,8 @@ export default {
                 }
             });
             // mic静音
-            yield put({
-                type: 'micControl'
-            });
+            yield put({ type: 'micControl' })
+            yield put({ type: 'videoControl' })
             const myMember = lodash.find(members, { 'id': myId} )
             // video+audio+randomId
             const myRandomId = meetingUtils.getRandomId(myId)
@@ -296,6 +296,7 @@ export default {
                 return;
             }
             peerMember.offered = true
+            
             const { peerConnect } = peerMember
             if(!peerConnect){
                 console.log("---error:", peerMember);
@@ -424,7 +425,8 @@ export default {
                 //     'height': { ideal: 480 }
                 // },
                 'micEnabled': true,
-                'roomAuthed': true,
+                'videoEnabled': true,
+                'roomAuthed': 0,
                 'members': []
             }
         },
@@ -452,7 +454,13 @@ export default {
                 state.stompClient.disconnect();
             }
             
-            const { members } = state
+            const { members, myTempStream } = state
+            const myTempTracks = myTempStream.getTracks()
+            if(myTempTracks){
+                myTempTracks.forEach( track=>{
+                    track.stop()
+                })
+            }
             members.forEach(member =>{ // 注意，这里是异步操作
                 if(!lodash.isEmpty(member)){
                     const {stream} = member
@@ -552,7 +560,27 @@ export default {
             
             return {
                 ...state,
-                'micEnabled': !micEnabled, // 覆盖前面的数据，所有需要放后面
+                'micEnabled': !micEnabled, // 覆盖前面的数据，新数据放后面
+            }
+        },
+        videoControl(state) {
+            const {myId, members, videoEnabled} = state;
+            const myIndex = lodash.findIndex(members, member => member.id === myId )
+            if(myIndex > -1){
+                const myMember = members[myIndex]
+                const tracks = myMember.stream.getVideoTracks()
+                if(!lodash.isEmpty(tracks)){
+                    if(videoEnabled){ // true  开mic ---> 静mic
+                        tracks[0].enabled = false
+                    }else{// false  静mic ---> 开mic
+                        tracks[0].enabled = true
+                    }
+                }
+            }
+            
+            return {
+                ...state,
+                'videoEnabled': !videoEnabled, // 覆盖前面的数据，新数据放后面
             }
         },
     },

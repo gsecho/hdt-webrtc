@@ -6,6 +6,7 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.AuthorityUtils;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -41,5 +42,14 @@ public class ToolTest {
         request.addHeader("X-Forwarded-For", "192.168.1.6");
         ip = ToolUtils.getClientIP(request);
         Assert.assertTrue(ip == "192.168.1.6");
+    }
+
+    @Test
+    public void findIndex(){
+        List<String> list = Arrays.asList("a", "b", "c");
+        int i = ToolUtils.indexOf(list, s -> s == "c");
+        System.out.println("index:"+ i);
+        i = ToolUtils.indexOf(list, s -> s == "d");
+        System.out.println("index:"+ i);
     }
 }

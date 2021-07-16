@@ -24,6 +24,17 @@ export default [
                 ],
             },
             {
+                path: '/room',
+                component: '../layouts/RoomLayout',
+                routes: [
+                    {
+                        path: '/room',
+                        component: './MeetingRoom'
+                    },
+                    // { path: '/user/register', component: './User/Register' },
+                ],
+            },
+            {
                 name: 'exception',
                 icon: 'warning',
                 path: '/exception',
@@ -50,10 +61,6 @@ export default [
                     {
                         path: '/dashboard',
                         component: './MeetingManager',
-                    },
-                    {
-                        path: '/room',
-                        component: './MeetingRoom',
                     },
                     {
                         name: 'users',
