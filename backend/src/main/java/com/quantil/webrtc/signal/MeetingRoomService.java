@@ -3,14 +3,12 @@ package com.quantil.webrtc.signal;
 import com.alibaba.fastjson.JSONObject;
 import com.quantil.webrtc.api.v1.meeting.bean.RtcMeetingItem;
 import com.quantil.webrtc.api.v1.meeting.dao.RtcMeetingItemDao;
-import com.quantil.webrtc.core.utils.JwtUtils;
 import com.quantil.webrtc.core.utils.ToolUtils;
 import com.quantil.webrtc.signal.bean.*;
 import com.quantil.webrtc.signal.constants.WebSocketConstants;
 import com.quantil.webrtc.signal.utils.StunHttpService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.xpath.operations.Bool;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
@@ -20,7 +18,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.stream.Collectors;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * @author chenrf
@@ -50,8 +48,7 @@ public class MeetingRoomService {
         return webSocketResponse;
     }
 
-    public boolean connectMeetingRoomHandler(String roomIdString, RtcMeetingItem meetingItem, WebSocketUserPrincipal userPrincipal,
-                                             Boolean videoBool, Boolean audioBool) {
+    public boolean connectMeetingRoomHandler(String roomIdString, RtcMeetingItem meetingItem, WebSocketUserPrincipal userPrincipal) {
         MeetingRoom meetingRoom = roomMap.get(roomIdString);
         if (meetingRoom == null) {// room创建
             meetingRoom = new MeetingRoom();// 新建meetingRoom信息
@@ -59,7 +56,7 @@ public class MeetingRoomService {
         }
         List<MeetingMember> roomMembers = meetingRoom.getMembers();
         // id重复
-        boolean duplicate = roomMembers.stream().anyMatch( item -> item.getUserPrincipal().getUserId() == userPrincipal.getUserId());
+        boolean duplicate = roomMembers.stream().anyMatch( item -> item != null && item.getUserPrincipal().getUserId() == userPrincipal.getUserId());
         if(duplicate){
             log.warn("id duplicate:{}", userPrincipal.getUserId());
             return false;
@@ -71,7 +68,7 @@ public class MeetingRoomService {
         // 查找null的位置
         int emptyIndex = roomMembers.indexOf(null);
 
-        MeetingMember member = new MeetingMember(videoBool, audioBool);
+        MeetingMember member = new MeetingMember();
         member.setUserPrincipal(userPrincipal);
         if(-1 == emptyIndex){
             userPrincipal.setIndex(roomMembers.size());
@@ -96,8 +93,6 @@ public class MeetingRoomService {
         String password = stompHeaderAccessor.getNativeHeader(WebSocketConstants.PASSWORD).get(0);
         String clientId = stompHeaderAccessor.getNativeHeader(WebSocketConstants.CLIENT_ID).get(0);
         String userName = clientId.split("-")[1];
-        Boolean videoBoolean = Boolean.valueOf(stompHeaderAccessor.getNativeHeader(WebSocketConstants.MEDIA_VIDEO).get(0));
-        Boolean audioBoolean = Boolean.valueOf(stompHeaderAccessor.getNativeHeader(WebSocketConstants.MEDIA_AUDIO).get(0));
         RtcMeetingItem meetingItem = rtcMeetingItemDao.selectByPrimaryKey(Long.valueOf(roomIdString));
         if (meetingItem.getPassword().equals(password)) {
             WebSocketUserPrincipal userPrincipal = new WebSocketUserPrincipal();
@@ -107,7 +102,7 @@ public class MeetingRoomService {
 
             stompHeaderAccessor.setUser(userPrincipal);
             simpMessageHeaderAccessor.setUser(userPrincipal);
-            return connectMeetingRoomHandler(roomIdString, meetingItem, userPrincipal, videoBoolean, audioBoolean);
+            return connectMeetingRoomHandler(roomIdString, meetingItem, userPrincipal);
         }else{
             throw new RuntimeException();// 这样 stomp客户端才会收到连接失败消息
         }
@@ -127,12 +122,12 @@ public class MeetingRoomService {
         if (meetingRoom == null) {
             return;
         }
-        int i = ToolUtils.indexOf(meetingRoom.getMembers(), member -> ((member != null) && (member.getUserPrincipal().getUserId().equals(userPrincipal.getUserId()))));
+        int i = ToolUtils.indexOf(meetingRoom.getMembers(), member -> (member != null) && (member.getUserPrincipal().getUserId().equals(userPrincipal.getUserId())));
         if(i != -1){
             meetingRoom.getMembers().set(i, null);
         }
         // 判断room是不是已经没人了,没人则删除
-        boolean b = meetingRoom.getMembers().stream().anyMatch(meetingMember -> meetingMember != null);
+        boolean b = meetingRoom.getMembers().stream().allMatch(member -> member == null);
         if (b) {
             roomMap.remove(userPrincipal.getRoomId());
         }
@@ -169,75 +164,99 @@ public class MeetingRoomService {
         }
 
     }
-    public void candidateHandler(WebSocketUserPrincipal userPrincipal, WebSocketRequestGenerator<CandidateMessage> request){
+    public void mediaStatusHandler(WebSocketUserPrincipal userPrincipal, WebSocketRequestGenerator<JSONObject> request) {
+        log.info("{}", request.getContent());
+        MeetingRoom meetingRoom = roomMap.get(userPrincipal.getRoomId());
+        meetingRoom.getMembers().forEach(member->{
+            if (userPrincipal == member.getUserPrincipal()) {
+                JSONObject object = request.getContent();
+                Boolean video = object.getBoolean("video");
+                if (video != null) {
+                    member.setVideo(video);
+                }
+                Boolean audio = object.getBoolean("audio");
+                if (audio != null) {
+                    member.setAudio(audio);
+                }
+            }
+        });
+    }
+    public void candidateEndHandler(WebSocketUserPrincipal userPrincipal, WebSocketRequestGenerator<CandidateContent> request){
+        log.info("{}", request.getContent());
+        CandidateContent candidateContent = JSONObject.parseObject(JSONObject.toJSONString(request.getContent()), CandidateContent.class);
+        if (candidateContent == null){
+            log.error("---error---");
+            return;
+        }
+        MeetingRoom meetingRoom = roomMap.get(userPrincipal.getRoomId());
+        boolean isAudio = candidateContent.getMediaType().equals("audio");
+        MeetingMember fromMember = ToolUtils.findElement(meetingRoom.getMembers(),member -> member.getUserPrincipal().getUserId().equals(request.getFrom()));
+        if (fromMember == null) {
+            return;
+        }
+
+        MeetingMember toMember = ToolUtils.findElement(meetingRoom.getMembers(),member -> member.getUserPrincipal().getUserId().equals(request.getTo()));
+        if (toMember == null) {
+            return;
+        }
+
+        // 请求stun得到代理端口
+        StunData stunData = new StunData();
+        stunData.setIp1(fromMember.getUserPrincipal().getIp());
+        stunData.setPort1(31981);// 不关心端口，随便写的
+        stunData.setIp2(toMember.getUserPrincipal().getIp());
+        stunData.setPort2(31982);
+        stunData.setUser(meetingRoom.getRtcMeetingItem().getCreateBy());
+        StunData stunDataRes = stunHttpService.post(stunData);
+        /**
+         * from 发送的candidate，组装再发出去
+         */
+        ConcurrentMap<String, CandidateContent> froMap = isAudio ? fromMember.getAudioMap() : fromMember.getVideoMap();
+        CandidateContent from2PeerContent = froMap.get(request.getTo());
+        CandidateDetail from2PeerCandidateDetail = new CandidateDetail(from2PeerContent.getCandidate().getCandidate());
+        from2PeerCandidateDetail.setIp(stunDataRes.getIp1());
+        from2PeerCandidateDetail.setPort(stunDataRes.getPort1().toString());
+        from2PeerContent.getCandidate().setCandidate(from2PeerCandidateDetail.toString());
+        Object payload1 = formatMessageRes(request.getFrom(), request.getTo(), WebSocketConstants.CMD_CANDIDATE, from2PeerContent);
+        simpMessagingTemplate.convertAndSendToUser(request.getTo(), WebSocketConstants.USER_CHANNEL, payload1);
+        /**
+         * to 发送的candidate，组装再发出去
+         */
+        ConcurrentMap<String, CandidateContent> toMap = isAudio ? toMember.getAudioMap() : toMember.getVideoMap();
+        CandidateContent to2PeerContent =  toMap.get(request.getFrom());
+        CandidateDetail to2PeerCandidateDetail = new CandidateDetail(to2PeerContent.getCandidate().getCandidate());
+        to2PeerCandidateDetail.setIp(stunDataRes.getIp2());
+        to2PeerCandidateDetail.setPort(stunDataRes.getPort2().toString());
+        to2PeerContent.getCandidate().setCandidate(to2PeerCandidateDetail.toString());
+        Object payload2 = formatMessageRes(request.getTo(), request.getFrom(), WebSocketConstants.CMD_CANDIDATE, to2PeerContent);
+        simpMessagingTemplate.convertAndSendToUser(request.getFrom(), WebSocketConstants.USER_CHANNEL, payload2);
+    }
+
+    public void candidateHandler(WebSocketUserPrincipal userPrincipal, WebSocketRequestGenerator<CandidateContent> request){
 //        因为转换的时候只转成map // TODO 这个有空时候研究下（MappingFastJsonMessageConverter）
         log.info("{}", request.getContent());
-        CandidateMessage candidateMessage = JSONObject.parseObject(JSONObject.toJSONString(request.getContent()), CandidateMessage.class);
-        String[] array = candidateMessage.getCandidate().split("\\s+");
-        CandidateBody candidateBody = new CandidateBody(array);
-        if (!array[WebSocketConstants.CANDIDATE_PROTOCOL].equalsIgnoreCase(WebSocketConstants.UDP_PROTOCOL)) {
+        CandidateContent candidateContent = JSONObject.parseObject(JSONObject.toJSONString(request.getContent()), CandidateContent.class);
+        if (candidateContent == null){
+            log.error("---error---");
+            return;
+        }
+        boolean isAudio = candidateContent.getMediaType().equals("audio");
+        CandidateDetail myCandidateDetail = new CandidateDetail(candidateContent.getCandidate().getCandidate());
+        if (!myCandidateDetail.getProtocol().equals(WebSocketConstants.UDP_PROTOCOL)) {
             return;
         }
 
         MeetingRoom meetingRoom = roomMap.get(userPrincipal.getRoomId());
-        MeetingMember fromMember=null;
-        MeetingMember toMember=null;
-
-        for (MeetingMember member : meetingRoom.getMembers()) {
-            if (member.getUserPrincipal().getUserId().equals(request.getFrom())) {
-                fromMember = member;
-            }else if (member.getUserPrincipal().getUserId().equals(request.getTo())) {
-                toMember = member;
-            }
+        MeetingMember fromMember = ToolUtils.findElement(meetingRoom.getMembers(),member -> member.getUserPrincipal().getUserId().equals(request.getFrom()));
+        if (fromMember == null) {
+            return;
         }
+        // audio or video map
+        ConcurrentMap<String, CandidateContent> map = isAudio ? fromMember.getAudioMap() : fromMember.getVideoMap();
+        CandidateContent content =  map.get(request.getTo());
 
-        if((fromMember !=null) && (toMember != null)){
-            // 接收者中有发送者的candidate ？
-            // 没有  -- 存入 --> 发送者有接收者的Candidate 有？
-            // 有 --> 分别发送给两个客户端
-            CandidateBody candidateBody1 = fromMember.getMap().get(request.getTo());
-            if(null == candidateBody1){
-                candidateBody1 = candidateBody;
-                fromMember.getMap().put(request.getTo(), candidateBody1);
-                CandidateBody candidateBody2 = toMember.getMap().get(request.getFrom());
-                if(null != candidateBody2){
-                    StunData stunData = new StunData();
-                    stunData.setIp1(fromMember.getUserPrincipal().getIp());
-                    stunData.setPort1(candidateBody2.getPort());
-                    stunData.setIp2(toMember.getUserPrincipal().getIp());
-                    stunData.setPort2(candidateBody1.getPort());
-                    stunData.setUser(meetingRoom.getRtcMeetingItem().getCreateBy());
-                    StunData stunDataRes = stunHttpService.post(stunData);
-                    // 应答给发送方
-                    WebSocketRequestGenerator<CandidateMessage> resFrom = new WebSocketRequestGenerator<>();
-                    resFrom.setFrom(request.getTo());
-                    resFrom.setTo(request.getFrom());
-                    resFrom.setType(WebSocketConstants.CMD_CANDIDATE);
-                    CandidateMessage candidateMessageResFrom = new CandidateMessage();
-                    BeanUtils.copyProperties(candidateMessage, candidateMessageResFrom);
-                    array[WebSocketConstants.CANDIDATE_IP] = stunDataRes.getIp1();
-                    array[WebSocketConstants.CANDIDATE_PORT] = stunDataRes.getPort1().toString();
-                    array[WebSocketConstants.CANDIDATE_UFRAG_VALUE] = candidateBody2.getUfragValue();
-                    String res1 = StringUtils.join(array, " ");
-                    candidateMessageResFrom.setCandidate(res1);
-                    resFrom.setContent(candidateMessageResFrom);
-                    simpMessagingTemplate.convertAndSendToUser(request.getFrom(), WebSocketConstants.USER_CHANNEL, resFrom);
-                    // 应答给接收方
-                    WebSocketRequestGenerator<CandidateMessage> resTo = new WebSocketRequestGenerator<>();
-                    resTo.setFrom(request.getFrom());
-                    resTo.setTo(request.getTo());
-                    resTo.setType(WebSocketConstants.CMD_CANDIDATE);
-                    CandidateMessage candidateMessageResTo = new CandidateMessage();
-                    BeanUtils.copyProperties(candidateMessage, candidateMessageResTo);
-                    array[WebSocketConstants.CANDIDATE_IP] = stunDataRes.getIp2();
-                    array[WebSocketConstants.CANDIDATE_PORT] = stunDataRes.getPort2().toString();
-                    array[WebSocketConstants.CANDIDATE_UFRAG_VALUE] = candidateBody1.getUfragValue();
-                    String res2 = StringUtils.join(array, " ");
-                    candidateMessageResTo.setCandidate(res2);
-                    resTo.setContent(candidateMessageResTo);
-                    simpMessagingTemplate.convertAndSendToUser(request.getTo(), WebSocketConstants.USER_CHANNEL, resTo);
-                }
-            }
+        if(content == null) {
+            map.put(request.getTo(), candidateContent);// 只有首次才存储
         }
     }
 

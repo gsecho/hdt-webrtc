@@ -8,8 +8,8 @@ import lombok.Data;
  * @date 2021/5/10 14:42
  */
 @Data
-public class CandidateMessage {
-    private Integer sdpMLineIndex;
+public class IceCandidate {
+    private String sdpMLineIndex;
     private String sdpMid;
-    private String candidate;
+    private String candidate; // 内容可以解析为 CandidateDetail
 }

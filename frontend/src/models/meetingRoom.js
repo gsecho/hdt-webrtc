@@ -19,13 +19,12 @@ export default {
      * const data = yield select(state =>state.meetingManager.data)
      */
     state: {
-        myTempStream: undefined, // 临时存储，stomp交互以后，这个就无效了
         videoConfig: undefined,// 进入页面以后 设置
         stompClient: undefined,
         roomAuthed: 0, // roomid和passwd校验结果(http) 0:未请求，1：校验成功，2：校验失败
         curSource: undefined, // 当前发送的流，camera、screen 
-        micEnabled: true, // 麦克风状态
-        videoEnabled: true, // video状态
+        videoEnabled: false, // video状态
+        micEnabled: false, // 麦克风状态
         myId: 0, // 我的id--发消息时候放from位置
         roomId : 0,
         password: undefined,
@@ -36,8 +35,8 @@ export default {
         // mystream: {}, // audiostreamTrack, videostreamTrack 单独拧出来方便操作
         members: [],
         // 与会人员：Id，名称，头像，在线状态，video状态，audio状态
-        // {'id': 2, 'name': 'xiaoming', 'avatar': '/..../path/2.png', 'online': true, 'video': true, "audio": false, peerConnect: {}, 
-        //        stream: undefined, ices:[], outputMuted: false, screenStream: undefined, offered: 1(sended),2(received) }
+        // {'id': 2, 'name': 'xiaoming', 'avatar': '/..../path/2.png', 'online': true, 'video': true, "audio": false, audioPc: {}, videoPc: {}, 
+        //        stream: undefined, ices:[], audioOutputMuted: false, audioOffered: 1(sended),2(received), videoOffered: 1(sended),2(received) }
     },
     effects: {
         /**
@@ -71,9 +70,9 @@ export default {
         *wbOpenedHander( { payload } , { put, call }){
             const { stompClient } = payload
             yield put({
-                type: 'setMeetingRoomState',
-                payload: {
-                    'stompClient': stompClient, 
+                'type': 'setMeetingRoomState',
+                'payload': {
+                    ...payload,
                     'roomAuthed': 1,
                 }
             });
@@ -86,12 +85,11 @@ export default {
         /**
          * 请求currentMeeting后的应答，如果有连接，需要逐个发起webrtc请求
          */
-        *wbMessageCurrentMeeting( {payload, callback} , { put,select }){
+        *wbMessageCurrentMeeting( {payload} , { put,select }){
             // 获取到当前room已经连接的用户信息
             // 发起连接
-            
             const {to:myId, content, content:{members}} = payload
-            const {myTempStream, stompClient} = yield select(state => state.meetingRoom)
+            const {stompClient} = yield select(state => state.meetingRoom)
             // 先存储currentMeeting信息
             yield put({
                 type: 'setMeetingRoomState',
@@ -99,44 +97,19 @@ export default {
                     ...content,
                 }
             });
-            
-            // 先存一份myId和stream数据
-            // 存储自己的流数据
-            yield put({
-                type: 'setMeetingMemberStream',
-                payload: {
-                    'id': myId,
-                    'stream' :myTempStream ,
-                    'outputMuted': true, // 自己的播放器，要静音，不然会听到自己的声音
-                }
-            });
-            // mic静音
-            yield put({ type: 'micControl' })
-            yield put({ type: 'videoControl' })
-            const myMember = lodash.find(members, { 'id': myId} )
-            // video+audio+randomId
-            const myRandomId = meetingUtils.getRandomId(myId)
-            const myFactor = `${myMember.video ? 1:0}${myMember.audio ? 1:0}${myRandomId}`
             // eslint-disable-next-line no-restricted-syntax
             for (const member of members) {
                 if(myId !== member.id){ // 自己不需要创建peerConnection
-                    member.peerConnect = new RTCPeerConnection()
+                    member.audioPc = new RTCPeerConnection()
+                    member.videoPc = new RTCPeerConnection()
                     member.ices = []
 
-                    const peerRandomId = meetingUtils.getRandomId(member.id)
-                    const peerFactor = `${member.audio ? 1:0}${member.audio ? 1:0}${peerRandomId}`
-                    if(myFactor >= peerFactor){
-                        // 我方发起offer
-                        yield put({
-                            type: 'wbRtcSendOffer',
-                            payload: {
-                                'myId' : myId,// from、to尽量只用在 ws传递中，内部用有意义的字段描述
-                                'peerId' : member.id,
-                            },
-                            'callback': callback,
-                        });
-                    }else{
-                        stompClient.send(`${wsSendPrefix}/reqSendOffer`, {}, JSON.stringify({"from": myId, "to": member.id, "content": 1}));
+                    // 登陆的时候audio和video都是没有的，所以对方有就让对方发起offer  
+                    if(member.audio){
+                        stompClient.send(`${wsSendPrefix}/reqSendOffer`, {}, JSON.stringify({"from": myId, "to": member.id, "content": 'audio'}));
+                    }
+                    if(member.video){
+                        stompClient.send(`${wsSendPrefix}/reqSendOffer`, {}, JSON.stringify({"from": myId, "to": member.id, "content": 'video'}));
                     }
                 }
             }
@@ -144,25 +117,25 @@ export default {
         /**
          * 替换流数据操作（ camera <--> screen， camera1 <--> camera2）
          */
-        *replaceTrack( {payload, callback} , { select, put } ){
+        *shareTrack( {payload, callback} , { select, put } ){
             let videoStream;
-            console.log("---replaceTrack:", 1);
-            if(payload.target === 'camera'){
+            const {target} = payload
+            if(target === 'camera'){
                 const {isMobile} = yield select(state => state.global)
                 const {videoConfig} = yield select(state => state.meetingRoom)
                 if(isMobile){
                     videoConfig.facingMode = "user" 
                 }
-                console.log("---replaceTrack:", '2-1');
+                console.log("---shareTrack:", '2-1');
                 videoStream = yield navigator.mediaDevices.getUserMedia({
                     video: videoConfig
                 }).catch(error => {
                     console.log("---", error);
                     return new MediaStream()
                 });
-                console.log("---replaceTrack:", '2-2');
-            }else if(payload.target === 'screen'){
-                console.log("---replaceTrack:", '3-1');
+                console.log("---shareTrack:", '2-2');
+            }else if(target === 'screen'){
+                console.log("---shareTrack:", '3-1');
                 videoStream = yield navigator.mediaDevices.getDisplayMedia({
                     video:{
                         'width': { ideal: 1280 },
@@ -172,7 +145,7 @@ export default {
                     console.log("---", error);
                     // 没有流返回undefined
                 })
-                console.log("---replaceTrack:", '3-2');
+                console.log("---shareTrack:", '3-2');
                 if(videoStream){
                     const videoTracks = videoStream.getVideoTracks() // 如果没有数据则是empty
                     if(!lodash.isEmpty(videoTracks)){
@@ -188,60 +161,44 @@ export default {
                     'videoStream' :videoStream ,
                 }
             });
-            yield put({ type: 'setMeetingRoomState', payload: { curSource: payload.target } });
+            yield put({ type: 'setMeetingRoomState', payload: { curSource: target } });
         },
         /** 对端发起的offer */
-        *wbMessageOffer( {payload, callback} , { select}){
-            const {from: peerId, to: myId, content:offer} = payload
+        *wbMessageOffer( {payload} , { select}){
+            const {from: peerId, to: myId, content: { offerDesc, mediaType}} = payload
             const meetingRoom = yield select(state => state.meetingRoom)
-            const {stompClient, members} = meetingRoom;
+            const {stompClient, members, onTrack} = meetingRoom;
             const index = lodash.findIndex(members, member => member.id === peerId )
-            if(index === -1){
-                return;
-            }
-            const peerMember = members[index]  
-            const { peerConnect } = peerMember
-            peerConnect.onicecandidate = e=> { // 事件触发执行 
+            if(index === -1) return
+
+            const peerMember = members[index]
+            const pc = mediaType === 'audio' ? peerMember.audioPc : peerMember.videoPc
+            pc.onicecandidate = e=> { // 事件触发执行 
+                console.log(`onicecandidate: -----------------`);
                 if (e.candidate != null) {
                     console.log(`onicecandidate: send candidate${e.candidate}`);
-                    stompClient.send(`${wsSendPrefix}/candidate`, {}, JSON.stringify({"from": myId, "to": peerId, "content": e.candidate}));
+                    stompClient.send(`${wsSendPrefix}/candidate`, {}, JSON.stringify({"from": myId, "to": peerId, "content": { 'mediaType': mediaType, 'candidate':e.candidate}}));
+                }else{
+                    // 所有candidate发送完会出现这个
+                    stompClient.send(`${wsSendPrefix}/candidateEnd`, {}, JSON.stringify({"from": myId, "to": peerId, "content": { 'mediaType': mediaType }}));
                 }
-            };
-            peerConnect.ondatachannel = e => {
-                console.log('Data channel is created!');
-                e.channel.onopen = () => {
-                  console.log('Data channel is open and ready to be used.');
-                };
-
-                e.channel.close = () => {
-                    console.log('Data channel is close.');// TODO
-                };
             };
 
             // 应答 offer 
-            peerMember.offered = 2 // received
-            peerConnect.ontrack = callback
-            const myIndex = lodash.findIndex(members, member => member.id === myId )
-            if(myIndex > -1){
-                const myInfo = members[myIndex]
-                yield myInfo.stream.getTracks().forEach(track=> {
-                    peerConnect.addTrack(track, myInfo.stream);
-                });
-            }
+            pc.ontrack = onTrack
             
-            yield peerConnect.setRemoteDescription(offer);// 必须等到remote处理完成才能加入ice
-            peerMember.ices.forEach(
-                ice => peerConnect.addIceCandidate(ice)
+            yield pc.setRemoteDescription(offerDesc);// 必须等到remote处理完成才能加入ice
+            yield peerMember.ices.forEach(
+                ice => pc.addIceCandidate(ice)
                 .then(console.log("---success01:"))
                 .catch(e=>console.log("---error01:", e))
             )// 加入缓存的candidate
-            peerConnect.createAnswer({
-                offerToReceiveVideo: 1,
-                offerToReceiveAudio: 1,
-            }).then(desc =>{
-                peerConnect.setLocalDescription(desc).then(() => {
-                    stompClient.send(`${wsSendPrefix}/answer`, {}, JSON.stringify({"from": myId, "to": peerId, "content": peerConnect.localDescription}));
-                });
+            const config = mediaType === 'audio'? {offerToReceiveAudio: true}: {offerToReceiveVideo: true}
+            pc.createAnswer(config)
+             .then(desc =>{
+                stompClient.send(`${wsSendPrefix}/answer`, {}, 
+                    JSON.stringify({"from": myId, "to": peerId, "content": { 'answerDesc': desc, 'mediaType': mediaType}}));
+                pc.setLocalDescription(desc);// 搜集candidate，触发onicecandidate事件
             })
         },
         /**
@@ -252,13 +209,14 @@ export default {
         *wbMessageAnswer( {payload} , { select}){
             const meetingRoom = yield select(state => state.meetingRoom)
             const {members} = meetingRoom;
-            const {from: peerId, content} = payload
+            const {from: peerId, content: {mediaType, answerDesc}} = payload
             const index = lodash.findIndex(members, member => member.id === peerId )
             if(index > -1){
-                const { peerConnect } = members[index]
-                yield peerConnect.setRemoteDescription(content);
-                members[index].ices.forEach(
-                    ice => peerConnect.addIceCandidate(ice)
+                const member = members[index]
+                const pc = mediaType === 'audio' ? member.audioPc : member.videoPc
+                yield pc.setRemoteDescription(answerDesc);
+                member.ices.forEach(
+                    ice => pc.addIceCandidate(ice)
                     .then(console.log("---success01:"))
                     .catch(e=>console.log("---error01:", e))
                 )// 加入缓存的candidate
@@ -267,110 +225,299 @@ export default {
         *wbMessageCandidate( {payload} , { select}){
             const meetingRoom = yield select(state => state.meetingRoom)
             const {members} = meetingRoom;
-            const {from: peerId, content} = payload
+            const {from: peerId, content:{mediaType, candidate}} = payload
             const index = lodash.findIndex(members, member => member.id === peerId )
             if(index === -1){
                 return;
             }
-            const member = members[index]
-            const { peerConnect } = member
+            const peerMember = members[index]
+            const pc = mediaType === 'audio' ? peerMember.audioPc : peerMember.videoPc
             
-            if(peerConnect && peerConnect.remoteDescription && peerConnect.remoteDescription.type){
-                peerConnect.addIceCandidate(content)
+            if(pc && pc.remoteDescription && pc.remoteDescription.type){
+                pc.addIceCandidate(candidate)
                 .then(console.log("---success:"))
-                .catch(e=>console.log("---error:", e));
-            }else if(member.ices){
+                .catch(e => console.log("---error:", e));
+            }else if(peerMember.ices){
                 // 加入数组中，设置setRemoteDescription以后需要再add
-                member.ices.push(content)
+                peerMember.ices.push(candidate)
             }
         },
-        *wbRtcSendOffer( {payload, callback} , { select }){
+        // 打开 camera或者 mic
+        *openLocalTrackStream({payload} , { select, put }) {
             const meetingRoom = yield select(state => state.meetingRoom)
-            const {stompClient, members} = meetingRoom;
-            const {myId, peerId} = payload
-            const index = lodash.findIndex(members, member => member.id === peerId )
-            const peerMember = members[index]
-            console.log("----------------------------------------offered----------------------------");
-            if((index === -1) || (peerMember.offered)){
-                console.log("----------------------------------------offered:", peerMember.offered);
-                return;
-            }
-            peerMember.offered = true
-            
-            const { peerConnect } = peerMember
-            if(!peerConnect){
-                console.log("---error:", peerMember);
-                console.log("---error:", peerConnect);
-                return;
-            }
-            peerConnect.onicecandidate = e=> { // 事件触发执行 
-                if (e.candidate != null) {
-                    console.log(`onicecandidate: send candidate${e.candidate}`);
-                    stompClient.send(`${wsSendPrefix}/candidate`, {}, JSON.stringify({"from": myId, "to": peerId, "content": e.candidate}));
-                }
-            };
-            peerConnect.ondatachannel = e => {
-                console.log('Data channel is created!');
-                e.channel.onopen = () => {
-                  console.log('Data channel is open and ready to be used.');
-                };
+            const {myId, members, stompClient } = meetingRoom;
+            const {stream, mediaKind, targetState, targetSource} = payload;
+            // mediaKind: screen, camera, microphone
+            // mediaType: video, audio 
+            const mediaType = mediaKind === 'microphone' ? 'audio' : 'video'
 
-                e.channel.close = () => {
-                    console.log('Data channel is close.');// TODO
-                };
-            };
-            
-            peerMember.offered = 1 // sended
-            peerConnect.ontrack = callback
-            const myIndex = lodash.findIndex(members, member => member.id === myId )
-            if(myIndex > -1){
-                const myInfo = members[myIndex]
-                yield myInfo.stream.getTracks().forEach(track=> {
-                    peerConnect.addTrack(track, myInfo.stream);
-                });
-            }
-            // https://developer.mozilla.org/en-US/docs/Web/Guide/API/WebRTC/Peer-to-peer_communications_with_WebRTC
-            // 发送offer之前必须准备好流
-            peerConnect.onnegotiationneeded = (e)=>{
-                console.log('---onnegotiationneeded: ', e);
-                peerConnect.createOffer({
-                    offerToReceiveAudio: 1,
-                    offerToReceiveVideo: 1
-                }).then( (desc) => {
-                    peerConnect.setLocalDescription(desc).then(()=>{
-                        stompClient.send(`${wsSendPrefix}/offer`, {}, JSON.stringify({"from": myId, "to": peerId, "content": peerConnect.localDescription}));
+            const localTrack = stream.getTracks()[0]
+            const index = lodash.findIndex(members, member => member.id === myId )
+            if(index > -1){
+                // 每次都使用新的stream，避免removeTrack导致的数组里面有 null 的情况
+                if(members[index].stream){
+                    yield members[index].stream.getTracks().forEach(track =>{
+                        if (track.kind === mediaType) {
+                            track.stop()
+                        }else{
+                            stream.addTrack(track)
+                        }
                     })
+                }
+                members[index].stream = stream
+                members[index].audioOutputMuted = true
+            }
+            // eslint-disable-next-line no-restricted-syntax
+            for (const member of members) {
+                if(myId !== member.id){ 
+                    yield put({
+                        type: 'wbRtcSendOffer',
+                        payload: {
+                            'myId' : myId,
+                            'peerId': member.id,
+                            'mediaType': mediaType,
+                            'track': localTrack
+                        }
+                    })
+                }
+            }
+            // 更改服务器段的audio和video标志
+            if(mediaKind === 'microphone'){
+                yield put({
+                    type: 'setMeetingRoomState',
+                    payload: { micEnabled: targetState}
+                })
+                stompClient.send(`${wsSendPrefix}/mediaStatus`, {}, JSON.stringify({"from": myId, "to": '0', "content": {audio: targetState}}));
+            }else if(mediaKind === 'camera'){
+                yield put({
+                    type: 'setMeetingRoomState',
+                    payload: { videoEnabled: targetState}
+                })
+                stompClient.send(`${wsSendPrefix}/mediaStatus`, {}, JSON.stringify({"from": myId, "to": '0', "content": {video: targetState}}));
+            }else{
+                yield put({
+                    type: 'setMeetingRoomState',
+                    payload: { 'curSource': targetSource}
+                })
+                const {videoEnabled} = meetingRoom
+                if(videoEnabled || targetSource === 'screen'){
+                    stompClient.send(`${wsSendPrefix}/mediaStatus`, {}, JSON.stringify({"from": myId, "to": '0', "content": {video: true}}));
+                }else {
+                    stompClient.send(`${wsSendPrefix}/mediaStatus`, {}, JSON.stringify({"from": myId, "to": '0', "content": {video: false}}));
+                }
+            }
+        },
+        *closeLocalTrackStream({payload} , { select, put }) {
+            const meetingRoom = yield select(state => state.meetingRoom)
+            const {myId, members, stompClient } = meetingRoom;
+            const { mediaKind, targetState, targetSource } = payload
+            const mediaType = mediaKind === 'microphone' ? 'audio' : 'video'
+
+            yield members.forEach(member =>{
+                if(member.id === myId){
+                    member.stream.getTracks().forEach(track =>{
+                        if (track.kind === mediaType) {
+                            track.stop()
+                        }
+                    })
+                }
+                // 关闭的时候不remove，下次再次打开直接调用 sender.replaceTrack
+            })
+            // 更改服务器段的audio和video标志
+            if(mediaKind === 'microphone'){
+                yield put({
+                    type: 'setMeetingRoomState',
+                    payload: { micEnabled: targetState}
+                })
+                stompClient.send(`${wsSendPrefix}/mediaStatus`, {}, JSON.stringify({"from": myId, "to": '0', "content": {audio: targetState}}));
+            }else if(mediaKind === 'camera'){
+                yield put({
+                    type: 'setMeetingRoomState',
+                    payload: { videoEnabled: targetState}
+                })
+                stompClient.send(`${wsSendPrefix}/mediaStatus`, {}, JSON.stringify({"from": myId, "to": '0', "content": {video: targetState}}));
+            }else{
+                yield put({
+                    type: 'setMeetingRoomState',
+                    payload: { 'curSource': targetSource}
                 })
             }
             
+            yield members.forEach( member =>{
+                stompClient.send(`${wsSendPrefix}/peerStreamStatusChange`, {}, 
+                    JSON.stringify({"from": myId, "to": member.id, "content": { 'mediaType': mediaType} }))
+            })
         },
-        *refreshStream( {event} , { select, put }){
+        *wbRtcSendOffer( {payload} , { select, put }){
+            const meetingRoom = yield select(state => state.meetingRoom)
+            const { stompClient, members, onTrack } = meetingRoom
+            const {myId, peerId, mediaType, track: localTrack} = payload
+            
+            const index = lodash.findIndex(members, member => member.id === peerId )
+            if(index === -1) return
+            const peerMember = members[index]
+
+            const myIndex = lodash.findIndex(members, member => member.id === myId )
+            if(myIndex === -1) return 
+            const {stream: myStream} = members[myIndex]
+
+            // console.log("----------------------------------------offered----------------------------");
+            // if((index === -1) || (peerMember.offered)){
+            //     console.log("----------------------------------------offered:", peerMember.offered);
+            //     return;
+            // }
+            // peerMember.offered = true
+            const pc = mediaType === 'audio' ? peerMember.audioPc : peerMember.videoPc
+            
+            if(!pc){
+                console.log("---error:", pc);
+                return
+            }
+            // 如果是reopen则 replaceTrack
+            if(pc.localDescription){ // 已经create则直接发送
+                yield put({ type: 'replaceSenderTrack', payload:{ 'mediaType': mediaType, track: localTrack} });
+                return
+            }
+           
+            pc.onicecandidate = e=> { // 事件触发执行 
+                if(pc.remoteDescription){
+                    console.error("--- onicecandidate send offer after")
+                    return
+                }
+                if (e.candidate != null) {
+                    console.log(`onicecandidate: send candidate${e.candidate}`)
+                    stompClient.send(`${wsSendPrefix}/candidate`, {}, 
+                        JSON.stringify({"from": myId, "to": peerId, "content": { 'mediaType': mediaType, 'candidate':e.candidate} }))
+                }else{
+                    console.log(`-------------------onicecandidate: send candidate${e.candidate}`);
+                }
+            };
+            
+            pc.ontrack = onTrack
+            
+            // https://developer.mozilla.org/en-US/docs/Web/Guide/API/WebRTC/Peer-to-peer_communications_with_WebRTC
+            // 发送offer之前必须准备好流
+            pc.onnegotiationneeded = e =>{
+                console.log('---onnegotiationneeded: ', e);
+                if(pc.localDescription){ // 已经create则直接发送
+                    stompClient.send(`${wsSendPrefix}/offer`, {}, 
+                                JSON.stringify({"from": myId, "to": peerId, "content": {'offerDesc':pc.localDescription, 'mediaType': mediaType} }));
+                }else{
+                    const config = mediaType === 'audio'? {offerToReceiveAudio: true}: {offerToReceiveVideo: true}
+                    pc.createOffer(config)
+                    .then( desc => {
+                        // 先发送offer再发送candidate 
+                        stompClient.send(`${wsSendPrefix}/offer`, {}, 
+                                JSON.stringify({"from": myId, "to": peerId, "content": {'offerDesc':desc, 'mediaType': mediaType} }));
+                        pc.setLocalDescription(desc)// 搜集candidate，触发onicecandidate事件
+                        // pc.setLocalDescription(desc).then(()=>{
+                        //     stompClient.send(`${wsSendPrefix}/offer`, {}, 
+                        //         JSON.stringify({"from": myId, "to": peerId, "content": {'offerDesc':pc.localDescription, 'mediaType': mediaType} }));
+                        // })
+                    })
+                }
+            }
+
+            if(mediaType === 'audio' && myStream.getAudioTracks()[0]){
+                pc.addTrack(myStream.getAudioTracks()[0], myStream)
+            }else if(mediaType === 'video' && myStream.getVideoTracks()[0]){
+                pc.addTrack(myStream.getVideoTracks()[0], myStream)
+            }else{
+                console.error("--- no found track")
+                // return
+            }
+        },
+        *replaceSenderTrack({payload : {mediaType, track}}, { select, put }) {
+            const meetingRoom = yield select(state => state.meetingRoom)
+            const {members, myId, stompClient} = meetingRoom;
+            // eslint-disable-next-line no-restricted-syntax
+            for (const member of members) {
+                const pc = mediaType === 'audio' ? member.audioPc : member.videoPc
+                if (member.id !== myId) {
+                    const senders = pc.getSenders(); // RTCRtpSender
+                    const index = lodash.findIndex(senders, sender =>sender.track && sender.track.kind === mediaType)
+                    if(index === -1){
+                        pc.addTrack(track)
+                        // yield senders.forEach(sender =>{
+                        //     if(!sender.track) {// 找到空位插入
+                        //         sender.replaceTrack(track)
+                        //     }
+                        // })
+                    }else{
+                        const sender = senders[index]
+                        if(sender.track) {
+                            sender.track.stop()
+                        }
+                        sender.replaceTrack(track)
+                    }
+                    stompClient.send(`${wsSendPrefix}/peerStreamStatusChange`, {}, 
+                        JSON.stringify({"from": myId, "to": member.id, "content": { 'mediaType': mediaType} }))
+                    console.log("-----senders:", senders);
+                }else{
+                    // 
+                }
+            }
+            yield put({ type: 'refreshState' });
+        },
+        /**
+         * 更新自己本地的Stream
+         * @param {*} param0 
+         * @param {*} param1 
+         */
+        *peerStreamStatusChange( {payload} , { select, put }){
+            const {from, content: {mediaType}} = payload
+            const meetingRoom = yield select(state => state.meetingRoom)
+            const {members} = meetingRoom
+            const index = lodash.findIndex(members, member => member.id === from )
+            if(index > -1){
+                const peerMember = members[index]
+                const tempStream = new MediaStream()
+                
+                const pc = mediaType === 'audio' ? peerMember.audioPc : peerMember.videoPc
+                yield pc.getReceivers().forEach(receiver=>{
+                    // if(track.enabled && !track.muted){ // 还在发送流数据的
+                    console.log("----:", receiver);
+                        tempStream.addTrack(receiver.track)
+                    // }
+                })
+                peerMember.stream = tempStream
+
+                yield put({ type: 'refreshState' });
+            }
+        },
+        *peerOnTrackEventRefreshStream( {event} , { select, put }){
             // event : RtcTrackEvent
             const meetingRoom = yield select(state => state.meetingRoom)
-            const {members} = meetingRoom;
+            const {members} = meetingRoom
             yield members.forEach(member =>{
-                if(member.peerConnect ){
-                    const receivers = member.peerConnect.getReceivers()
+                const pc = event.track.kind === 'audio' ? member.audioPc : member.videoPc
+                if(pc){
+                    const receivers = pc.getReceivers()
                     console.log("receivers", receivers);
                     const index = lodash.findIndex(receivers, receiver => receiver.track.id === event.track.id )
                     if(index > -1){
-                        if(!member.stream) {
-                            // eslint-disable-next-line no-param-reassign
-                            member.stream = new MediaStream();
+                        const tempStream = new MediaStream()
+                        tempStream.addTrack(event.track)
+                        if(member.stream) {
+                            member.stream.getTracks().forEach(track=>{
+                                if(track.enabled && !track.muted){ // 还在发送流数据的
+                                    tempStream.addTrack(track)
+                                }
+                            })
                         }
-                        member.stream.addTrack(event.track)
-                        console.log("-----refreshStream-stream:", member.stream);
+                        member.stream = tempStream
+                        console.log("-----refreshStream-stream:", member.stream.getTracks())
                     }
                 }
             })
             yield put({ type: 'refreshState' });
         },
-        *caculateStat(_, {select, put}){
+        *caculateStats(_, {select, put}){
             const meetingRoom = yield select(state => state.meetingRoom)
             const {members} = meetingRoom;
             yield members.forEach(member =>{ // 遍历所有
-                if(member.peerConnect ){
-                    const receivers = member.peerConnect.getReceivers()
+                if( member.videoPc ){ // member.audoPc 只计算video是速度
+                    const receivers = member.videoPc.getReceivers()
                     if(!lodash.isEmpty(receivers)){
                         // console.log("-----receivers:", receivers);
                         receivers.forEach( receiver=>{
@@ -403,7 +550,7 @@ export default {
                 }
             })
             yield put({ type: 'refreshState' });
-        },
+        }
     },
 
     reducers: {
@@ -424,27 +571,28 @@ export default {
                 //     'width': { ideal: 640 },
                 //     'height': { ideal: 480 }
                 // },
-                'micEnabled': true,
-                'videoEnabled': true,
+                'videoEnabled': false,
+                'micEnabled': false,
                 'roomAuthed': 0,
                 'members': []
             }
         },
         createMeetingMember(state, {payload}) {
             // payload  {  content:{id, username} }
-            const {content} = payload
-            content.peerConnect = new RTCPeerConnection()
-            content.ices = []
+            const {content: member} = payload
+            member.audioPc = new RTCPeerConnection()
+            member.videoPc = new RTCPeerConnection()
+            member.ices = []
             const { members } = state
-            meetingUtils.addMemberToList(content, members)
+            meetingUtils.addMemberToList(member, members)
             return {// 触发更新
                 ...state
             }
         },
         removeMeetingMember(state, {payload}) {
-            const {content} = payload
+            const {content: member} = payload
             const { members } = state
-            meetingUtils.removeMemberFromList(content, members)
+            meetingUtils.removeMemberFromList(member, members)
             return {// 触发更新
                 ...state
             }
@@ -454,13 +602,7 @@ export default {
                 state.stompClient.disconnect();
             }
             
-            const { members, myTempStream } = state
-            const myTempTracks = myTempStream.getTracks()
-            if(myTempTracks){
-                myTempTracks.forEach( track=>{
-                    track.stop()
-                })
-            }
+            const { members } = state
             members.forEach(member =>{ // 注意，这里是异步操作
                 if(!lodash.isEmpty(member)){
                     const {stream} = member
@@ -473,8 +615,12 @@ export default {
                         }
                     }
                 }
-                if(member.peerConnect){
-                    member.peerConnect.close()
+                // TODO
+                if(member.audioPc){
+                    member.audioPc.close()
+                }
+                if(member.videoPc){
+                    member.videoPc.close()
                 }
             })
             state.members.splice(0, members.length) // 清空
@@ -485,7 +631,8 @@ export default {
         setMeetingMember(state, {payload}) { // 一次传入members,应答meeting表的时候调用
             // eslint-disable-next-line no-restricted-syntax
             for(const member of payload){
-                member.peerConnect = new RTCPeerConnection()
+                member.audioPc = new RTCPeerConnection()
+                member.videoPc = new RTCPeerConnection()
                 member.ices = []
             }
 
@@ -496,25 +643,15 @@ export default {
                 }
             };
         },
-        setMeetingMemberStream(state, {payload}) {
-            // console.log(state);
-            const { members } = state
-            const index = lodash.findIndex(members, member => member.id === payload.id )
-            if(index > -1){
-                members[index].stream = payload.stream
-                members[index].outputMuted = payload.outputMuted
-            }
-            return {// 触发更新
-                ...state
-            }
-        },
+        
         /**
          * 只替换RTCRtpSender流，使用新的videoStream+旧的audioStream替换localStream
          */
-        replaceMeetingMemberStream(state, {payload : {videoStream: targetStream}}) {
+        replaceMeetingMemberStream(state, {payload : {mediaType, videoStream: targetStream}}) {
             const { members, myId } = state
             // eslint-disable-next-line no-restricted-syntax
             for (const member of members) {
+                const pc = mediaType === 'audio' ? member.audioPc : member.videoPc
                 if(myId === member.id){   
                     const videoTracks = member.stream.getVideoTracks() // 如果没有数据则是empty
                     if(!lodash.isEmpty(videoTracks)){
@@ -526,7 +663,7 @@ export default {
                     }
                     member.stream = targetStream
                 }else{
-                    const sends = member.peerConnect.getSenders(); // RTCRtpSender
+                    const sends = pc.getSenders(); // RTCRtpSender
                     if(sends){
                         const videoTracks = targetStream.getVideoTracks()
                         if(!lodash.isEmpty(videoTracks)){
@@ -563,25 +700,6 @@ export default {
                 'micEnabled': !micEnabled, // 覆盖前面的数据，新数据放后面
             }
         },
-        videoControl(state) {
-            const {myId, members, videoEnabled} = state;
-            const myIndex = lodash.findIndex(members, member => member.id === myId )
-            if(myIndex > -1){
-                const myMember = members[myIndex]
-                const tracks = myMember.stream.getVideoTracks()
-                if(!lodash.isEmpty(tracks)){
-                    if(videoEnabled){ // true  开mic ---> 静mic
-                        tracks[0].enabled = false
-                    }else{// false  静mic ---> 开mic
-                        tracks[0].enabled = true
-                    }
-                }
-            }
-            
-            return {
-                ...state,
-                'videoEnabled': !videoEnabled, // 覆盖前面的数据，新数据放后面
-            }
-        },
+        
     },
 }
