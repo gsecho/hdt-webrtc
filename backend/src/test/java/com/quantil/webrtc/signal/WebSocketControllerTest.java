@@ -2,15 +2,10 @@ package com.quantil.webrtc.signal;
 
 import com.quantil.webrtc.core.exception.RestApiException;
 import com.quantil.webrtc.core.utils.SetterUtils;
-import com.quantil.webrtc.signal.bean.CandidateMessage;
-import com.quantil.webrtc.signal.bean.MeetingMember;
-import com.quantil.webrtc.signal.bean.WebSocketRequestGenerator;
-import com.quantil.webrtc.signal.bean.WebSocketUserPrincipal;
+import com.quantil.webrtc.signal.bean.*;
 import org.junit.Test;
 import org.powermock.api.mockito.PowerMockito;
-import org.springframework.messaging.Message;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.messaging.support.ErrorMessage;
 import org.springframework.messaging.support.GenericMessage;
 import org.springframework.web.socket.messaging.SessionConnectedEvent;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
@@ -32,7 +27,7 @@ public class WebSocketControllerTest {
         SimpMessagingTemplate simpMessagingTemplate = PowerMockito.mock(SimpMessagingTemplate.class);
         SetterUtils.setter(webSocketController, simpMessagingTemplate, "simpMessagingTemplate");
 
-        webSocketController.hello(new MeetingMember(true, true));
+        webSocketController.hello(new MeetingMember());
         WebSocketUserPrincipal userPrincipal = new WebSocketUserPrincipal();
         WebSocketRequestGenerator<String> stringWebSocketRequestGenerator = new WebSocketRequestGenerator<>();
         stringWebSocketRequestGenerator.setContent("192.168.1.1");
@@ -42,7 +37,7 @@ public class WebSocketControllerTest {
 
         webSocketController.transmitAnswer(userPrincipal, new WebSocketRequestGenerator<String>());
 
-        webSocketController.transmitCandidate(userPrincipal, new WebSocketRequestGenerator<CandidateMessage>());
+        webSocketController.transmitCandidate(userPrincipal, new WebSocketRequestGenerator<CandidateContent>());
 
         GenericMessage genericMessage = new GenericMessage("hello");
         SessionDisconnectEvent sessionDisconnectEvent = new SessionDisconnectEvent("test", genericMessage, "sessionId",null, userPrincipal);

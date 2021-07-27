@@ -1,12 +1,11 @@
 package com.quantil.webrtc.signal;
 
-import com.quantil.webrtc.api.v1.meeting.dao.RtcMeetingItemDao;
+import com.alibaba.fastjson.JSONObject;
 import com.quantil.webrtc.signal.bean.*;
 import com.quantil.webrtc.signal.constants.WebSocketConstants;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
-import org.springframework.messaging.handler.annotation.Headers;
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -16,7 +15,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.socket.messaging.SessionConnectedEvent;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 import java.util.HashMap;
-import java.util.Map;
 
 
 /**
@@ -78,14 +76,28 @@ public class WebSocketController {
         simpMessagingTemplate.convertAndSendToUser(request.getTo(), WebSocketConstants.USER_CHANNEL, request);
     }
     @MessageMapping({WebSocketConstants.CMD_CANDIDATE})
-    public void transmitCandidate(WebSocketUserPrincipal principal, WebSocketRequestGenerator<CandidateMessage> request){
+    public void transmitCandidate(WebSocketUserPrincipal principal, WebSocketRequestGenerator<CandidateContent> request){
         // 转发candidate请求
         request.setType(WebSocketConstants.CMD_CANDIDATE);
         simpMessagingTemplate.convertAndSendToUser(request.getTo(), WebSocketConstants.USER_CHANNEL, request);
         // 再次处理内容，是否需要修改
         meetingRoomService.candidateHandler(principal, request);
-}
+    }
+    @MessageMapping({WebSocketConstants.CMD_CANDIDATE_END})
+    public void candidateEnd(WebSocketUserPrincipal principal, WebSocketRequestGenerator<CandidateContent> request){
+        meetingRoomService.candidateEndHandler(principal, request);
+    }
+    @MessageMapping({WebSocketConstants.CMD_PEER_STREAM_STATUS_CHANGE})
+    public void meetingRoomInfoSendToPeer(WebSocketUserPrincipal principal, WebSocketRequestGenerator<CandidateContent> request){
+        request.setType(WebSocketConstants.CMD_PEER_STREAM_STATUS_CHANGE);
+        simpMessagingTemplate.convertAndSendToUser(request.getTo(), WebSocketConstants.USER_CHANNEL, request);
+    }
+    @MessageMapping({WebSocketConstants.CMD_MEDIA_STATUS_CHANGE})
+    public void meetingRoomInfoMediaStatus(WebSocketUserPrincipal principal, WebSocketRequestGenerator<JSONObject> request){
+        request.setType(WebSocketConstants.CMD_MEDIA_STATUS_CHANGE);
+        meetingRoomService.mediaStatusHandler(principal, request);
 
+    }
     /**
      * 断开事件
      * @param event

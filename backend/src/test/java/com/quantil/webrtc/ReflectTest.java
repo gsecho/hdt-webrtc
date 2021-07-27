@@ -28,6 +28,6 @@ public class ReflectTest {
         } catch (Exception e) {
             log.error("{}", e);
         }
-
     }
+
 }

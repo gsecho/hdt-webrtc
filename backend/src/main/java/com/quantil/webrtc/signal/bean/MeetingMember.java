@@ -1,7 +1,6 @@
 package com.quantil.webrtc.signal.bean;
 
 import lombok.Data;
-import org.apache.xpath.operations.Bool;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -17,12 +16,17 @@ public class MeetingMember {
     private Boolean online;
     private Boolean video;
     private Boolean audio;
-    private ConcurrentMap<String, CandidateBody> map;// <toID, ufrag>
+//    private ConcurrentMap<String, CandidateDetail> map;// <toID, 第一条udp candidate>
 
-    public MeetingMember(Boolean videoBool, Boolean audioBool){
+    private ConcurrentMap<String, CandidateContent> audioMap;// <toID, 第一条udp candidate>
+    private ConcurrentMap<String, CandidateContent> videoMap;// <toID, 第一条udp candidate>
+    public MeetingMember(){
         online = true;
-        video = videoBool;
-        audio = audioBool;
-        map = new ConcurrentHashMap();
+        video = false;
+        audio = false;
+//        map = new ConcurrentHashMap();
+
+        videoMap = new ConcurrentHashMap();
+        audioMap = new ConcurrentHashMap();
     }
 }

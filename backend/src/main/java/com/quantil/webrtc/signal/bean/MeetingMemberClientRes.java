@@ -18,7 +18,7 @@ public class MeetingMemberClientRes {
 
     public MeetingMemberClientRes(){
         online = true;
-        video = true;
-        audio = true;
+        video = false;
+        audio = false;
     }
 }
