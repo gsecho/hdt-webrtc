@@ -95,11 +95,36 @@ class MeetingRoom extends React.Component {
     dispatch({type: `${curModlePrefix}/caculateStats`})
   }
 
-  peerOnTrack = (ev) =>{
-    // ev: RtcTrackEvent
-    console.log('peerOnTrack-------ev:', ev);
+  peerTrackOnMuteOperate = (ev) => {
+    console.log("---peerTrackOnMuteOperate:", ev);
+    console.log("---peerTrackOnMuteOperate type:", ev.type);
+    console.log("---peerTrackOnMuteOperate target:", ev.target );
+    // if(ev.target){
+    //   console.log("---peerTrackOnMuteOperate target:", ev.target );
+    //   if(ev.target.track){
+    //     console.log("---peerTrackOnMuteOperate target track:", ev.target.track );
+    //   }
+    // }
+    // if(ev.currentTarget){
+    //   console.log("---peerTrackOnMuteOperate currentTarget:", ev.currentTarget );
+    //   if(ev.currentTarget.track){
+    //     console.log("---peerTrackOnMuteOperate currentTarget.track:", ev.currentTarget.track );
+    //     if(ev.currentTarget.track.kind){
+    //       console.log("---peerTrackOnMuteOperate: ev.currentTarget.track.kind", ev.currentTarget.track.kind );
+    //     }
+    //   }
+    // }
     const { dispatch } = this.props;
-    dispatch({type: `${curModlePrefix}/peerOnTrackEventRefreshStream`, event: ev})
+    dispatch({type: `${curModlePrefix}/peerOnTrackEventRefreshStream`, event: { 'type':ev.type, 'track': ev.target}})
+  }
+
+  peerOnTrack = (ev) =>{
+    // ev: RTCTrackEvent
+    console.log('peerOnTrack-------ev:', ev);
+    ev.track.onmute = this.peerTrackOnMuteOperate
+    ev.track.onunmute = this.peerTrackOnMuteOperate
+    // const { dispatch } = this.props;
+    // dispatch({type: `${curModlePrefix}/peerOnTrackEventRefreshStream`, event: ev})
   }
 
   startStomp = (nickname) =>{
@@ -148,9 +173,6 @@ class MeetingRoom extends React.Component {
                         break;
                     case 'close':
                         dispatch({ type : `${curModlePrefix}/closeMeeting`, payload: data});
-                        break;
-                    case 'peerStreamStatusChange':
-                        dispatch({ type : `${curModlePrefix}/peerStreamStatusChange`, payload: data});
                         break;
                     default:
                         console.log('default');
@@ -373,6 +395,15 @@ class MeetingRoom extends React.Component {
     }
   }
 
+  // TODO : for test
+  printLog = ()=>{
+    const {dispatch } = this.props;
+    dispatch({
+      type: `${curModlePrefix}/printState`,
+      payload: 'test'
+  })
+  }
+
   render() {
     const { meetingRoom: {roomAuthed, maxMembers: total, members, curSource, videoEnabled, micEnabled } } = this.props
     const {global: {isMobile}, location } = this.props;
@@ -506,6 +537,7 @@ class MeetingRoom extends React.Component {
               <img className="custom-left-menu-icon" src={cameraIcon} style={{ width: '20px', height: '20px' }} />
             </Button>
           </Tooltip>
+          <Button type="primary" size="large" style={{ marginLeft: '10px'}} onClick={this.printLog}>打印</Button>
         </div>
       </div> 
     }
