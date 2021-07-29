@@ -96,24 +96,9 @@ class MeetingRoom extends React.Component {
   }
 
   peerTrackOnMuteOperate = (ev) => {
-    console.log("---peerTrackOnMuteOperate:", ev);
-    console.log("---peerTrackOnMuteOperate type:", ev.type);
-    console.log("---peerTrackOnMuteOperate target:", ev.target );
-    // if(ev.target){
-    //   console.log("---peerTrackOnMuteOperate target:", ev.target );
-    //   if(ev.target.track){
-    //     console.log("---peerTrackOnMuteOperate target track:", ev.target.track );
-    //   }
-    // }
-    // if(ev.currentTarget){
-    //   console.log("---peerTrackOnMuteOperate currentTarget:", ev.currentTarget );
-    //   if(ev.currentTarget.track){
-    //     console.log("---peerTrackOnMuteOperate currentTarget.track:", ev.currentTarget.track );
-    //     if(ev.currentTarget.track.kind){
-    //       console.log("---peerTrackOnMuteOperate: ev.currentTarget.track.kind", ev.currentTarget.track.kind );
-    //     }
-    //   }
-    // }
+    // console.log("---peerTrackOnMuteOperate:", ev);
+    // console.log("---peerTrackOnMuteOperate type:", ev.type);
+    // console.log("---peerTrackOnMuteOperate target:", ev.target );
     const { dispatch } = this.props;
     dispatch({type: `${curModlePrefix}/peerOnTrackEventRefreshStream`, event: { 'type':ev.type, 'track': ev.target}})
   }
@@ -123,8 +108,6 @@ class MeetingRoom extends React.Component {
     console.log('peerOnTrack-------ev:', ev);
     ev.track.onmute = this.peerTrackOnMuteOperate
     ev.track.onunmute = this.peerTrackOnMuteOperate
-    // const { dispatch } = this.props;
-    // dispatch({type: `${curModlePrefix}/peerOnTrackEventRefreshStream`, event: ev})
   }
 
   startStomp = (nickname) =>{
@@ -135,7 +118,6 @@ class MeetingRoom extends React.Component {
     if(lodash.isUndefined(roomId) || lodash.isUndefined(roomPwd)){
         // 错误情况
     }else{
-        // const clientId =  meetingUtils.getRandomClientName(roomId, userName)
         const headers = {
             'roomId': roomId,
             'password': roomPwd,
@@ -537,7 +519,7 @@ class MeetingRoom extends React.Component {
               <img className="custom-left-menu-icon" src={cameraIcon} style={{ width: '20px', height: '20px' }} />
             </Button>
           </Tooltip>
-          <Button type="primary" size="large" style={{ marginLeft: '10px'}} onClick={this.printLog}>打印</Button>
+          {/* <Button type="primary" size="large" style={{ marginLeft: '10px'}} onClick={this.printLog}>打印</Button> */}
         </div>
       </div> 
     }

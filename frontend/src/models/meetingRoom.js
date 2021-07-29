@@ -472,13 +472,19 @@ export default {
                     const index = lodash.findIndex(receivers, receiver => receiver.track.id === event.track.id )
                     if(index > -1){
                         const tempStream = new MediaStream()
-                        tempStream.addTrack(event.track)
                         if(member.stream) {
                             member.stream.getTracks().forEach(track=>{
                                 if(track.enabled && !track.muted){ // 还在发送流数据的
                                     tempStream.addTrack(track)
                                 }
                             })
+                            // 有audio track  ，这时video变成muted了，这时候只能保留audio track （特殊）
+                            const audioTracks = tempStream.getAudioTracks() // audio了
+                            if (!(audioTracks.length !== 0 && event.track.muted)){
+                                tempStream.addTrack(event.track)
+                            }
+                        }else{
+                            tempStream.addTrack(event.track)
                         }
                         member.stream = tempStream
                         console.log("-----refreshStream-stream:", member.stream.getTracks())
