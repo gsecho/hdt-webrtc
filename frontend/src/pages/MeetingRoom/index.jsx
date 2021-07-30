@@ -95,19 +95,25 @@ class MeetingRoom extends React.Component {
     dispatch({type: `${curModlePrefix}/caculateStats`})
   }
 
+  /** 在苹果上，使用这个是有问题的，有时候会出现mute和unmute循环 */
   peerTrackOnMuteOperate = (ev) => {
-    // console.log("---peerTrackOnMuteOperate:", ev);
-    // console.log("---peerTrackOnMuteOperate type:", ev.type);
-    // console.log("---peerTrackOnMuteOperate target:", ev.target );
-    const { dispatch } = this.props;
-    dispatch({type: `${curModlePrefix}/peerOnTrackEventRefreshStream`, event: { 'type':ev.type, 'track': ev.target}})
+    console.log("---peerTrackOnMuteOperate:", ev);
+    console.log("---peerTrackOnMuteOperate type:", ev.type);
+    console.log("---peerTrackOnMuteOperate target id:", ev.target.id );
+    console.log("---peerTrackOnMuteOperate target enabled:", ev.target.enabled );
+    console.log("---peerTrackOnMuteOperate target muted:", ev.target.muted );
+    // const { dispatch } = this.props;
+    // dispatch({type: `${curModlePrefix}/peerOnTrackEventRefreshStream`, event: { 'type':ev.type, 'track': ev.target}})
   }
 
   peerOnTrack = (ev) =>{
     // ev: RTCTrackEvent
     console.log('peerOnTrack-------ev:', ev);
-    ev.track.onmute = this.peerTrackOnMuteOperate
-    ev.track.onunmute = this.peerTrackOnMuteOperate
+    console.log('peerOnTrack-------enabled:', ev.track.enabled);
+    console.log('peerOnTrack-------muted:', ev.track.muted);
+    // ev.track.onmute = this.peerTrackOnMuteOperate
+    // ev.track.onunmute = this.peerTrackOnMuteOperate
+    dispatch({type: `${curModlePrefix}/peerOnTrackEventRefreshStream`, event: { 'type':ev.type, 'track': ev.target}})
   }
 
   startStomp = (nickname) =>{
@@ -196,17 +202,12 @@ class MeetingRoom extends React.Component {
     })
   }
 
-  getVideosWidth = () => {
-    const { global: { collapsed, isMobile} } = this.props;
-    if(isMobile){
-      return (document.body.clientWidth-24*4);
-    }
-      if(collapsed){
-        return (document.body.clientWidth-64-24*4);
-      }
-        return (document.body.clientWidth-265-24*4);
-  }
-
+  getVideosWidth = () => document.body.clientWidth-20*4
+    // const { global: { isMobile} } = this.props;
+    // if(isMobile){
+    //   return document.body.clientWidth
+    // }
+  
   getFlexDisplayInfo = (total) =>{
     // 计算行类情况
     const sqrRoot = Math.sqrt(total);
@@ -519,7 +520,7 @@ class MeetingRoom extends React.Component {
               <img className="custom-left-menu-icon" src={cameraIcon} style={{ width: '20px', height: '20px' }} />
             </Button>
           </Tooltip>
-          {/* <Button type="primary" size="large" style={{ marginLeft: '10px'}} onClick={this.printLog}>打印</Button> */}
+          <Button type="primary" size="large" style={{ marginLeft: '10px'}} onClick={this.printLog}>打印</Button>
         </div>
       </div> 
     }

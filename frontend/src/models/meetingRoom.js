@@ -317,8 +317,15 @@ export default {
                 if(member.id === myId){
                     member.stream.getTracks().forEach(track =>{
                         if (track.kind === mediaType) {
+                            track.enabled = false
                             track.stop()
                         }
+                    })
+                }else{
+                    // stop以后要删除
+                    member.videoPc.getSenders().forEach(sender =>{
+                        // console.log("--- tracks:", sender.track.enabled, sender.track.muted);
+                        member.videoPc.removeTrack(sender)
                     })
                 }
                 // 关闭的时候不remove，下次再次打开直接调用 sender.replaceTrack
@@ -369,20 +376,16 @@ export default {
                 console.log("---error:", pc);
                 return
             }
-            if(pc.remoteDescription){
+            if(pc.localDescription){
                 // 如果已经有track则 replaceTrack
-                console.log("pc.getSenders:", pc.getSenders());
+                console.log("pc.getSenders:", pc.getSenders())
                 if(pc.getSenders().length !== 0 && pc.getSenders()[0].track){ // 已经create则直接发送,并且有track
-                    yield put({ type: 'replaceSenderTrack', payload:{ 'mediaType': mediaType, track: localTrack} });
+                // if(pc.getSenders().length !== 0 ){ // 已经create则直接发送,并且有track
+                    yield put({ type: 'replaceSenderTrack', payload:{ 'mediaType': mediaType, track: localTrack} })
                     return
                 }
-                // 如果没有track则新建RTCPeerConnection 
+                // 如果没有track则新建RTCPeerConnection
                 pc.close()
-                // console.log("-----:", pc.getReceivers()[0].track.muted);
-                yield put({
-                    type: 'setMeetingRoomState',
-                    payload: { 'tempPc': pc}
-                })
                 if(mediaType === 'audio'){
                     peerMember.audioPc = new RTCPeerConnection()
                     pc = peerMember.audioPc
@@ -421,10 +424,9 @@ export default {
             // 发送offer之前必须准备好流
             pc.onnegotiationneeded = e =>{
                 console.log('---onnegotiationneeded: ', e);
-                if(pc.localDescription){ // 已经create则直接发送
-                    stompClient.send(`${wsSendPrefix}/offer`, {}, 
-                                JSON.stringify({"from": myId, "to": peerId, "content": {'offerDesc':pc.localDescription, 'mediaType': mediaType} }));
-                }else{
+                if(pc.remoteDescription){ // 已经create则直接发送
+                    return
+                }
                     const config = mediaType === 'audio'? {offerToReceiveAudio: true}: {offerToReceiveVideo: true}
                     pc.createOffer(config)
                     .then( desc => {
@@ -433,7 +435,6 @@ export default {
                                 JSON.stringify({"from": myId, "to": peerId, "content": {'offerDesc':desc, 'mediaType': mediaType} }));
                         pc.setLocalDescription(desc)// 搜集candidate，触发onicecandidate事件
                     })
-                }
             }
         },
         *replaceSenderTrack({payload : {mediaType, track}}, { select, put }) {
@@ -446,7 +447,11 @@ export default {
                     const senders = pc.getSenders(); // RTCRtpSender
                     const index = lodash.findIndex(senders, sender =>sender.track && sender.track.kind === mediaType)
                     if(index === -1){
-                        pc.addTrack(track)
+                        if(senders.length === 0){
+                            pc.addTrack(track)
+                        }else{
+                            senders[0].replaceTrack(track)
+                        }
                     }else{
                         const sender = senders[index]
                         if(sender.track) {
