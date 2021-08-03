@@ -95,6 +95,10 @@ class MeetingRoom extends React.Component {
     dispatch({type: `${curModlePrefix}/caculateStats`})
   }
 
+  peerTrackOnEnd = (ev) => {
+    console.log("---peerTrackOnEnd:", ev);
+  }
+
   /** 在苹果上，使用这个是有问题的，有时候会出现mute和unmute循环 */
   peerTrackOnMuteOperate = (ev) => {
     console.log("---peerTrackOnMuteOperate:", ev);
@@ -102,8 +106,8 @@ class MeetingRoom extends React.Component {
     console.log("---peerTrackOnMuteOperate target id:", ev.target.id );
     console.log("---peerTrackOnMuteOperate target enabled:", ev.target.enabled );
     console.log("---peerTrackOnMuteOperate target muted:", ev.target.muted );
-    // const { dispatch } = this.props;
-    // dispatch({type: `${curModlePrefix}/peerOnTrackEventRefreshStream`, event: { 'type':ev.type, 'track': ev.target}})
+    const { dispatch } = this.props;
+    dispatch({type: `${curModlePrefix}/peerOnMuteEventRefreshStream`, event: { 'type':ev.type, 'track': ev.target}})
   }
 
   peerOnTrack = (ev) =>{
@@ -111,9 +115,12 @@ class MeetingRoom extends React.Component {
     console.log('peerOnTrack-------ev:', ev);
     console.log('peerOnTrack-------enabled:', ev.track.enabled);
     console.log('peerOnTrack-------muted:', ev.track.muted);
-    // ev.track.onmute = this.peerTrackOnMuteOperate
-    // ev.track.onunmute = this.peerTrackOnMuteOperate
-    dispatch({type: `${curModlePrefix}/peerOnTrackEventRefreshStream`, event: { 'type':ev.type, 'track': ev.target}})
+    ev.track.onmute = this.peerTrackOnMuteOperate
+    ev.track.onunmute = this.peerTrackOnMuteOperate
+    ev.track.onend = this.peerTrackOnEnd
+
+    const { dispatch } = this.props;
+    dispatch({type: `${curModlePrefix}/peerOnTrackEventRefreshStream`, event: ev})
   }
 
   startStomp = (nickname) =>{
@@ -159,9 +166,6 @@ class MeetingRoom extends React.Component {
                     case 'leave':
                         dispatch({ type : `${curModlePrefix}/removeMeetingMember`, payload: data});
                         break;
-                    case 'close':
-                        dispatch({ type : `${curModlePrefix}/closeMeeting`, payload: data});
-                        break;
                     default:
                         console.log('default');
                         break;
@@ -190,9 +194,6 @@ class MeetingRoom extends React.Component {
     const { dispatch } = this.props;
     dispatch({
         type: `${curModlePrefix}/STOP_TIME_TASK`
-    })
-    dispatch({
-        type: `${curModlePrefix}/closeMeeting`
     })
     dispatch({
         type: `${curModlePrefix}/setMeetingRoomState`,
@@ -439,7 +440,7 @@ class MeetingRoom extends React.Component {
     }
     // console.log(videos);
     const flexInfo = this.getFlexDisplayInfo(videos.length);  
-    const videoHeight = (videosWidth/lengthWidthRatio)/(flexInfo.columnNum)*0.8;
+    const videoHeight = (videosWidth/lengthWidthRatio)/(flexInfo.columnNum)*0.75;
     // console.log(videos);
     const micIcon = micEnabled ? MicOnSvg : MicOffSvg;
     const cameraIcon = videoEnabled ? cameraOnSvg : cameraOffSvg;

@@ -114,55 +114,6 @@ export default {
                 }
             }
         },
-        /**
-         * 替换流数据操作（ camera <--> screen， camera1 <--> camera2）
-         */
-        *shareTrack( {payload, callback} , { select, put } ){
-            let videoStream;
-            const {target} = payload
-            if(target === 'camera'){
-                const {isMobile} = yield select(state => state.global)
-                const {videoConfig} = yield select(state => state.meetingRoom)
-                if(isMobile){
-                    videoConfig.facingMode = "user" 
-                }
-                console.log("---shareTrack:", '2-1');
-                videoStream = yield navigator.mediaDevices.getUserMedia({
-                    video: videoConfig
-                }).catch(error => {
-                    console.log("---", error);
-                    return new MediaStream()
-                });
-                console.log("---shareTrack:", '2-2');
-            }else if(target === 'screen'){
-                console.log("---shareTrack:", '3-1');
-                videoStream = yield navigator.mediaDevices.getDisplayMedia({
-                    video:{
-                        'width': { ideal: 1280 },
-                        'height': { ideal: 720 }
-                    }
-                }).catch( error =>{
-                    console.log("---", error);
-                    // 没有流返回undefined
-                })
-                console.log("---shareTrack:", '3-2');
-                if(videoStream){
-                    const videoTracks = videoStream.getVideoTracks() // 如果没有数据则是empty
-                    if(!lodash.isEmpty(videoTracks)){
-                        callback(videoTracks[0]) // 把流数据返回给前端，停止的时候才能在回调中发送 disaptch 
-                    }
-                }else{
-                    return;
-                }
-            }
-            yield put({
-                type: 'replaceMeetingMemberStream',
-                payload: {
-                    'videoStream' :videoStream ,
-                }
-            });
-            yield put({ type: 'setMeetingRoomState', payload: { curSource: target } });
-        },
         /** 对端发起的offer */
         *wbMessageOffer( {payload} , { select}){
             const {from: peerId, to: myId, content: { offerDesc, mediaType}} = payload
@@ -170,9 +121,36 @@ export default {
             const {stompClient, members, onTrack} = meetingRoom;
             const index = lodash.findIndex(members, member => member.id === peerId )
             if(index === -1) return
-
             const peerMember = members[index]
-            const pc = mediaType === 'audio' ? peerMember.audioPc : peerMember.videoPc
+
+            const myIndex = lodash.findIndex(members, member => member.id === myId )
+            if(myIndex === -1) return 
+            const {stream: myStream} = members[myIndex]
+
+            let pc;
+            if(mediaType === 'audio'){
+                if(peerMember.audioPc.remoteDescription){
+                    peerMember.audioPc.close()
+                    peerMember.audioPc = new RTCPeerConnection()
+                    pc = peerMember.audioPc
+                }
+                pc = peerMember.audioPc
+                if(myStream){
+                    pc.addTrack(myStream.getAudioTracks()[0], myStream)
+                }
+                
+            }else {
+                if(peerMember.videoPc.remoteDescription){
+                    peerMember.videoPc.close()
+                    peerMember.videoPc = new RTCPeerConnection()
+                }
+                pc = peerMember.videoPc
+                if(myStream){
+                    pc.addTrack(myStream.getVideoTracks()[0], myStream)
+                }
+            }
+            
+
             pc.onicecandidate = e=> { // 事件触发执行 
                 console.log(`onicecandidate: -----------------`);
                 if (e.candidate != null) {
@@ -322,10 +300,11 @@ export default {
                         }
                     })
                 }else{
+                    const pc = mediaType === 'audio' ? member.audioPc : member.videoPc
                     // stop以后要删除
-                    member.videoPc.getSenders().forEach(sender =>{
+                    pc.getSenders().forEach(sender =>{
                         // console.log("--- tracks:", sender.track.enabled, sender.track.muted);
-                        member.videoPc.removeTrack(sender)
+                        pc.removeTrack(sender)
                     })
                 }
                 // 关闭的时候不remove，下次再次打开直接调用 sender.replaceTrack
@@ -349,7 +328,6 @@ export default {
                     payload: { 'curSource': targetSource}
                 })
             }
-            
         },
         *wbRtcSendOffer( {payload} , { select, put }){
             const meetingRoom = yield select(state => state.meetingRoom)
@@ -376,20 +354,36 @@ export default {
                 console.log("---error:", pc);
                 return
             }
+            pc.ontrack = onTrack
             if(pc.localDescription){
                 // 如果已经有track则 replaceTrack
-                console.log("pc.getSenders:", pc.getSenders())
-                if(pc.getSenders().length !== 0 && pc.getSenders()[0].track){ // 已经create则直接发送,并且有track
-                // if(pc.getSenders().length !== 0 ){ // 已经create则直接发送,并且有track
+                const parameters = pc.getSenders()[0].getParameters()
+                if(parameters.codecs.length !== 0){ // 如果发送offer或者answer的时候有数据流则codecs数组不为空
                     yield put({ type: 'replaceSenderTrack', payload:{ 'mediaType': mediaType, track: localTrack} })
                     return
                 }
                 // 如果没有track则新建RTCPeerConnection
-                pc.close()
+                // pc.close()
                 if(mediaType === 'audio'){
+                    // const receivers = peerMember.audioPc.getReceivers()
+                    // yield receivers.forEach(receiver=>{
+                    //     if(receiver.track === mediaType){
+                    //         receiver.track.onmute = null
+                    //         receiver.track.onunmute = null
+                    //     }
+                    // })
+                    peerMember.audioPc.close()
                     peerMember.audioPc = new RTCPeerConnection()
                     pc = peerMember.audioPc
                 }else{
+                    // const receivers = peerMember.videoPc.getReceivers()
+                    // yield receivers.forEach(receiver=>{
+                    //     if(receiver.track === mediaType){
+                    //         receiver.track.onmute = null
+                    //         receiver.track.onunmute = null
+                    //     }
+                    // })
+                    peerMember.videoPc.close()
                     peerMember.videoPc = new RTCPeerConnection()
                     pc = peerMember.videoPc
                 }
@@ -449,7 +443,7 @@ export default {
                     if(index === -1){
                         if(senders.length === 0){
                             pc.addTrack(track)
-                        }else{
+                        }else{ // 都是执行这个
                             senders[0].replaceTrack(track)
                         }
                     }else{
@@ -466,7 +460,7 @@ export default {
             }
             yield put({ type: 'refreshState' });
         },
-        *peerOnTrackEventRefreshStream( {event} , { select, put }){
+        *peerOnMuteEventRefreshStream( {event} , { select, put }){
             const meetingRoom = yield select(state => state.meetingRoom)
             const {members} = meetingRoom
             yield members.forEach(member =>{
@@ -483,17 +477,37 @@ export default {
                                     tempStream.addTrack(track)
                                 }
                             })
-                            // 有audio track  ，这时video变成muted了，这时候只能保留audio track （特殊）
-                            const audioTracks = tempStream.getAudioTracks() // audio了
-                            if (!(audioTracks.length !== 0 && event.track.muted)){
+                            if(event.type !== 'mute'){
                                 tempStream.addTrack(event.track)
                             }
-                        }else{
+                            // 有audio track  ，这时video变成muted了，这时候只能保留audio track （特殊）
+                            // const audioTracks = tempStream.getAudioTracks() // audio了
+                            // if (!(audioTracks.length !== 0 && event.track.muted)){
+                            //     tempStream.addTrack(event.track)
+                            // }
+                        }else if(event.type !== 'mute'){
                             tempStream.addTrack(event.track)
                         }
                         member.stream = tempStream
                         console.log("-----refreshStream-stream:", member.stream.getTracks())
                     }
+                }
+            })
+            yield put({ type: 'refreshState' });
+        },
+        /**
+         *  
+         */
+        *peerOnTrackEventRefreshStream( {event} , { select, put }){
+            const {members} = yield select(state => state.meetingRoom)
+            const {target:targetPc} = event
+            yield members.forEach(member =>{
+                const pc = event.track.kind === 'audio' ? member.audioPc : member.videoPc
+                if(targetPc === pc){
+                    if(!member.stream){
+                        member.stream = new MediaStream()
+                    }
+                    member.stream.addTrack(event.track)
                 }
             })
             yield put({ type: 'refreshState' });
@@ -580,37 +594,6 @@ export default {
             const { members } = state
             meetingUtils.removeMemberFromList(member, members)
             return {// 触发更新
-                ...state
-            }
-        },
-        closeMeeting(state ) { // TODO 改成对特定链路关闭
-            if(state.stompClient){
-                state.stompClient.disconnect();
-            }
-            
-            const { members } = state
-            members.forEach(member =>{ // 注意，这里是异步操作
-                if(!lodash.isEmpty(member)){
-                    const {stream} = member
-                    if(stream) {
-                        const tracks = stream.getTracks()
-                        if(tracks){
-                            tracks.forEach( track=>{
-                                track.stop()
-                            })
-                        }
-                    }
-                }
-                // TODO
-                if(member.audioPc){
-                    member.audioPc.close()
-                }
-                if(member.videoPc){
-                    member.videoPc.close()
-                }
-            })
-            state.members.splice(0, members.length) // 清空
-            return {
                 ...state
             }
         },
