@@ -219,6 +219,7 @@ public class MeetingRoomService {
         from2PeerContent.getCandidate().setCandidate(from2PeerCandidateDetail.toString());
         Object payload1 = formatMessageRes(request.getFrom(), request.getTo(), WebSocketConstants.CMD_CANDIDATE, from2PeerContent);
         simpMessagingTemplate.convertAndSendToUser(request.getTo(), WebSocketConstants.USER_CHANNEL, payload1);
+        froMap.remove(request.getTo());
         /**
          * to 发送的candidate，组装再发出去
          */
@@ -230,6 +231,7 @@ public class MeetingRoomService {
         to2PeerContent.getCandidate().setCandidate(to2PeerCandidateDetail.toString());
         Object payload2 = formatMessageRes(request.getTo(), request.getFrom(), WebSocketConstants.CMD_CANDIDATE, to2PeerContent);
         simpMessagingTemplate.convertAndSendToUser(request.getFrom(), WebSocketConstants.USER_CHANNEL, payload2);
+        toMap.remove(request.getFrom());
     }
 
     public void candidateHandler(WebSocketUserPrincipal userPrincipal, WebSocketRequestGenerator<CandidateContent> request){

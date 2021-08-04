@@ -9,7 +9,7 @@ import lombok.Data;
  */
 @Data
 public class IceCandidate {
-    private String sdpMLineIndex;
+    private Integer sdpMLineIndex;
     private String sdpMid;
     private String candidate; // 内容可以解析为 CandidateDetail
 }

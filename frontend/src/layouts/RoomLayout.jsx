@@ -19,8 +19,8 @@ class LoginLayout extends React.Component {
     <Header>
       <div className="logo" />
     </Header>
-    <Content style={{ padding: '0 50px' }}>
-  <div style={{ background: '#fff', padding: 24, minHeight: 280, textAlign: 'center' }}>{children}</div>
+    <Content style={{ padding: '0 0px' }}>
+        <div style={{ background: '#fff', padding: '10px 20px', minHeight: 100, textAlign: 'center' }}>{children}</div>
     </Content>
     <Footer />
            </Layout>

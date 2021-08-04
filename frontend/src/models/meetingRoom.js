@@ -97,8 +97,7 @@ export default {
                     ...content,
                 }
             });
-            // eslint-disable-next-line no-restricted-syntax
-            for (const member of members) {
+            yield members.forEach(member=>{
                 if(myId !== member.id){ // 自己不需要创建peerConnection
                     member.audioPc = new RTCPeerConnection()
                     member.videoPc = new RTCPeerConnection()
@@ -112,56 +111,7 @@ export default {
                         stompClient.send(`${wsSendPrefix}/reqSendOffer`, {}, JSON.stringify({"from": myId, "to": member.id, "content": 'video'}));
                     }
                 }
-            }
-        },
-        /**
-         * 替换流数据操作（ camera <--> screen， camera1 <--> camera2）
-         */
-        *shareTrack( {payload, callback} , { select, put } ){
-            let videoStream;
-            const {target} = payload
-            if(target === 'camera'){
-                const {isMobile} = yield select(state => state.global)
-                const {videoConfig} = yield select(state => state.meetingRoom)
-                if(isMobile){
-                    videoConfig.facingMode = "user" 
-                }
-                console.log("---shareTrack:", '2-1');
-                videoStream = yield navigator.mediaDevices.getUserMedia({
-                    video: videoConfig
-                }).catch(error => {
-                    console.log("---", error);
-                    return new MediaStream()
-                });
-                console.log("---shareTrack:", '2-2');
-            }else if(target === 'screen'){
-                console.log("---shareTrack:", '3-1');
-                videoStream = yield navigator.mediaDevices.getDisplayMedia({
-                    video:{
-                        'width': { ideal: 1280 },
-                        'height': { ideal: 720 }
-                    }
-                }).catch( error =>{
-                    console.log("---", error);
-                    // 没有流返回undefined
-                })
-                console.log("---shareTrack:", '3-2');
-                if(videoStream){
-                    const videoTracks = videoStream.getVideoTracks() // 如果没有数据则是empty
-                    if(!lodash.isEmpty(videoTracks)){
-                        callback(videoTracks[0]) // 把流数据返回给前端，停止的时候才能在回调中发送 disaptch 
-                    }
-                }else{
-                    return;
-                }
-            }
-            yield put({
-                type: 'replaceMeetingMemberStream',
-                payload: {
-                    'videoStream' :videoStream ,
-                }
-            });
-            yield put({ type: 'setMeetingRoomState', payload: { curSource: target } });
+            })
         },
         /** 对端发起的offer */
         *wbMessageOffer( {payload} , { select}){
@@ -170,9 +120,33 @@ export default {
             const {stompClient, members, onTrack} = meetingRoom;
             const index = lodash.findIndex(members, member => member.id === peerId )
             if(index === -1) return
-
             const peerMember = members[index]
-            const pc = mediaType === 'audio' ? peerMember.audioPc : peerMember.videoPc
+
+            const myIndex = lodash.findIndex(members, member => member.id === myId )
+            if(myIndex === -1) return 
+            const {stream: myStream} = members[myIndex]
+
+            let pc;
+            if(mediaType === 'audio'){
+                if(peerMember.audioPc.remoteDescription){
+                    peerMember.audioPc.close()
+                    peerMember.audioPc = new RTCPeerConnection()
+                }
+                pc = peerMember.audioPc
+                if(myStream && myStream.getAudioTracks().length !== 0){
+                    pc.addTrack(myStream.getAudioTracks()[0], myStream)
+                }
+            }else {
+                if(peerMember.videoPc.remoteDescription){
+                    peerMember.videoPc.close()
+                    peerMember.videoPc = new RTCPeerConnection()
+                }
+                pc = peerMember.videoPc
+                if(myStream && myStream.getVideoTracks().length !== 0){
+                    pc.addTrack(myStream.getVideoTracks()[0], myStream)
+                }
+            }
+
             pc.onicecandidate = e=> { // 事件触发执行 
                 console.log(`onicecandidate: -----------------`);
                 if (e.candidate != null) {
@@ -309,19 +283,33 @@ export default {
         },
         *closeLocalTrackStream({payload} , { select, put }) {
             const meetingRoom = yield select(state => state.meetingRoom)
-            const {myId, members, stompClient } = meetingRoom;
+            const {myId, members, stompClient } = meetingRoom
             const { mediaKind, targetState, targetSource } = payload
+            // mediaKind: screen, camera, microphone
+            // mediaType: video, audio
             const mediaType = mediaKind === 'microphone' ? 'audio' : 'video'
 
             yield members.forEach(member =>{
                 if(member.id === myId){
                     member.stream.getTracks().forEach(track =>{
                         if (track.kind === mediaType) {
+                            track.enabled = false
                             track.stop()
                         }
                     })
+                }else{
+                    const pc = mediaType === 'audio' ? member.audioPc : member.videoPc
+                    if(pc){
+                        // stop以后要删除
+                        pc.getSenders().forEach(sender =>{
+                            // console.log("--- removeTrack tracks:", sender.track.enabled, sender.track.muted)
+                            pc.removeTrack(sender)
+                        })
+                        // 通知远端，track已经删除
+                        stompClient.send(`${wsSendPrefix}/peerTrackStatusChange`, {}, 
+                            JSON.stringify({"from": myId, "to": member.id, "content": {'mediaType': mediaType,status: 'mute'}}))
+                    }
                 }
-                // 关闭的时候不remove，下次再次打开直接调用 sender.replaceTrack
             })
             // 更改服务器段的audio和video标志
             if(mediaKind === 'microphone'){
@@ -329,20 +317,19 @@ export default {
                     type: 'setMeetingRoomState',
                     payload: { micEnabled: targetState}
                 })
-                stompClient.send(`${wsSendPrefix}/mediaStatus`, {}, JSON.stringify({"from": myId, "to": '0', "content": {audio: targetState}}));
+                stompClient.send(`${wsSendPrefix}/mediaStatus`, {}, JSON.stringify({"from": myId, "to": '0', "content": {audio: targetState}}))
             }else if(mediaKind === 'camera'){
                 yield put({
                     type: 'setMeetingRoomState',
                     payload: { videoEnabled: targetState}
                 })
-                stompClient.send(`${wsSendPrefix}/mediaStatus`, {}, JSON.stringify({"from": myId, "to": '0', "content": {video: targetState}}));
+                stompClient.send(`${wsSendPrefix}/mediaStatus`, {}, JSON.stringify({"from": myId, "to": '0', "content": {video: targetState}}))
             }else{
                 yield put({
                     type: 'setMeetingRoomState',
                     payload: { 'curSource': targetSource}
                 })
             }
-            
         },
         *wbRtcSendOffer( {payload} , { select, put }){
             const meetingRoom = yield select(state => state.meetingRoom)
@@ -366,23 +353,19 @@ export default {
             let pc = mediaType === 'audio' ? peerMember.audioPc : peerMember.videoPc
             
             if(!pc){
-                console.log("---error:", pc);
+                console.log("---error:", pc)
                 return
             }
-            if(pc.remoteDescription){
+            pc.ontrack = onTrack
+            if(pc.localDescription){
                 // 如果已经有track则 replaceTrack
-                console.log("pc.getSenders:", pc.getSenders());
-                if(pc.getSenders().length !== 0 && pc.getSenders()[0].track){ // 已经create则直接发送,并且有track
-                    yield put({ type: 'replaceSenderTrack', payload:{ 'mediaType': mediaType, track: localTrack} });
+                const parameters = pc.getSenders()[0].getParameters()
+                if(parameters.codecs.length !== 0){ // 如果发送offer或者answer的时候有数据流则codecs数组不为空
+                    yield put({ type: 'replaceSenderTrack', payload:{ 'mediaType': mediaType,'peerId': peerId, track: localTrack} })
                     return
                 }
-                // 如果没有track则新建RTCPeerConnection 
+                // 如果没有track则新建RTCPeerConnection
                 pc.close()
-                // console.log("-----:", pc.getReceivers()[0].track.muted);
-                yield put({
-                    type: 'setMeetingRoomState',
-                    payload: { 'tempPc': pc}
-                })
                 if(mediaType === 'audio'){
                     peerMember.audioPc = new RTCPeerConnection()
                     pc = peerMember.audioPc
@@ -390,8 +373,9 @@ export default {
                     peerMember.videoPc = new RTCPeerConnection()
                     pc = peerMember.videoPc
                 }
+                peerMember.stream = undefined
             }
-            
+
             pc.onicecandidate = e=> { // 事件触发执行 
                 if(pc.remoteDescription){
                     console.error("--- onicecandidate send offer after")
@@ -420,11 +404,11 @@ export default {
             // https://developer.mozilla.org/en-US/docs/Web/Guide/API/WebRTC/Peer-to-peer_communications_with_WebRTC
             // 发送offer之前必须准备好流
             pc.onnegotiationneeded = e =>{
+                // removetrack也会进入这里
                 console.log('---onnegotiationneeded: ', e);
-                if(pc.localDescription){ // 已经create则直接发送
-                    stompClient.send(`${wsSendPrefix}/offer`, {}, 
-                                JSON.stringify({"from": myId, "to": peerId, "content": {'offerDesc':pc.localDescription, 'mediaType': mediaType} }));
-                }else{
+                if(pc.remoteDescription){ // 已经create则直接发送
+                    return
+                }
                     const config = mediaType === 'audio'? {offerToReceiveAudio: true}: {offerToReceiveVideo: true}
                     pc.createOffer(config)
                     .then( desc => {
@@ -433,56 +417,82 @@ export default {
                                 JSON.stringify({"from": myId, "to": peerId, "content": {'offerDesc':desc, 'mediaType': mediaType} }));
                         pc.setLocalDescription(desc)// 搜集candidate，触发onicecandidate事件
                     })
-                }
             }
         },
-        *replaceSenderTrack({payload : {mediaType, track}}, { select, put }) {
+        *replaceSenderTrack({payload : {mediaType, peerId, track}}, { select, put }) {
             const meetingRoom = yield select(state => state.meetingRoom)
-            const {members, myId} = meetingRoom;
-            // eslint-disable-next-line no-restricted-syntax
-            for (const member of members) {
+            const {myId, stompClient, members,} = meetingRoom;
+
+            const member = members.find(item =>item.id === peerId)
+            if(member){
                 const pc = mediaType === 'audio' ? member.audioPc : member.videoPc
-                if (member.id !== myId) {
-                    const senders = pc.getSenders(); // RTCRtpSender
-                    const index = lodash.findIndex(senders, sender =>sender.track && sender.track.kind === mediaType)
-                    if(index === -1){
-                        pc.addTrack(track)
-                    }else{
-                        const sender = senders[index]
-                        if(sender.track) {
-                            sender.track.stop()
-                        }
-                        sender.replaceTrack(track)
-                    }
-                    console.log("-----senders:", senders);
+                const senders = pc.getSenders(); // RTCRtpSender
+                const index = lodash.findIndex(senders, sender =>sender.track && sender.track.kind === mediaType)
+
+                if(index === -1){
+                    senders[0].replaceTrack(track).then(()=>{
+                        stompClient.send(`${wsSendPrefix}/peerTrackStatusChange`, {}, 
+                        JSON.stringify({"from": myId, "to": member.id, "content": {'mediaType': mediaType,status: 'unmute'}}))
+                    })
                 }else{
-                    // 
+                    const sender = senders[index]
+                    if(sender.track) { sender.track.stop() }
+                    sender.replaceTrack(track)
                 }
             }
             yield put({ type: 'refreshState' });
         },
-        *peerOnTrackEventRefreshStream( {event} , { select, put }){
+        /**
+         * 对端通知的状态
+         */
+        *peerTrackStatusChange( {payload: {from: peerId, content:{mediaType, status}}} , { select, put }){
             const meetingRoom = yield select(state => state.meetingRoom)
             const {members} = meetingRoom
+            const member = members.find(item => item.id === peerId )
+            if(member){
+                if(status === 'mute'){
+                    const tempStream = new MediaStream()
+                    if(member.stream){
+                        member.stream.getTracks().forEach(track => {
+                            if (track.kind !== mediaType){
+                                tempStream.addTrack(track)
+                            }
+                        })
+                        if(tempStream.getTracks().length === 0){
+                            member.stream = undefined
+                        }else{
+                            member.stream = tempStream
+                        }
+                    }
+                }else{
+                    // unmute
+                    const pc = mediaType === 'audio' ? member.audioPc : member.videoPc
+                    const {track} = pc.getReceivers()[0]
+                    if(track){
+                        if(member.stream){
+                            member.stream.addTrack(track)
+                        }else{
+                            member.stream = new MediaStream()
+                            member.stream.addTrack(track)
+                        }
+                    }
+                }
+            }
+            yield put({ type: 'refreshState' });
+        },
+        /**
+         *  
+         */
+        *peerOnTrackEventRefreshStream( {event} , { select, put }){
+            const {members} = yield select(state => state.meetingRoom)
+            const {target:targetPc} = event
             yield members.forEach(member =>{
                 const pc = event.track.kind === 'audio' ? member.audioPc : member.videoPc
-                if(pc){
-                    const receivers = pc.getReceivers()
-                    console.log("receivers", receivers);
-                    const index = lodash.findIndex(receivers, receiver => receiver.track.id === event.track.id )
-                    if(index > -1){
-                        const tempStream = new MediaStream()
-                        tempStream.addTrack(event.track)
-                        if(member.stream) {
-                            member.stream.getTracks().forEach(track=>{
-                                if(track.enabled && !track.muted){ // 还在发送流数据的
-                                    tempStream.addTrack(track)
-                                }
-                            })
-                        }
-                        member.stream = tempStream
-                        console.log("-----refreshStream-stream:", member.stream.getTracks())
+                if(targetPc === pc){
+                    if(!member.stream){
+                        member.stream = new MediaStream()
                     }
+                    member.stream.addTrack(event.track)
                 }
             })
             yield put({ type: 'refreshState' });
@@ -568,89 +578,6 @@ export default {
             const {content: member} = payload
             const { members } = state
             meetingUtils.removeMemberFromList(member, members)
-            return {// 触发更新
-                ...state
-            }
-        },
-        closeMeeting(state ) { // TODO 改成对特定链路关闭
-            if(state.stompClient){
-                state.stompClient.disconnect();
-            }
-            
-            const { members } = state
-            members.forEach(member =>{ // 注意，这里是异步操作
-                if(!lodash.isEmpty(member)){
-                    const {stream} = member
-                    if(stream) {
-                        const tracks = stream.getTracks()
-                        if(tracks){
-                            tracks.forEach( track=>{
-                                track.stop()
-                            })
-                        }
-                    }
-                }
-                // TODO
-                if(member.audioPc){
-                    member.audioPc.close()
-                }
-                if(member.videoPc){
-                    member.videoPc.close()
-                }
-            })
-            state.members.splice(0, members.length) // 清空
-            return {
-                ...state
-            }
-        },
-        setMeetingMember(state, {payload}) { // 一次传入members,应答meeting表的时候调用
-            // eslint-disable-next-line no-restricted-syntax
-            for(const member of payload){
-                member.audioPc = new RTCPeerConnection()
-                member.videoPc = new RTCPeerConnection()
-                member.ices = []
-            }
-
-            return {
-                ...state,
-                members: {
-                    ...payload
-                }
-            };
-        },
-        
-        /**
-         * 只替换RTCRtpSender流，使用新的videoStream+旧的audioStream替换localStream
-         */
-        replaceMeetingMemberStream(state, {payload : {mediaType, videoStream: targetStream}}) {
-            const { members, myId } = state
-            // eslint-disable-next-line no-restricted-syntax
-            for (const member of members) {
-                const pc = mediaType === 'audio' ? member.audioPc : member.videoPc
-                if(myId === member.id){   
-                    const videoTracks = member.stream.getVideoTracks() // 如果没有数据则是empty
-                    if(!lodash.isEmpty(videoTracks)){
-                        videoTracks[0].stop()
-                    }
-                    const audioTracks = member.stream.getAudioTracks()
-                    if(!lodash.isEmpty(audioTracks)){
-                        targetStream.addTrack(audioTracks[0])
-                    }
-                    member.stream = targetStream
-                }else{
-                    const sends = pc.getSenders(); // RTCRtpSender
-                    if(sends){
-                        const videoTracks = targetStream.getVideoTracks()
-                        if(!lodash.isEmpty(videoTracks)){
-                            const index = lodash.findIndex(sends, rtpSender=> rtpSender.track !== null && rtpSender.track.kind === 'video' )
-                            if(index > -1){
-                                sends[index].replaceTrack(videoTracks[0])
-                            }
-                        }
-                    }
-                }
-            }
-            // console.log(members);
             return {// 触发更新
                 ...state
             }

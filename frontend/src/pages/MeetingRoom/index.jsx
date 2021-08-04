@@ -95,36 +95,30 @@ class MeetingRoom extends React.Component {
     dispatch({type: `${curModlePrefix}/caculateStats`})
   }
 
-  peerTrackOnMuteOperate = (ev) => {
-    console.log("---peerTrackOnMuteOperate:", ev);
-    console.log("---peerTrackOnMuteOperate type:", ev.type);
-    console.log("---peerTrackOnMuteOperate target:", ev.target );
-    // if(ev.target){
-    //   console.log("---peerTrackOnMuteOperate target:", ev.target );
-    //   if(ev.target.track){
-    //     console.log("---peerTrackOnMuteOperate target track:", ev.target.track );
-    //   }
-    // }
-    // if(ev.currentTarget){
-    //   console.log("---peerTrackOnMuteOperate currentTarget:", ev.currentTarget );
-    //   if(ev.currentTarget.track){
-    //     console.log("---peerTrackOnMuteOperate currentTarget.track:", ev.currentTarget.track );
-    //     if(ev.currentTarget.track.kind){
-    //       console.log("---peerTrackOnMuteOperate: ev.currentTarget.track.kind", ev.currentTarget.track.kind );
-    //     }
-    //   }
-    // }
-    const { dispatch } = this.props;
-    dispatch({type: `${curModlePrefix}/peerOnTrackEventRefreshStream`, event: { 'type':ev.type, 'track': ev.target}})
-  }
+  // peerTrackOnMuteOperate = (ev) => {
+  //   console.log("---peerTrackOnMuteOperate:", ev);
+  //   console.log("---peerTrackOnMuteOperate type:", ev.type);
+  //   console.log("---peerTrackOnMuteOperate target id:", ev.target.id );
+  //   console.log("---peerTrackOnMuteOperate target enabled:", ev.target.enabled );
+  //   console.log("---peerTrackOnMuteOperate target muted:", ev.target.muted );
+  //   const { dispatch } = this.props;
+  //   dispatch({type: `${curModlePrefix}/peerOnMuteEventRefreshStream`, event: { 'type':ev.type, 'track': ev.target}})
+  // }
 
-  peerOnTrack = (ev) =>{
+  /**
+   * 远端加入track，并且完成offer/answer+ice流程,以后的回调
+   */
+  peerOnTrack = ev =>{
     // ev: RTCTrackEvent
-    console.log('peerOnTrack-------ev:', ev);
-    ev.track.onmute = this.peerTrackOnMuteOperate
-    ev.track.onunmute = this.peerTrackOnMuteOperate
-    // const { dispatch } = this.props;
-    // dispatch({type: `${curModlePrefix}/peerOnTrackEventRefreshStream`, event: ev})
+    // console.log('peerOnTrack-------ev:', ev);
+    // console.log('peerOnTrack-------enabled:', ev.track.enabled);
+    // console.log('peerOnTrack-------muted:', ev.track.muted);
+    // ev.track.onmute = this.peerTrackOnMuteOperate 
+    // ev.track.onunmute = this.peerTrackOnMuteOperate
+    // ev.track.onend = this.peerTrackOnEnd
+
+    const { dispatch } = this.props;
+    dispatch({type: `${curModlePrefix}/peerOnTrackEventRefreshStream`, event: ev})
   }
 
   startStomp = (nickname) =>{
@@ -135,7 +129,6 @@ class MeetingRoom extends React.Component {
     if(lodash.isUndefined(roomId) || lodash.isUndefined(roomPwd)){
         // 错误情况
     }else{
-        // const clientId =  meetingUtils.getRandomClientName(roomId, userName)
         const headers = {
             'roomId': roomId,
             'password': roomPwd,
@@ -165,14 +158,14 @@ class MeetingRoom extends React.Component {
                     case 'candidate':
                         dispatch({ type : `${curModlePrefix}/wbMessageCandidate`, payload: data});
                         break;
+                    case 'peerTrackStatusChange':
+                      dispatch({ type : `${curModlePrefix}/peerTrackStatusChange`, payload: data});
+                      break;
                     case 'enter':
                         dispatch({ type : `${curModlePrefix}/createMeetingMember`, payload: data});
                         break;
                     case 'leave':
                         dispatch({ type : `${curModlePrefix}/removeMeetingMember`, payload: data});
-                        break;
-                    case 'close':
-                        dispatch({ type : `${curModlePrefix}/closeMeeting`, payload: data});
                         break;
                     default:
                         console.log('default');
@@ -190,7 +183,7 @@ class MeetingRoom extends React.Component {
                     'roomId': roomId,
                     'password': roomPwd,
                     'myId': clientId,
-                    'onTrack': this.peerOnTrack
+                    'onTrack': this.peerOnTrack,
                 }
             });
         }
@@ -204,9 +197,6 @@ class MeetingRoom extends React.Component {
         type: `${curModlePrefix}/STOP_TIME_TASK`
     })
     dispatch({
-        type: `${curModlePrefix}/closeMeeting`
-    })
-    dispatch({
         type: `${curModlePrefix}/setMeetingRoomState`,
         payload: {
           'roomAuthed': 2,
@@ -214,17 +204,12 @@ class MeetingRoom extends React.Component {
     })
   }
 
-  getVideosWidth = () => {
-    const { global: { collapsed, isMobile} } = this.props;
-    if(isMobile){
-      return (document.body.clientWidth-24*4);
-    }
-      if(collapsed){
-        return (document.body.clientWidth-64-24*4);
-      }
-        return (document.body.clientWidth-265-24*4);
-  }
-
+  getVideosWidth = () => document.body.clientWidth-20*4
+    // const { global: { isMobile} } = this.props;
+    // if(isMobile){
+    //   return document.body.clientWidth
+    // }
+  
   getFlexDisplayInfo = (total) =>{
     // 计算行类情况
     const sqrRoot = Math.sqrt(total);
@@ -456,7 +441,7 @@ class MeetingRoom extends React.Component {
     }
     // console.log(videos);
     const flexInfo = this.getFlexDisplayInfo(videos.length);  
-    const videoHeight = (videosWidth/lengthWidthRatio)/(flexInfo.columnNum)*0.8;
+    const videoHeight = (videosWidth/lengthWidthRatio)/(flexInfo.columnNum)*0.75;
     // console.log(videos);
     const micIcon = micEnabled ? MicOnSvg : MicOffSvg;
     const cameraIcon = videoEnabled ? cameraOnSvg : cameraOffSvg;
@@ -537,17 +522,15 @@ class MeetingRoom extends React.Component {
               <img className="custom-left-menu-icon" src={cameraIcon} style={{ width: '20px', height: '20px' }} />
             </Button>
           </Tooltip>
-          <Button type="primary" size="large" style={{ marginLeft: '10px'}} onClick={this.printLog}>打印</Button>
+          {/* <Button type="primary" size="large" style={{ marginLeft: '10px'}} onClick={this.printLog}>测试</Button> */}
         </div>
       </div> 
     }
     
     return(
-      // <PageHeaderWrapper topRightWrapper={newButton} pageHeaderClass="no-border" childrenClass="custom-mt116">
       <>
         {pageBg}
       </>
-      // </PageHeaderWrapper>
     )
   }
 }

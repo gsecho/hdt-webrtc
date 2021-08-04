@@ -25,7 +25,7 @@ public class WebSocketConstants {
     public static final String CMD_ENTER = "enter";
     public static final String CMD_LEAVE = "leave";
     public static final String CMD_CLOSE = "close";
-    public static final String CMD_PEER_STREAM_STATUS_CHANGE = "peerStreamStatusChange";
+    public static final String CMD_PEER_TRACK_STATUS_CHANGE = "peerTrackStatusChange";
     public static final String CMD_MEDIA_STATUS_CHANGE = "mediaStatus";
 
     public static final String TOKEN = "token";

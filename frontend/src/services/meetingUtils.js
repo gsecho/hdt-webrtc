@@ -47,7 +47,7 @@ export function addMemberToList(member, members){
 export function removeMemberFromList(targetMember, members){
     const index = members.findIndex((member) => member.id === targetMember.id)
     if(index !== -1){
-        const {stream} = members[index]
+        const {videoPc, audioPc, stream} = members[index]
         if(stream){
             const tracks = stream.getTracks()
             if(tracks){
@@ -57,6 +57,8 @@ export function removeMemberFromList(targetMember, members){
                 }
             }
         }
+        videoPc.close()
+        audioPc.close()
         members.fill({}, index, index+1)
     }
 }
