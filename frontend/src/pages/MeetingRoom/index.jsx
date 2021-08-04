@@ -95,29 +95,27 @@ class MeetingRoom extends React.Component {
     dispatch({type: `${curModlePrefix}/caculateStats`})
   }
 
-  peerTrackOnEnd = (ev) => {
-    console.log("---peerTrackOnEnd:", ev);
-  }
+  // peerTrackOnMuteOperate = (ev) => {
+  //   console.log("---peerTrackOnMuteOperate:", ev);
+  //   console.log("---peerTrackOnMuteOperate type:", ev.type);
+  //   console.log("---peerTrackOnMuteOperate target id:", ev.target.id );
+  //   console.log("---peerTrackOnMuteOperate target enabled:", ev.target.enabled );
+  //   console.log("---peerTrackOnMuteOperate target muted:", ev.target.muted );
+  //   const { dispatch } = this.props;
+  //   dispatch({type: `${curModlePrefix}/peerOnMuteEventRefreshStream`, event: { 'type':ev.type, 'track': ev.target}})
+  // }
 
-  /** 在苹果上，使用这个是有问题的，有时候会出现mute和unmute循环 */
-  peerTrackOnMuteOperate = (ev) => {
-    console.log("---peerTrackOnMuteOperate:", ev);
-    console.log("---peerTrackOnMuteOperate type:", ev.type);
-    console.log("---peerTrackOnMuteOperate target id:", ev.target.id );
-    console.log("---peerTrackOnMuteOperate target enabled:", ev.target.enabled );
-    console.log("---peerTrackOnMuteOperate target muted:", ev.target.muted );
-    const { dispatch } = this.props;
-    dispatch({type: `${curModlePrefix}/peerOnMuteEventRefreshStream`, event: { 'type':ev.type, 'track': ev.target}})
-  }
-
-  peerOnTrack = (ev) =>{
+  /**
+   * 远端加入track，并且完成offer/answer+ice流程,以后的回调
+   */
+  peerOnTrack = ev =>{
     // ev: RTCTrackEvent
-    console.log('peerOnTrack-------ev:', ev);
-    console.log('peerOnTrack-------enabled:', ev.track.enabled);
-    console.log('peerOnTrack-------muted:', ev.track.muted);
-    ev.track.onmute = this.peerTrackOnMuteOperate
-    ev.track.onunmute = this.peerTrackOnMuteOperate
-    ev.track.onend = this.peerTrackOnEnd
+    // console.log('peerOnTrack-------ev:', ev);
+    // console.log('peerOnTrack-------enabled:', ev.track.enabled);
+    // console.log('peerOnTrack-------muted:', ev.track.muted);
+    // ev.track.onmute = this.peerTrackOnMuteOperate 
+    // ev.track.onunmute = this.peerTrackOnMuteOperate
+    // ev.track.onend = this.peerTrackOnEnd
 
     const { dispatch } = this.props;
     dispatch({type: `${curModlePrefix}/peerOnTrackEventRefreshStream`, event: ev})
@@ -160,6 +158,9 @@ class MeetingRoom extends React.Component {
                     case 'candidate':
                         dispatch({ type : `${curModlePrefix}/wbMessageCandidate`, payload: data});
                         break;
+                    case 'peerTrackStatusChange':
+                      dispatch({ type : `${curModlePrefix}/peerTrackStatusChange`, payload: data});
+                      break;
                     case 'enter':
                         dispatch({ type : `${curModlePrefix}/createMeetingMember`, payload: data});
                         break;
@@ -182,7 +183,7 @@ class MeetingRoom extends React.Component {
                     'roomId': roomId,
                     'password': roomPwd,
                     'myId': clientId,
-                    'onTrack': this.peerOnTrack
+                    'onTrack': this.peerOnTrack,
                 }
             });
         }
@@ -521,17 +522,15 @@ class MeetingRoom extends React.Component {
               <img className="custom-left-menu-icon" src={cameraIcon} style={{ width: '20px', height: '20px' }} />
             </Button>
           </Tooltip>
-          <Button type="primary" size="large" style={{ marginLeft: '10px'}} onClick={this.printLog}>打印</Button>
+          {/* <Button type="primary" size="large" style={{ marginLeft: '10px'}} onClick={this.printLog}>测试</Button> */}
         </div>
       </div> 
     }
     
     return(
-      // <PageHeaderWrapper topRightWrapper={newButton} pageHeaderClass="no-border" childrenClass="custom-mt116">
       <>
         {pageBg}
       </>
-      // </PageHeaderWrapper>
     )
   }
 }

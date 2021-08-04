@@ -87,9 +87,9 @@ public class WebSocketController {
     public void candidateEnd(WebSocketUserPrincipal principal, WebSocketRequestGenerator<CandidateContent> request){
         meetingRoomService.candidateEndHandler(principal, request);
     }
-    @MessageMapping({WebSocketConstants.CMD_PEER_STREAM_STATUS_CHANGE})
+    @MessageMapping({WebSocketConstants.CMD_PEER_TRACK_STATUS_CHANGE})
     public void meetingRoomInfoSendToPeer(WebSocketUserPrincipal principal, WebSocketRequestGenerator<CandidateContent> request){
-        request.setType(WebSocketConstants.CMD_PEER_STREAM_STATUS_CHANGE);
+        request.setType(WebSocketConstants.CMD_PEER_TRACK_STATUS_CHANGE);
         simpMessagingTemplate.convertAndSendToUser(request.getTo(), WebSocketConstants.USER_CHANNEL, request);
     }
     @MessageMapping({WebSocketConstants.CMD_MEDIA_STATUS_CHANGE})
