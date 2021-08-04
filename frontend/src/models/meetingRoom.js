@@ -133,17 +133,16 @@ export default {
                     peerMember.audioPc = new RTCPeerConnection()
                 }
                 pc = peerMember.audioPc
-                if(myStream){
+                if(myStream && myStream.getAudioTracks().length !== 0){
                     pc.addTrack(myStream.getAudioTracks()[0], myStream)
                 }
-                
             }else {
                 if(peerMember.videoPc.remoteDescription){
                     peerMember.videoPc.close()
                     peerMember.videoPc = new RTCPeerConnection()
                 }
                 pc = peerMember.videoPc
-                if(myStream){
+                if(myStream && myStream.getVideoTracks().length !== 0){
                     pc.addTrack(myStream.getVideoTracks()[0], myStream)
                 }
             }
@@ -374,6 +373,7 @@ export default {
                     peerMember.videoPc = new RTCPeerConnection()
                     pc = peerMember.videoPc
                 }
+                peerMember.stream = undefined
             }
 
             pc.onicecandidate = e=> { // 事件触发执行 
