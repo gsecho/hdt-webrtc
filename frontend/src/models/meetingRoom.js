@@ -101,7 +101,8 @@ export default {
                 if(myId !== member.id){ // 自己不需要创建peerConnection
                     member.audioPc = new RTCPeerConnection()
                     member.videoPc = new RTCPeerConnection()
-                    member.ices = []
+                    member.audioIces = []
+                    member.videoIces = []
 
                     // 登陆的时候audio和video都是没有的，所以对方有就让对方发起offer  
                     if(member.audio){
@@ -127,12 +128,15 @@ export default {
             const {stream: myStream} = members[myIndex]
 
             let pc;
+            let ices;
             if(mediaType === 'audio'){
                 if(peerMember.audioPc.remoteDescription){
                     peerMember.audioPc.close()
                     peerMember.audioPc = new RTCPeerConnection()
+                    peerMember.audioIces = []
                 }
                 pc = peerMember.audioPc
+                ices = peerMember.audioIces
                 if(myStream && myStream.getAudioTracks().length !== 0){
                     pc.addTrack(myStream.getAudioTracks()[0], myStream)
                 }
@@ -140,8 +144,10 @@ export default {
                 if(peerMember.videoPc.remoteDescription){
                     peerMember.videoPc.close()
                     peerMember.videoPc = new RTCPeerConnection()
+                    peerMember.videoIces = []
                 }
                 pc = peerMember.videoPc
+                ices = peerMember.videoIces
                 if(myStream && myStream.getVideoTracks().length !== 0){
                     pc.addTrack(myStream.getVideoTracks()[0], myStream)
                 }
@@ -157,12 +163,11 @@ export default {
                     stompClient.send(`${wsSendPrefix}/candidateEnd`, {}, JSON.stringify({"from": myId, "to": peerId, "content": { 'mediaType': mediaType }}));
                 }
             };
-
             // 应答 offer 
             pc.ontrack = onTrack
             
             yield pc.setRemoteDescription(offerDesc);// 必须等到remote处理完成才能加入ice
-            yield peerMember.ices.forEach(
+            yield ices.forEach(
                 ice => pc.addIceCandidate(ice)
                 .then(console.log("---success01:"))
                 .catch(e=>console.log("---error01:", e))
@@ -177,19 +182,17 @@ export default {
         },
         /**
          * 处理对端的offer应答
-         * @param {*} param0 
-         * @param {*} param1 
          */
         *wbMessageAnswer( {payload} , { select}){
             const meetingRoom = yield select(state => state.meetingRoom)
             const {members} = meetingRoom;
             const {from: peerId, content: {mediaType, answerDesc}} = payload
-            const index = lodash.findIndex(members, member => member.id === peerId )
-            if(index > -1){
-                const member = members[index]
-                const pc = mediaType === 'audio' ? member.audioPc : member.videoPc
+            const peerMember = members.find(item => item.id === peerId)
+            if(peerMember){
+                const pc = mediaType === 'audio' ? peerMember.audioPc : peerMember.videoPc
+                const ices = mediaType === 'audio' ? peerMember.audioIces : peerMember.videoIces
                 yield pc.setRemoteDescription(answerDesc);
-                member.ices.forEach(
+                yield ices.forEach(
                     ice => pc.addIceCandidate(ice)
                     .then(console.log("---success01:"))
                     .catch(e=>console.log("---error01:", e))
@@ -200,20 +203,19 @@ export default {
             const meetingRoom = yield select(state => state.meetingRoom)
             const {members} = meetingRoom;
             const {from: peerId, content:{mediaType, candidate}} = payload
-            const index = lodash.findIndex(members, member => member.id === peerId )
-            if(index === -1){
+            const peerMember = members.find(item => item.id === peerId)
+            if(!peerMember){
                 return;
             }
-            const peerMember = members[index]
             const pc = mediaType === 'audio' ? peerMember.audioPc : peerMember.videoPc
-            
+            const ices = mediaType === 'audio' ? peerMember.audioIces : peerMember.videoIces
             if(pc && pc.remoteDescription && pc.remoteDescription.type){
                 pc.addIceCandidate(candidate)
                 .then(console.log("---success:"))
                 .catch(e => console.log("---error:", e));
-            }else if(peerMember.ices){
+            }else if(ices){
                 // 加入数组中，设置setRemoteDescription以后需要再add
-                peerMember.ices.push(candidate)
+                ices.push(candidate)
             }
         },
         // 打开 camera或者 mic
@@ -368,9 +370,11 @@ export default {
                 pc.close()
                 if(mediaType === 'audio'){
                     peerMember.audioPc = new RTCPeerConnection()
+                    peerMember.audioIces = []
                     pc = peerMember.audioPc
                 }else{
                     peerMember.videoPc = new RTCPeerConnection()
+                    peerMember.videoIces = []
                     pc = peerMember.videoPc
                 }
                 peerMember.stream = undefined
@@ -567,7 +571,9 @@ export default {
             const {content: member} = payload
             member.audioPc = new RTCPeerConnection()
             member.videoPc = new RTCPeerConnection()
-            member.ices = []
+            member.audioIces = []
+            member.videoIces = []
+            // member.ices = []
             const { members } = state
             meetingUtils.addMemberToList(member, members)
             return {// 触发更新
