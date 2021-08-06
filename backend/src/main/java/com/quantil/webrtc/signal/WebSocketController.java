@@ -14,6 +14,8 @@ import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.socket.messaging.SessionConnectedEvent;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
+import org.springframework.web.socket.messaging.SessionSubscribeEvent;
+
 import java.util.HashMap;
 
 
@@ -111,9 +113,13 @@ public class WebSocketController {
     public void onConnectedEvent(SessionConnectedEvent event) {
         // StompCommand-connect ---> SessionConnectEvent ---> SessionConnectedEvent
         // 从需要关闭的队列中，发送关闭消息到客户端
-        meetingRoomService.sessionConnectEvent();
+        meetingRoomService.sessionConnectEvent(event);
     }
-
+    @EventListener
+    public void sessionSubscribeEvent(SessionSubscribeEvent event) {
+        log.info("sessionSubscribeEvent: --------------");
+        meetingRoomService.sessionSubscribeEvent(event);
+    }
     /**
      * @MessageMapping 这个注解里面的throw会进入这里
      * @param e
