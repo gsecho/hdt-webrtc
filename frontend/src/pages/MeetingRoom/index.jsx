@@ -39,7 +39,7 @@ class MeetingRoom extends React.Component {
     // videosWidth: '0px',
     timerId: undefined, // 定时器ID
     // inputNameFormRef: undefined,
-    lackName: false,
+    errorReason: undefined,
   }
   
   componentDidMount(){
@@ -80,7 +80,7 @@ class MeetingRoom extends React.Component {
 
   inputNameButtonCancel = e => {
     e.preventDefault();
-    this.setState({ lackName: true })
+    this.setState({errorReason: "please input your name!" })
     const { dispatch } = this.props;
     if (e.currentTarget.localName === "button"){
       dispatch({
@@ -167,6 +167,9 @@ class MeetingRoom extends React.Component {
                     case 'leave':
                         dispatch({ type : `${curModlePrefix}/removeMeetingMember`, payload: data});
                         break;
+                    case 'disconnect':
+                      this.closeStomp("server reject!")
+                      break;
                     default:
                         console.log('default');
                         break;
@@ -187,11 +190,16 @@ class MeetingRoom extends React.Component {
                 }
             });
         }
-        stompClient.connect(headers, successFunction, this.closeStomp);
+        stompClient.connect(headers, successFunction, this.authCloseStomp);
     }
   }
 
-  closeStomp = () =>{
+  authCloseStomp= ()=>{
+    this.closeStomp("room id or password error!")
+  }
+
+  closeStomp = (errorReason) =>{
+    this.setState({'errorReason': errorReason })
     const { dispatch } = this.props;
     dispatch({
         type: `${curModlePrefix}/STOP_TIME_TASK`
@@ -466,13 +474,7 @@ class MeetingRoom extends React.Component {
         <InputName wrappedComponentRef={(form) => {this.inputNameFormRef = form}} />
       </Modal>
     }else if(roomAuthed === 2){ // 校验失败
-      const {lackName} = this.state 
-      let localTitle;
-      if(lackName){
-        localTitle = "Please input nickname.";
-      }else{
-        localTitle = "room id or password error.";
-      }
+      const {errorReason: localTitle} = this.state 
       pageBg =<Result
         status="500"
         title="notice"

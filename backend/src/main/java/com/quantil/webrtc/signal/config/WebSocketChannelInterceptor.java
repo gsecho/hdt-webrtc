@@ -12,8 +12,6 @@ import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
 import org.springframework.stereotype.Component;
 
-import java.security.Principal;
-import java.util.function.Predicate;
 
 
 /**
@@ -35,28 +33,39 @@ public class WebSocketChannelInterceptor implements ChannelInterceptor {
 
         StompHeaderAccessor stompHeaderAccessor = StompHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
         StompCommand cmd = stompHeaderAccessor.getCommand();
-        log.debug("--------- cmd:{}", cmd);
+        WebSocketUserPrincipal user = (WebSocketUserPrincipal)stompHeaderAccessor.getUser();
         /**
          * connect的时候会校验token, 其他阶段只判断是否有principal
          */
         if(null == cmd){
             if(stompHeaderAccessor.isHeartbeat()){
-                WebSocketUserPrincipal user = (WebSocketUserPrincipal)stompHeaderAccessor.getUser();
-                if (user.getEnable()) {// 被禁止的认证，不应答心跳包 -- 是为了处理用户重复连接同一个roomId的问题
+//                WebSocketUserPrincipal user = (WebSocketUserPrincipal)stompHeaderAccessor.getUser();
+                log.debug("heart beat id:{}", user.getUserId());
+                if (user.getEnable()) {// 被禁止的认证，不应答心跳包
                     return message;
                 }
+            }else{
+                log.debug("--------- cmd: null");
             }
-        }else if(StompCommand.CONNECT.equals(cmd)){
-            if (meetingRoomService.connectHandler(stompHeaderAccessor, stompHeaderAccessor)) {
-                return message;
-            }
-        }else if(StompCommand.DISCONNECT.equals(cmd)){
-            meetingRoomService.disconnectHandler(stompHeaderAccessor);
-            return message;
         }else{
-            Principal principal = stompHeaderAccessor.getUser();
-            if (principal != null) {// 已经经过校验
+//            WebSocketUserPrincipal user = (WebSocketUserPrincipal)stompHeaderAccessor.getUser();
+            if(StompCommand.CONNECT.equals(cmd)){
+                if (meetingRoomService.connectHandler(stompHeaderAccessor, stompHeaderAccessor)) {
+                    return message;
+                }
+            }else if(StompCommand.DISCONNECT.equals(cmd)){
+                log.debug("--------- cmd:{}, id:{}, enable:{}", cmd, user.getUserId(), user.getEnable());
+                meetingRoomService.disconnectHandler(stompHeaderAccessor);
                 return message;
+            }else if(StompCommand.SUBSCRIBE.equals(cmd)) {
+                log.debug("--------- cmd:{}, id:{}, enable:{}", cmd, user.getUserId(), user.getEnable());
+                return message;
+            }else {
+                log.debug("--------- cmd:{}, id:{}, enable:{}", cmd, user.getUserId(), user.getEnable());
+                WebSocketUserPrincipal principal = (WebSocketUserPrincipal)stompHeaderAccessor.getUser();
+                if (principal != null && principal.getEnable()) {
+                    return message;
+                }
             }
         }
         return null;

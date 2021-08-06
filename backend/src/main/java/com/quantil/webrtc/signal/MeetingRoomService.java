@@ -15,7 +15,11 @@ import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.socket.messaging.SessionConnectedEvent;
+import org.springframework.web.socket.messaging.SessionSubscribeEvent;
+
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
@@ -58,12 +62,16 @@ public class MeetingRoomService {
         // id重复
         boolean duplicate = roomMembers.stream().anyMatch( item -> item != null && item.getUserPrincipal().getUserId() == userPrincipal.getUserId());
         if(duplicate){
-            log.warn("id duplicate:{}", userPrincipal.getUserId());
-            return false;
+            log.warn("Id duplicate:{}", userPrincipal.getUserId());
+            userPrincipal.setEnable(false);
+            return true;
         }
+        long count = roomMembers.stream().filter(Objects::nonNull).count();
         // 人数超过限制
-        if(roomMembers.size() >= meetingRoom.getRtcMeetingItem().getMaxMember()){
-            return false;
+        if(count >= meetingRoom.getRtcMeetingItem().getMaxMember()){
+            log.warn("Exceed the upper limit");
+            userPrincipal.setEnable(false);
+            return true;
         }
         // 查找null的位置
         int emptyIndex = roomMembers.indexOf(null);
@@ -93,6 +101,7 @@ public class MeetingRoomService {
         String password = stompHeaderAccessor.getNativeHeader(WebSocketConstants.PASSWORD).get(0);
         String clientId = stompHeaderAccessor.getNativeHeader(WebSocketConstants.CLIENT_ID).get(0);
         String userName = clientId.split("-")[1];
+        log.info("client connect id:{}", clientId);
         RtcMeetingItem meetingItem = rtcMeetingItemDao.selectByPrimaryKey(Long.valueOf(roomIdString));
         if (meetingItem.getPassword().equals(password)) {
             WebSocketUserPrincipal userPrincipal = new WebSocketUserPrincipal();
@@ -132,8 +141,15 @@ public class MeetingRoomService {
             roomMap.remove(userPrincipal.getRoomId());
         }
     }
+    public void sessionSubscribeEvent(SessionSubscribeEvent event){
+        WebSocketUserPrincipal webSocketUserPrincipal = (WebSocketUserPrincipal)event.getUser();
+        if (!webSocketUserPrincipal.getEnable()) {
+            disabledNotify(webSocketUserPrincipal, "disconnect");
+        }
+    }
 
-    public void sessionConnectEvent(){
+    public void sessionConnectEvent(SessionConnectedEvent event){
+
         WebSocketUserPrincipal dstPrincipal = deleteQueue.poll();
         if(dstPrincipal != null){
             Object payload = formatMessageRes(WebSocketConstants.SERVER_ID, dstPrincipal.getUserId(), WebSocketConstants.CMD_CLOSE, dstPrincipal.getUsername());
@@ -299,5 +315,10 @@ public class MeetingRoomService {
 
     public MeetingRoom getRoomInfo(String id){
         return roomMap.get(id);
+    }
+
+    public void disabledNotify(WebSocketUserPrincipal userPrincipal, String type){
+        Object payload = formatMessageRes(WebSocketConstants.SERVER_ID, userPrincipal.getUserId(), type, "disconnect");
+        simpMessagingTemplate.convertAndSendToUser(userPrincipal.getName(), WebSocketConstants.USER_CHANNEL, payload);
     }
 }
