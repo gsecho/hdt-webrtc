@@ -1,11 +1,15 @@
 /* eslint-disable react/jsx-indent */
 import React from 'react';
-import { Layout } from 'antd';
+import { Layout, Icon } from 'antd';
+import { connect } from 'dva';
 import faviconUtils from  '@/utils/faviconUtils'
 import Footer from './Footer';
 
 const { Header, Content } = Layout;
 
+@connect(({ meetingRoom }) => ({
+  meetingRoom
+}))
 class LoginLayout extends React.Component {
 
   componentDidMount(){
@@ -13,11 +17,14 @@ class LoginLayout extends React.Component {
   }
 
   render(){
-    const { children } = this.props;
+    const { children, meetingRoom: { nickname }  } = this.props;
 
     return <Layout className="layout">
-    <Header>
-      <div className="logo" />
+    <Header style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', flex: 'auto'}}>
+      {
+        nickname ?<div style={{color: '#e8e8e8', marginLeft:'auto'}}> <Icon type="user" /> {nickname}</div> : <></>
+      }
+      
     </Header>
     <Content style={{ padding: '0 0px' }}>
         <div style={{ background: '#fff', padding: '10px 20px', minHeight: 100, textAlign: 'center' }}>{children}</div>

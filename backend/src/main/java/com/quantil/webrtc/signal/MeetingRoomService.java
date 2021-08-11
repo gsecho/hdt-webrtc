@@ -8,15 +8,12 @@ import com.quantil.webrtc.signal.bean.*;
 import com.quantil.webrtc.signal.constants.WebSocketConstants;
 import com.quantil.webrtc.signal.utils.StunHttpService;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.socket.messaging.SessionConnectedEvent;
-import org.springframework.web.socket.messaging.SessionSubscribeEvent;
 
 import java.util.List;
 import java.util.Objects;
@@ -64,14 +61,14 @@ public class MeetingRoomService {
         if(duplicate){
             log.warn("Id duplicate:{}", userPrincipal.getUserId());
             userPrincipal.setEnable(false);
-            return true;
+            throw new RuntimeException(WebRtcErrorEnum.USER_DUPLICATE.toString());
         }
         long count = roomMembers.stream().filter(Objects::nonNull).count();
         // 人数超过限制
         if(count >= meetingRoom.getRtcMeetingItem().getMaxMember()){
             log.warn("Exceed the upper limit");
             userPrincipal.setEnable(false);
-            return true;
+            throw new RuntimeException(WebRtcErrorEnum.EXCEED_LIMIT.toString());
         }
         // 查找null的位置
         int emptyIndex = roomMembers.indexOf(null);
@@ -103,7 +100,7 @@ public class MeetingRoomService {
         String userName = clientId.split("-")[1];
         log.info("client connect id:{}", clientId);
         RtcMeetingItem meetingItem = rtcMeetingItemDao.selectByPrimaryKey(Long.valueOf(roomIdString));
-        if (meetingItem.getPassword().equals(password)) {
+        if (meetingItem != null && meetingItem.getPassword().equals(password)) {
             WebSocketUserPrincipal userPrincipal = new WebSocketUserPrincipal();
             userPrincipal.setUsername(userName);
             userPrincipal.setName(clientId);// 这里使用客户端随机的id
@@ -113,7 +110,7 @@ public class MeetingRoomService {
             simpMessageHeaderAccessor.setUser(userPrincipal);
             return connectMeetingRoomHandler(roomIdString, meetingItem, userPrincipal);
         }else{
-            throw new RuntimeException();// 这样 stomp客户端才会收到连接失败消息
+            throw new RuntimeException(WebRtcErrorEnum.AUTH.toString());// 这样 stomp客户端才会收到连接失败消息
         }
     }
 
@@ -139,12 +136,6 @@ public class MeetingRoomService {
         boolean b = meetingRoom.getMembers().stream().allMatch(member -> member == null);
         if (b) {
             roomMap.remove(userPrincipal.getRoomId());
-        }
-    }
-    public void sessionSubscribeEvent(SessionSubscribeEvent event){
-        WebSocketUserPrincipal webSocketUserPrincipal = (WebSocketUserPrincipal)event.getUser();
-        if (!webSocketUserPrincipal.getEnable()) {
-            disabledNotify(webSocketUserPrincipal, "disconnect");
         }
     }
 

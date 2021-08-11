@@ -44,7 +44,7 @@ public class WebSocketControllerTest {
         webSocketController.sessionDisconnectEvent(sessionDisconnectEvent);
         webSocketController.onConnectedEvent(new SessionConnectedEvent("test", genericMessage));
 
-        webSocketController.handleException(new RestApiException("rest"));
+        webSocketController.handleException(userPrincipal, new RestApiException("rest"));
     }
 
 }
