@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 
@@ -21,12 +22,16 @@ public class StunHttpService {
     private RestTemplate restTemplate;
 
     public StunData post(StunData data){
-        ResponseEntity<String> responseEntity = restTemplate.postForEntity(url, data, String.class);
-        String abc = responseEntity.getBody();
-        return JSON.parseObject(abc, StunData.class);
+        ResponseEntity<String> responseEntity = null;
+        try {
+            responseEntity = restTemplate.postForEntity(url, data, String.class);
+            String abc = responseEntity.getBody();
+            return JSON.parseObject(abc, StunData.class);
+        } catch (RestClientException e) {
+            log.error("StunData:{}", data);
+            log.error("{}", e);
+            throw e;
+        }
     }
-
-
-
 }
 

@@ -117,15 +117,16 @@ public class WebSocketController {
     }
     @EventListener
     public void sessionSubscribeEvent(SessionSubscribeEvent event) {
-        log.info("sessionSubscribeEvent: --------------");
-        meetingRoomService.sessionSubscribeEvent(event);
+        log.debug("sessionSubscribeEvent: --------------");
     }
     /**
      * @MessageMapping 这个注解里面的throw会进入这里
      * @param e
      */
     @MessageExceptionHandler
-    public void handleException(Exception e) {
-        log.error("{}", e.getMessage());
+    public void handleException(WebSocketUserPrincipal principal, Exception e) {
+        // 可以在这里通知客户
+        log.error("client-id:{}", principal.getUserId());
+        log.error("socket handleException:", e);
     }
 }

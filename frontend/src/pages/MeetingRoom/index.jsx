@@ -136,7 +136,9 @@ class MeetingRoom extends React.Component {
         };
         const ws = new WebSocket(`wss://${window.location.host}${wsUri}`);
         const stompClient = stomp.over(ws);
-        const successFunction = ()=>{
+        // console.log("stompClient:", stompClient);
+        const successFunction = (event)=>{
+          console.log("-----------successFunction:", event);
           // console.log("-------------------------successFunction-------------------------------");
             stompClient.subscribe(wsUserChannel, respnose => {
                 // 展示返回的信息，只要订阅了 /user/getResponse 目标，都可以接收到服务端返回的信息
@@ -187,6 +189,7 @@ class MeetingRoom extends React.Component {
                     'password': roomPwd,
                     'myId': clientId,
                     'onTrack': this.peerOnTrack,
+                    'nickname': nickname,
                 }
             });
         }
@@ -194,8 +197,21 @@ class MeetingRoom extends React.Component {
     }
   }
 
-  authCloseStomp= ()=>{
-    this.closeStomp("room id or password error!")
+  authCloseStomp= (event)=>{
+    console.log("-----------authCloseStomp:", event);
+    if(event.command=== "ERROR" && event.body){
+      // console.log(JSON.parse(event.body))
+      const {message: errorReason} = JSON.parse(event.body)
+      this.setState({'errorReason': errorReason })
+      // this.closeStomp(mes)
+    }else if(!event.command){
+      const {errorReason} = this.state
+      if(errorReason){
+        this.closeStomp(errorReason)
+      }else{
+        this.closeStomp("Lost connection")
+      }
+    }
   }
 
   closeStomp = (errorReason) =>{
@@ -213,10 +229,6 @@ class MeetingRoom extends React.Component {
   }
 
   getVideosWidth = () => document.body.clientWidth-20*4
-    // const { global: { isMobile} } = this.props;
-    // if(isMobile){
-    //   return document.body.clientWidth
-    // }
   
   getFlexDisplayInfo = (total) =>{
     // 计算行类情况

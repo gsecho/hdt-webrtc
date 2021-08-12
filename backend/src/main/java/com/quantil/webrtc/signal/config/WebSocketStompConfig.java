@@ -16,6 +16,7 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 import org.springframework.web.socket.config.annotation.WebSocketTransportRegistration;
 import org.springframework.web.socket.handler.WebSocketHandlerDecorator;
 import org.springframework.web.socket.handler.WebSocketHandlerDecoratorFactory;
+import org.springframework.web.socket.messaging.StompSubProtocolErrorHandler;
 
 import java.util.List;
 
@@ -32,10 +33,16 @@ public class WebSocketStompConfig implements WebSocketMessageBrokerConfigurer {
 
     @Autowired
     WebSocketChannelInterceptor webSocketChannelInterceptor;
+
+    /**
+     * @param registry: WebMvcStompEndpointRegistry
+     */
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         // 普通协议
-        registry.addEndpoint("/ws")
+        registry
+            .setErrorHandler(new CustomStompSubProtocolErrorHandler()) // 自定义throw返回给客户端的数据
+            .addEndpoint("/ws")
             .setAllowedOrigins("*") // 表示可以跨域
 //            .setHandshakeHandler() // 自定义握手方式 -- 忽略
 //            .addInterceptors(new StompHandshakeInterceptor())  // 自定义握手拦截器 -- 忽略

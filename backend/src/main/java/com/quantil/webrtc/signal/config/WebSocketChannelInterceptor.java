@@ -4,6 +4,7 @@ import com.quantil.webrtc.api.v1.meeting.dao.RtcMeetingItemDao;
 import com.quantil.webrtc.signal.MeetingRoomService;
 import com.quantil.webrtc.signal.bean.WebSocketUserPrincipal;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
@@ -12,6 +13,7 @@ import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 
 
 /**
@@ -28,40 +30,46 @@ public class WebSocketChannelInterceptor implements ChannelInterceptor {
     @Autowired
     MeetingRoomService meetingRoomService;
 
+    /**
+     * 备注: 使用throw new RuntimeException() 这样stomp客户端才会收到连接失败/断开消息
+     */
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
 
         StompHeaderAccessor stompHeaderAccessor = StompHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
         StompCommand cmd = stompHeaderAccessor.getCommand();
         WebSocketUserPrincipal user = (WebSocketUserPrincipal)stompHeaderAccessor.getUser();
+        if (user!=null && !user.getEnable()) {
+            log.info("client disable id:{}", user.getUserId());
+            throw new RuntimeException("disconnect link");
+        }
         /**
          * connect的时候会校验token, 其他阶段只判断是否有principal
          */
         if(null == cmd){
             if(stompHeaderAccessor.isHeartbeat()){
-//                WebSocketUserPrincipal user = (WebSocketUserPrincipal)stompHeaderAccessor.getUser();
                 log.debug("heart beat id:{}", user.getUserId());
-                if (user.getEnable()) {// 被禁止的认证，不应答心跳包
-                    return message;
-                }
+                return message;
             }else{
-                log.debug("--------- cmd: null");
+                log.debug("--------- cmd: null ,but not heart beat signal");
             }
         }else{
-//            WebSocketUserPrincipal user = (WebSocketUserPrincipal)stompHeaderAccessor.getUser();
             if(StompCommand.CONNECT.equals(cmd)){
                 if (meetingRoomService.connectHandler(stompHeaderAccessor, stompHeaderAccessor)) {
                     return message;
                 }
             }else if(StompCommand.DISCONNECT.equals(cmd)){
-                log.debug("--------- cmd:{}, id:{}, enable:{}", cmd, user.getUserId(), user.getEnable());
-                meetingRoomService.disconnectHandler(stompHeaderAccessor);
+                if(user != null){
+                    log.debug("--------- cmd:{}, id:{}, enable:{}", cmd, user.getUserId(), user.getEnable());
+                    meetingRoomService.disconnectHandler(stompHeaderAccessor);
+                }
                 return message;
             }else if(StompCommand.SUBSCRIBE.equals(cmd)) {
                 log.debug("--------- cmd:{}, id:{}, enable:{}", cmd, user.getUserId(), user.getEnable());
                 return message;
             }else {
-                log.debug("--------- cmd:{}, id:{}, enable:{}", cmd, user.getUserId(), user.getEnable());
+                List<String> dstList = stompHeaderAccessor.toNativeHeaderMap().get("destination");
+                log.info("--------- cmd:{}, id:{}, enable:{}, destination:{}", cmd, user.getUserId(), user.getEnable(), StringUtils.join(dstList, ","));
                 WebSocketUserPrincipal principal = (WebSocketUserPrincipal)stompHeaderAccessor.getUser();
                 if (principal != null && principal.getEnable()) {
                     return message;
@@ -70,6 +78,5 @@ public class WebSocketChannelInterceptor implements ChannelInterceptor {
         }
         return null;
     }
-
 
 }

@@ -36,11 +36,16 @@ public class WebSocketChannelInterceptorTest {
         stompHeaderAccessor.setUser(webSocketUserPrincipal);
         webSocketUserPrincipal.setEnable(false);
         GenericMessage<String> message = new GenericMessage<String>("payload", stompHeaderAccessor.getMessageHeaders());
-        Message<?> out = webSocketChannelInterceptor.preSend(message, executorSubscribableChannel);
-        Assert.assertNull(out);
 
+        boolean flag = false;
+        try{
+            webSocketChannelInterceptor.preSend(message, executorSubscribableChannel);
+        }catch (RuntimeException e){
+            flag = true;
+        }
+        Assert.assertTrue(flag);
         webSocketUserPrincipal.setEnable(true);
-        out = webSocketChannelInterceptor.preSend(message, executorSubscribableChannel);
+        Message<?> out = webSocketChannelInterceptor.preSend(message, executorSubscribableChannel);
         Assert.assertTrue(out == message);
     }
 

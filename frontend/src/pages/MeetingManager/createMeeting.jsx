@@ -31,7 +31,7 @@ class AddMeeting extends React.Component {
         super(props);
         this.state = {
             durationItems: [],
-            maxMemberList: [2, 4, 6]
+            maxMemberList: [2, 4, 6 , 9, 12 , 16 , 20 , 25]
         };
     }
     
