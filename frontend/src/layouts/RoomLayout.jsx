@@ -23,7 +23,7 @@ class LoginLayout extends React.Component {
     return <Layout className="layout">
     <Header style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', flex: 'auto'}}>
       {
-        accelerate ? <div style={{color: '#e8e8e8' }}> <img src={disableSvg} alt="" style={{ width: '20px', height: '20px' }} /> {" "}HDT</div> : <></>
+        !accelerate ? <div style={{color: '#e8e8e8' }}> <img src={disableSvg} alt="" style={{ width: '20px', height: '20px' }} /> {" "}HDT</div> : <></>
       }
       {
         nickname ?<div style={{color: '#e8e8e8', marginLeft:'auto'}}> <Icon type="user" /> {nickname}</div> : <></>

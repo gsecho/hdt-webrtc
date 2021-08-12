@@ -23,4 +23,6 @@ public class RtcMeetingItem extends DbBase {
 
     private Integer maxMember;
 
+    private Boolean accelerate;
+
 }

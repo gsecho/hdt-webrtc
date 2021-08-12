@@ -15,6 +15,7 @@ import java.util.List;
 public class MeetingRoomClientRes {
 
     private Long roomId;
+    private Boolean accelerate;
 
     private Integer maxMembers; // 允许最大会议人数
     private String speaker;     // 主讲人

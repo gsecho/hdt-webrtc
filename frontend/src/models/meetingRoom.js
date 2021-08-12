@@ -90,7 +90,7 @@ export default {
         *wbMessageCurrentMeeting( {payload} , { put,select }){
             // 获取到当前room已经连接的用户信息
             // 发起连接
-            const {to:myId, content, content:{members}} = payload
+            const {to:myId, content, content:{members, accelerate}} = payload
             const {stompClient} = yield select(state => state.meetingRoom)
             // 先存储currentMeeting信息
             yield put({

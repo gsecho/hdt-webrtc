@@ -22,6 +22,7 @@ CREATE TABLE `rtc_meeting_item` (
   `duration_min` int(11) NOT NULL,
 	`admin_password` varchar(128) NOT NULL, # 管理员密码
 	`max_member` int(11) NOT NULL, # 人数上限
+	`accelerate` boolean NOT NULL, # HDT加速
   `status` int(11) NOT NULL,
   `create_dt` datetime DEFAULT NULL,
   `create_by` varchar(128) DEFAULT NULL,
