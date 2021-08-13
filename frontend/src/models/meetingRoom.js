@@ -20,7 +20,7 @@ export default {
      */
     state: {
         nickname: undefined,
-        accelerate: false, // 使用HDT加速
+        accelerate: undefined, // 使用HDT加速
         videoConfig: undefined,// 进入页面以后 设置
         stompClient: undefined,
         roomAuthed: 0, // roomid和passwd校验结果(http) 0:未请求，1：校验成功，2：校验失败
