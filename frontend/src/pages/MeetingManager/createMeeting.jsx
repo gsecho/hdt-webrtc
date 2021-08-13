@@ -1,6 +1,6 @@
 import React from 'react';
 import { connect } from 'dva';
-import { DatePicker, Form, Input, Select } from 'antd';
+import { DatePicker, Form, Input, Select, Switch, Icon } from 'antd';
 import * as utils from '@/utils/utils'
 import * as momentUtils from '@/utils/momentUtils'
 
@@ -76,8 +76,9 @@ class AddMeeting extends React.Component {
                     'subject': values.subject,
                     'startTime': currentTime , 
                     'durationMin': utils.meetingDurationIndexToMin(values.duration),
-                    'content': values.content,
+                    'accelerate': values.accelerate,
                     'maxMember': values.maxMember,
+                    'content': values.content,
                 },
                 callback: () => {
                   form.resetFields()
@@ -91,11 +92,8 @@ class AddMeeting extends React.Component {
         const {durationItems, maxMemberList} = this.state;
         const {
             form: { getFieldDecorator },
-          } = this.props;
-        // const { form: { getFieldValue } } = this.props;
-        // const startTimer = getFieldValue('start');
-        // const valueTimer = helper.tranMomentToUtcStr(startTimer);
-        // console.log(valueTimer);
+        } = this.props;
+        
         return(
           <>
             <Form {...formLayout}>
@@ -116,7 +114,7 @@ class AddMeeting extends React.Component {
                 }
               </Form.Item>
               
-              <Form.Item label="duration">
+              <Form.Item label="Duration">
                 {getFieldDecorator('duration', {
                     rules: [{ required: true, message: 'Please select your duration!' }],
                 })(
@@ -138,7 +136,7 @@ class AddMeeting extends React.Component {
                   </Select>,
                 )}
               </Form.Item>
-              <Form.Item label="attendance">
+              <Form.Item label="Attendance">
                 {getFieldDecorator('maxMember', {
                     rules: [{ required: true, message: 'Please select your attendance !' }],
                 })(
@@ -152,7 +150,12 @@ class AddMeeting extends React.Component {
                   </Select>,
                 )}
               </Form.Item>
-              <Form.Item label="content">
+              <Form.Item label="Accelerate">
+                {getFieldDecorator('accelerate', { initialValue: true, valuePropName: 'checked' })(
+                  <Switch checkedChildren={<Icon type="check" />} unCheckedChildren={<Icon type="close" />} />
+                )}
+              </Form.Item>
+              <Form.Item label="Content">
                 {getFieldDecorator('content', {})(
                   <TextArea rows={4}  />
                   // <TextArea rows={4} placeholder="请输入至少五个字符" />

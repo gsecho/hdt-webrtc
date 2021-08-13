@@ -10,6 +10,7 @@
     <result column="duration_min" jdbcType="INTEGER" property="durationMin" />
     <result column="admin_password" jdbcType="VARCHAR" property="adminPassword" />
     <result column="max_member" jdbcType="INTEGER" property="maxMember" />
+    <result column="accelerate" jdbcType="BOOLEAN" property="accelerate" />
     <result column="status" jdbcType="INTEGER" property="status" />
     <result column="create_dt" jdbcType="TIMESTAMP" property="createDt" />
     <result column="create_by" jdbcType="VARCHAR" property="createBy" />
@@ -26,15 +27,15 @@
       SELECT LAST_INSERT_ID()
     </selectKey>
     insert into rtc_meeting_item (password, subject, content, 
-      start_time, duration_min, admin_password, 
-      max_member, status, create_dt, 
+      start_time, duration_min, admin_password,
+      max_member, accelerate, status, create_dt,
       create_by, update_dt, update_by, 
       remark)
     values (#{password,jdbcType=VARCHAR}, #{subject,jdbcType=VARCHAR}, #{content,jdbcType=VARCHAR}, 
       #{startTime,jdbcType=TIMESTAMP}, #{durationMin,jdbcType=INTEGER}, #{adminPassword,jdbcType=VARCHAR},
-      #{maxMember,jdbcType=INTEGER}, #{status,jdbcType=INTEGER}, #{createDt,jdbcType=TIMESTAMP}, 
-      #{createBy,jdbcType=VARCHAR}, #{updateDt,jdbcType=TIMESTAMP}, #{updateBy,jdbcType=VARCHAR}, 
-      #{remark,jdbcType=VARCHAR})
+      #{maxMember,jdbcType=INTEGER}, #{accelerate,jdbcType=BOOLEAN}, #{status,jdbcType=INTEGER},
+      #{createDt,jdbcType=TIMESTAMP}, #{createBy,jdbcType=VARCHAR}, #{updateDt,jdbcType=TIMESTAMP},
+      #{updateBy,jdbcType=VARCHAR}, #{remark,jdbcType=VARCHAR})
   </insert>
   <update id="updateByPrimaryKey" parameterType="com.quantil.webrtc.api.v1.meeting.bean.RtcMeetingItem">
     update rtc_meeting_item
@@ -46,6 +47,7 @@
       <if test="durationMin != null">duration_min = #{durationMin,jdbcType=INTEGER},</if>
       <if test="adminPassword != null">admin_password = #{adminPassword,jdbcType=VARCHAR},</if>
       <if test="maxMember != null">max_member = #{maxMember,jdbcType=INTEGER},</if>
+      <if test="accelerate != null">accelerate = #{accelerate,jdbcType=BOOLEAN},</if>
       <if test="status != null">status = #{status,jdbcType=INTEGER},</if>
       update_dt = #{updateDt,jdbcType=TIMESTAMP},
       update_by = #{updateBy,jdbcType=VARCHAR}
@@ -53,14 +55,14 @@
   </update>
   <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
     select id, password, subject, content, start_time, duration_min, admin_password, 
-    max_member, status, create_dt, create_by, update_dt, update_by, remark
+    max_member, accelerate, status, create_dt, create_by, update_dt, update_by, remark
     from rtc_meeting_item
     where id = #{id,jdbcType=BIGINT} and status != 2
   </select>
 
   <select id="selectByStartTime" resultMap="BaseResultMap">
     select id, password, subject, content, start_time, duration_min, admin_password,
-    max_member, status, create_dt, create_by, update_dt, update_by, remark
+    max_member, accelerate, status, create_dt, create_by, update_dt, update_by, remark
     from rtc_meeting_item
     where status != 2
     <if test="createBy != null"> and create_by = #{createBy,jdbcType=VARCHAR} </if>
@@ -68,7 +70,7 @@
 
   <select id="selectAll" resultMap="BaseResultMap">
     select id, password, subject, content, start_time, duration_min, admin_password, 
-    max_member, status, create_dt, create_by, update_dt, update_by, remark
+    max_member, accelerate, status, create_dt, create_by, update_dt, update_by, remark
     from rtc_meeting_item
     where status != 2
   </select>

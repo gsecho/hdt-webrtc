@@ -177,9 +177,19 @@ class EditMeeting extends React.Component {
                   <Input />
                 )}
               </Form.Item>
+              <Form.Item label="Accelerate">
+                {getFieldDecorator('accelerate', {
+                        valuePropName: 'checked', initialValue: editData.accelerate
+                    })(
+                      <Switch
+                        checkedChildren={<Icon type="check" />}
+                        unCheckedChildren={<Icon type="close" />}
+                      />
+                    )
+                }
+              </Form.Item>
               <Form.Item label="Status">
                 {getFieldDecorator('switchStatus', {
-                        rules: [{ required: true}],
                         valuePropName: 'checked', initialValue: editData.switchStatus
                     })(
                       <Switch

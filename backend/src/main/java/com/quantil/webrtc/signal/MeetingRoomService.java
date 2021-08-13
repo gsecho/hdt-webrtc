@@ -210,11 +210,20 @@ public class MeetingRoomService {
         // 请求stun得到代理端口
         StunData stunData = new StunData();
         stunData.setIp1(fromMember.getUserPrincipal().getIp());
-        stunData.setPort1(31981);// 不关心端口，随便写的
+//        stunData.setPort1(31981);// 不关心端口，随便写的
         stunData.setIp2(toMember.getUserPrincipal().getIp());
-        stunData.setPort2(31982);
+//        stunData.setPort2(31982);
         stunData.setUser(meetingRoom.getRtcMeetingItem().getCreateBy());
         StunData stunDataRes = stunHttpService.post(stunData);
+        if (meetingRoom.getRtcMeetingItem().getAccelerate()) {
+            stunData.setPort1(31981);// 不关心端口，随便写的
+            stunData.setPort1(31982);// 不关心端口，随便写的
+        }else{
+            // 不加速
+            stunData.setPort1(0);
+            stunData.setPort2(0);
+        }
+
         /**
          * from 发送的candidate，组装再发出去
          */
@@ -279,8 +288,10 @@ public class MeetingRoomService {
         // 过来数据，只给必须的 -- 重新构建返回数据
         // 如果有多个同名的userName，都会收到消息，客户端收到消息做判断处理
         MeetingRoomClientRes meetingRoomClientRes = new MeetingRoomClientRes();
-        meetingRoomClientRes.setRoomId(meetingRoom.getRtcMeetingItem().getId());
-        meetingRoomClientRes.setMaxMembers(meetingRoom.getRtcMeetingItem().getMaxMember());
+        RtcMeetingItem rtcMeetingItem = meetingRoom.getRtcMeetingItem();
+        meetingRoomClientRes.setRoomId(rtcMeetingItem.getId());
+        meetingRoomClientRes.setAccelerate(rtcMeetingItem.getAccelerate());
+        meetingRoomClientRes.setMaxMembers(rtcMeetingItem.getMaxMember());
 //        meetingRoomClientRes.setSpeaker();
         List<MeetingMember> meetingMemberList = meetingRoom.getMembers();
         for(MeetingMember meetingMember: meetingMemberList){

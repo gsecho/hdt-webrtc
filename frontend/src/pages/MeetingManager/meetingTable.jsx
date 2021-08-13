@@ -283,7 +283,7 @@ class MeetingTable extends Component {
               visible={addModalVisible}
               onOk={this.addPageButtonOk}
               onCancel={this.addPageButtonCancel}
-              // style={{ top: 30 }}
+              style={{ top: 50 }}
               width={640}
               // bodyStyle={done ? { padding: '72px 0' } : { padding: '28px 0 0' }}
             >
@@ -295,7 +295,7 @@ class MeetingTable extends Component {
               visible={editModalVisible}
               onOk={this.editPageButtonOk}
               onCancel={this.editPageButtonCancel}
-              // style={{ top: 30 }}
+              style={{ top: 50 }}
               width={640}
               // bodyStyle={done ? { padding: '72px 0' } : { padding: '28px 0 0' }}
             >

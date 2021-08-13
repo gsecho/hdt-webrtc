@@ -90,18 +90,31 @@ public class WebSocketChannelInterceptorTest {
     public void other() {
         WebSocketChannelInterceptor webSocketChannelInterceptor = new WebSocketChannelInterceptor();
         ExecutorSubscribableChannel executorSubscribableChannel = new ExecutorSubscribableChannel();
-
         StompHeaderAccessor stompHeaderAccessor = StompHeaderAccessor.create(StompCommand.ERROR);
         GenericMessage<String> message = new GenericMessage<String>("payload", stompHeaderAccessor.getMessageHeaders());
-        Message<?> out = webSocketChannelInterceptor.preSend(message, executorSubscribableChannel);
-        Assert.assertNull(out);
-
+        boolean flag = false;
+        try {
+            webSocketChannelInterceptor.preSend(message, executorSubscribableChannel);
+        }catch (Exception e){
+            flag = true;
+        }
+        Assert.assertTrue(flag);
 
         StompHeaderAccessor stompHeaderAccessor1 = StompHeaderAccessor.create(StompCommand.ERROR);
         WebSocketUserPrincipal webSocketUserPrincipal = new WebSocketUserPrincipal();
+        webSocketUserPrincipal.setEnable(false);
         stompHeaderAccessor1.setUser(webSocketUserPrincipal);
         GenericMessage<String> message1 = new GenericMessage<String>("payload", stompHeaderAccessor1.getMessageHeaders());
-        out = webSocketChannelInterceptor.preSend(message1, executorSubscribableChannel);
+        try {
+            webSocketChannelInterceptor.preSend(message1, executorSubscribableChannel);
+            flag = false;
+        }catch (Exception e){
+            flag = true;
+        }
+        Assert.assertTrue(flag);
+
+        webSocketUserPrincipal.setEnable(true);
+        Message<?> out = webSocketChannelInterceptor.preSend(message1, executorSubscribableChannel);
         Assert.assertTrue(out == message1);
     }
 
