@@ -4,6 +4,7 @@ import { Layout, Icon } from 'antd';
 import { connect } from 'dva';
 import faviconUtils from  '@/utils/faviconUtils'
 import disableSvg from '@/assets/disable.svg';
+import lodash from 'lodash'
 import Footer from './Footer';
 
 const { Header, Content } = Layout;
@@ -23,7 +24,7 @@ class LoginLayout extends React.Component {
     return <Layout className="layout">
     <Header style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', flex: 'auto'}}>
       {
-        !accelerate ? <div style={{color: '#e8e8e8' }}> <img src={disableSvg} alt="" style={{ width: '20px', height: '20px' }} /> {" "}HDT</div> : <></>
+        (lodash.isUndefined(accelerate) || accelerate) ? <></> : <div style={{color: '#e8e8e8' }}> <img src={disableSvg} alt="" style={{ width: '20px', height: '20px' }} /> {" "}HDT</div>
       }
       {
         nickname ?<div style={{color: '#e8e8e8', marginLeft:'auto'}}> <Icon type="user" /> {nickname}</div> : <></>

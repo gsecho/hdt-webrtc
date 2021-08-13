@@ -78,6 +78,7 @@ class EditMeeting extends React.Component {
                     'maxMember': values.maxMember,
                     'password': values.password,
                     'adminPassword': values.adminPassword,
+                    'accelerate': values.accelerate,
                     'status': values.switchStatus ? 0: 1,
                 },
               })
