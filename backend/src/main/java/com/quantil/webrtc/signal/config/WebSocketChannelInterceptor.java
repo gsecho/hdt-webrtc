@@ -39,15 +39,14 @@ public class WebSocketChannelInterceptor implements ChannelInterceptor {
         StompHeaderAccessor stompHeaderAccessor = StompHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
         StompCommand cmd = stompHeaderAccessor.getCommand();
         WebSocketUserPrincipal user = (WebSocketUserPrincipal)stompHeaderAccessor.getUser();
-        if (user!=null && !user.getEnable()) {
-            log.info("client disable id:{}", user.getUserId());
-            throw new RuntimeException("disconnect link");
-        }
         /**
          * connect的时候会校验token, 其他阶段只判断是否有principal
          */
         if(null == cmd){
-            if(stompHeaderAccessor.isHeartbeat()){
+            if ((user == null) || (user!=null && !user.getEnable())) {
+                log.info("client disable id:{}", user.getUserId());
+                throw new RuntimeException("disconnect link");
+            }else if(stompHeaderAccessor.isHeartbeat()){
                 log.debug("heart beat id:{}", user.getUserId());
                 return message;
             }else{
@@ -65,13 +64,19 @@ public class WebSocketChannelInterceptor implements ChannelInterceptor {
                 }
                 return message;
             }else if(StompCommand.SUBSCRIBE.equals(cmd)) {
+                if ((user == null) || (user!=null && !user.getEnable())) {
+                    log.info("client disable id:{}", user.getUserId());
+                    throw new RuntimeException("disconnect link");
+                }
                 log.debug("--------- cmd:{}, id:{}, enable:{}", cmd, user.getUserId(), user.getEnable());
                 return message;
             }else {
-                List<String> dstList = stompHeaderAccessor.toNativeHeaderMap().get("destination");
-                log.info("--------- cmd:{}, id:{}, enable:{}, destination:{}", cmd, user.getUserId(), user.getEnable(), StringUtils.join(dstList, ","));
-                WebSocketUserPrincipal principal = (WebSocketUserPrincipal)stompHeaderAccessor.getUser();
-                if (principal != null && principal.getEnable()) {
+                if ((user == null) || (user!=null && !user.getEnable())) {
+                    log.info("client disable id:{}", user.getUserId());
+                    throw new RuntimeException("disconnect link");
+                }else{
+                    List<String> dstList = stompHeaderAccessor.toNativeHeaderMap().get("destination");
+                    log.info("--------- cmd:{}, id:{}, enable:{}, destination:{}", cmd, user.getUserId(), user.getEnable(), StringUtils.join(dstList, ","));
                     return message;
                 }
             }
